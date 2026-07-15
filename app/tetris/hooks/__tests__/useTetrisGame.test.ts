@@ -164,4 +164,24 @@ describe('useTetrisGame', () => {
 
     expect(() => result.current.hardDrop()).not.toThrow()
   })
+
+  it('locks a hard-dropped piece before horizontal input can move it', () => {
+    const { result } = renderHook(() => useTetrisGame())
+
+    act(() => result.current.hardDrop())
+
+    const lockedBoard = result.current.gameState.board.map(row => [...row])
+    const lockedCellCount = lockedBoard.flat().filter(Boolean).length
+    const nextPieceBeforeMove = result.current.gameState.currentPiece
+
+    expect(lockedCellCount).toBeGreaterThan(0)
+    expect(nextPieceBeforeMove?.position.y).toBe(0)
+
+    act(() => result.current.movePiece('left'))
+
+    expect(result.current.gameState.board).toEqual(lockedBoard)
+    expect(result.current.gameState.currentPiece?.position.x).toBe(
+      (nextPieceBeforeMove?.position.x ?? 0) - 1
+    )
+  })
 })

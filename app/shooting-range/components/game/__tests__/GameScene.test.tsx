@@ -16,7 +16,6 @@ vi.mock('@react-three/fiber', () => ({
 
 vi.mock('@react-three/drei', () => ({
   PointerLockControls: vi.fn(() => null),
-  Environment: vi.fn(() => null),
 }))
 
 vi.mock('three-stdlib', () => ({

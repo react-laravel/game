@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
-import { PointerLockControls, Environment } from '@react-three/drei'
+import { PointerLockControls } from '@react-three/drei'
 import { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { Target } from './Target'
@@ -534,7 +534,6 @@ export function GameScene({
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
 
-      <Environment preset="sunset" />
       <fog attach="fog" args={['#0c1445', 15, 50]} />
 
       {/* 太阳 */}

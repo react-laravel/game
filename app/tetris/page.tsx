@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+import { Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { useTetrisGame } from './hooks/useTetrisGame'
@@ -22,7 +24,37 @@ export default function TetrisGame() {
     resetGame,
     togglePause,
     bestScore,
+    soundMuted,
+    toggleSound,
   } = useTetrisGame()
+
+  useEffect(() => {
+    const gameWindow = window as Window & {
+      render_game_to_text?: () => string
+    }
+
+    gameWindow.render_game_to_text = () =>
+      JSON.stringify({
+        mode: gameState.gameOver ? 'gameOver' : gameState.paused ? 'paused' : 'playing',
+        coordinateSystem: 'board origin top-left; x increases right; y increases down',
+        score: gameState.score,
+        lines: gameState.lines,
+        level: gameState.level,
+        soundMuted,
+        activePiece: gameState.currentPiece
+          ? {
+              type: gameState.currentPiece.type,
+              position: gameState.currentPiece.position,
+              shape: gameState.currentPiece.shape,
+            }
+          : null,
+        settledRows: gameState.board.map(row => row.map(cell => (cell ? '#' : '.')).join('')),
+      })
+
+    return () => {
+      delete gameWindow.render_game_to_text
+    }
+  }, [gameState, soundMuted])
 
   // 键盘控制
   useKeyboardControls({
@@ -44,17 +76,29 @@ export default function TetrisGame() {
             <span className="mx-1">{'>'}</span>{' '}
             <span className="text-foreground font-medium">俄罗斯方块</span>
           </div>
-          <GameRulesDialog
-            title="俄罗斯方块游戏规则"
-            rules={[
-              '使用方向键移动和旋转方块',
-              '空格键硬降，下方向键软降',
-              'P键暂停游戏',
-              '填满一行会自动消除并得分',
-              '消除多行可获得更高分数',
-              '方块堆到顶部游戏结束',
-            ]}
-          />
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={toggleSound}
+              aria-label={soundMuted ? '开启音效' : '关闭音效'}
+              title={soundMuted ? '开启音效' : '关闭音效'}
+            >
+              {soundMuted ? <VolumeX /> : <Volume2 />}
+            </Button>
+            <GameRulesDialog
+              title="俄罗斯方块游戏规则"
+              rules={[
+                '使用方向键移动和旋转方块',
+                '空格键硬降，下方向键软降',
+                'P键暂停游戏',
+                '填满一行会自动消除并得分',
+                '消除多行可获得更高分数',
+                '方块堆到顶部游戏结束',
+              ]}
+            />
+          </div>
         </div>
         <p className="hidden text-center text-sm text-gray-600 sm:block sm:text-base">
           使用方向键移动和旋转，空格键硬降，P键暂停

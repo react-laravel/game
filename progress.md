@@ -2,8 +2,15 @@ Original prompt: 开始实现前端，工作目录只限新目录 /Users/sam/Cod
 
 Current prompt (2026-07-15): 修复 `https://game.dogeow.com/monopoly` 浅色、深色表现不对应的问题，并为 Monopoly 增加自己的顶部导航栏。
 
+Current prompt (2026-07-15): 修复 `/tetris` 空格硬降触底后仍能左右移动的问题，并增加游戏音效。
+
+Current prompt (2026-07-15): 修复 `/shooting-range` 因 `venice_sunset_1k.hdr` 加载失败而无法进入的问题。
+
 ## Current work
 
+- Removed Shooting Range's remote Drei `sunset` HDR environment dependency; the scene now relies on its existing local lights, fog, sun, and canvas background, so an external HDR fetch failure can no longer crash the route.
+- Fixed Tetris hard drop so Space locks the landed piece immediately and spawns the next piece before any later horizontal input can run.
+- Added synthesized Tetris sound effects for movement, rotation, landing, hard drop, line clear, and game over, with a persisted mute control.
 - Added a class-driven game theme bootstrap/provider so the root color tokens and every `dark:` utility switch together, with a persisted light/dark choice and system-theme fallback.
 - Added a dedicated Monopoly top navigation with a game-center link and theme toggle; active boards now use the remaining flex height below that navigation instead of a missing central-site header offset.
 - Created the standalone game project directory.
@@ -23,8 +30,10 @@ Current prompt (2026-07-15): 修复 `https://game.dogeow.com/monopoly` 浅色、
 
 - `npm run type-check` passes.
 - `npm run lint` passes with no warnings.
-- `npm test` passes: 52/52 test files and 480/480 tests.
+- `npm test` passes: 53/53 test files and 484/484 tests.
 - `npm run build` passes and generates the game center, auth callback, and all 13 root game routes.
+- Shooting Range validation passes in the local production build and `develop-web-game` browser client: the full 3D scene renders without console/page errors, and neither the source nor built assets reference `venice_sunset_1k.hdr` or the remote `sunset` environment preset.
+- Tetris hard-drop validation passes in unit tests and the `develop-web-game` browser client: Space immediately adds the landed piece to settled rows, a following Left input only moves the newly spawned top piece, sound playback schedules correctly, and mute state persists without console/page errors.
 - Monopoly theme/header validation passes in both light and dark modes: the root color scheme, board tiles, center panels, and navigation switch together; the 1638×1538 screenshot viewport has no vertical overflow.
 - The `develop-web-game` Playwright client reached the mocked active Monopoly board, captured its text state and screenshot, and reported no console/page errors once the local API/Reverb fixtures were available.
 - The `develop-web-game` Playwright client was used to exercise 2048 input/state, inspect the game-center and Moon Dice screens, and render the Shooting Range 3D scene; the successful runs had no console/page errors.

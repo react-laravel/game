@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { useTetrisStore } from '../store'
-import { GameState, Position } from '../types'
+import type { GameState, Position, Tetromino } from '../types'
 import {
   createEmptyBoard,
   generateRandomTetromino,
@@ -15,9 +15,11 @@ import {
   calculateHardDropDistance,
 } from '../utils'
 import { SCORING, GAME_SPEED } from '../constants'
+import { useTetrisSounds, type TetrisSound } from './useTetrisSounds'
 
 export function useTetrisGame() {
   const { bestScore, setBestScore, incrementGamesPlayed, addLinesCleared } = useTetrisStore()
+  const { muted: soundMuted, playSound, toggleMuted: toggleSound } = useTetrisSounds()
 
   const [gameState, setGameState] = useState<GameState>(() => ({
     board: createEmptyBoard(),
@@ -86,12 +88,13 @@ export function useTetrisGame() {
           ...prev,
           currentPiece: prev.currentPiece ? { ...prev.currentPiece, position: newPosition } : null,
         }))
+        if (direction === 'left' || direction === 'right') playSound('move')
         return true
       }
 
       return false
     },
-    [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused]
+    [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused, playSound]
   )
 
   // 旋转方块
@@ -105,8 +108,64 @@ export function useTetrisGame() {
         ...prev,
         currentPiece: rotated,
       }))
+      playSound('rotate')
     }
-  }, [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused])
+  }, [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused, playSound])
+
+  const lockPiece = useCallback(
+    (landedPiece: Tetromino, scoreBonus = 0, landingSound: TetrisSound = 'lock') => {
+      const newBoard = placeTetromino(gameState.board, landedPiece)
+      const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard)
+      const newLines = gameState.lines + linesCleared
+      const newLevel = calculateLevel(newLines)
+      const newScore =
+        gameState.score + scoreBonus + calculateScore(linesCleared, gameState.level)
+      const newPiece = gameState.nextPiece || generateRandomTetromino()
+      const nextNewPiece = generateRandomTetromino()
+      const gameOver = !isValidPosition(clearedBoard, newPiece, newPiece.position)
+
+      if (linesCleared > 0) {
+        addLinesCleared(linesCleared)
+        toast.success(`消除了 ${linesCleared} 行！`)
+      }
+
+      if (newScore > bestScore) setBestScore(newScore)
+
+      if (gameOver) {
+        incrementGamesPlayed()
+        toast.error('游戏结束！')
+        playSound('gameOver')
+      } else if (linesCleared > 0) {
+        playSound('clear')
+      } else {
+        playSound(landingSound)
+      }
+
+      setGameState(prev => ({
+        ...prev,
+        board: clearedBoard,
+        currentPiece: gameOver ? null : newPiece,
+        nextPiece: gameOver ? prev.nextPiece : nextNewPiece,
+        score: newScore,
+        lines: newLines,
+        level: newLevel,
+        gameOver,
+      }))
+      lastDropTime.current = Date.now()
+    },
+    [
+      addLinesCleared,
+      bestScore,
+      gameState.board,
+      gameState.level,
+      gameState.lines,
+      gameState.nextPiece,
+      gameState.score,
+      incrementGamesPlayed,
+      playSound,
+      setBestScore,
+    ]
+  )
 
   // 硬降
   const hardDrop = useCallback(() => {
@@ -114,19 +173,16 @@ export function useTetrisGame() {
 
     const dropDistance = calculateHardDropDistance(gameState.board, gameState.currentPiece)
 
-    if (dropDistance > 0) {
-      const newPosition = {
+    const landedPiece = {
+      ...gameState.currentPiece,
+      position: {
         ...gameState.currentPiece.position,
         y: gameState.currentPiece.position.y + dropDistance,
-      }
-
-      setGameState(prev => ({
-        ...prev,
-        currentPiece: prev.currentPiece ? { ...prev.currentPiece, position: newPosition } : null,
-        score: prev.score + dropDistance * SCORING.HARD_DROP_BONUS,
-      }))
+      },
     }
-  }, [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused])
+
+    lockPiece(landedPiece, dropDistance * SCORING.HARD_DROP_BONUS, 'drop')
+  }, [gameState.currentPiece, gameState.board, gameState.gameOver, gameState.paused, lockPiece])
 
   // 开始软降
   const startSoftDrop = useCallback(() => {
@@ -181,54 +237,7 @@ export function useTetrisGame() {
       const now = Date.now()
       if (now - lastDropTime.current >= dropSpeed) {
         if (!movePiece('down')) {
-          // 方块无法下移，固定到棋盘上
-          const newBoard = placeTetromino(gameState.board, gameState.currentPiece!)
-          const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard)
-
-          let newScore = gameState.score
-          let newLines = gameState.lines
-          let newLevel = gameState.level
-
-          if (linesCleared > 0) {
-            newScore += calculateScore(linesCleared, gameState.level)
-            newLines += linesCleared
-            newLevel = calculateLevel(newLines)
-            addLinesCleared(linesCleared)
-
-            if (newScore > bestScore) {
-              setBestScore(newScore)
-            }
-
-            toast.success(`消除了 ${linesCleared} 行！`)
-          }
-
-          // 生成新方块
-          const newPiece = gameState.nextPiece || generateRandomTetromino()
-          const nextNewPiece = generateRandomTetromino()
-
-          // 检查游戏是否结束
-          if (!isValidPosition(clearedBoard, newPiece, newPiece.position)) {
-            setGameState(prev => ({
-              ...prev,
-              gameOver: true,
-              score: newScore,
-            }))
-            incrementGamesPlayed()
-            if (newScore > bestScore) {
-              setBestScore(newScore)
-            }
-            toast.error('游戏结束！')
-          } else {
-            setGameState(prev => ({
-              ...prev,
-              board: clearedBoard,
-              currentPiece: newPiece,
-              nextPiece: nextNewPiece,
-              score: newScore,
-              lines: newLines,
-              level: newLevel,
-            }))
-          }
+          lockPiece(gameState.currentPiece!)
         }
         lastDropTime.current = now
       }
@@ -241,7 +250,7 @@ export function useTetrisGame() {
         clearInterval(gameLoopRef.current)
       }
     }
-  }, [gameState, movePiece, bestScore, setBestScore, incrementGamesPlayed, addLinesCleared])
+  }, [gameState, movePiece, lockPiece])
 
   // 重置游戏
   const resetGame = useCallback(() => {
@@ -295,5 +304,7 @@ export function useTetrisGame() {
     resetGame,
     togglePause,
     bestScore,
+    soundMuted,
+    toggleSound,
   }
 }

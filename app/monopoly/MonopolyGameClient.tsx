@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PageContainer } from '@/components/layout'
 import { createEchoInstance, getEchoInstance } from '@/lib/websocket'
 import useAuthStore from '@/stores/authStore'
@@ -561,13 +561,7 @@ export default function MonopolyGameClient() {
   return (
     <PageContainer
       fullScreen
-      className="fixed inset-x-0 z-20 overflow-hidden bg-background"
-      style={
-        {
-          top: 'var(--app-header-total-height, var(--app-header-height, 50px))',
-          height: 'calc(100dvh - var(--app-header-total-height, var(--app-header-height, 50px)))',
-        } as CSSProperties
-      }
+      className="relative h-full overflow-hidden bg-background"
     >
       <MonopolyAnimationStyles />
       <div className="flex h-full w-full items-center justify-center overflow-hidden">

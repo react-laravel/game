@@ -1,7 +1,5 @@
-import { MutableRefObject, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { PointerLockControls } from '@react-three/drei'
-import { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { Target } from './Target'
 import { FPSWeapon } from './FPSWeapon'
@@ -22,6 +20,7 @@ interface TargetData {
 }
 
 export interface ShootingSceneSnapshot {
+  camera: { yaw: number; pitch: number }
   targets: Array<{ id: number; x: number; y: number; z: number; hit: boolean }>
 }
 
@@ -44,7 +43,6 @@ interface GameSceneProps {
   gameStarted: boolean
   setGameStarted: (started: boolean) => void
   useFallbackControls?: boolean
-  onError?: (message: string) => void
   sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
 }
 
@@ -57,11 +55,9 @@ export function GameScene({
   gameStarted,
   setGameStarted,
   useFallbackControls = false,
-  onError,
   sceneStateRef,
 }: GameSceneProps) {
   const { camera, gl } = useThree()
-  const controls = useRef<PointerLockControlsImpl | null>(null)
   const settings = difficultySettings[difficulty]
   const [targets, setTargets] = useState<TargetData[]>(() => createTargets(settings))
   const targetObjects = useRef(new Map<number, THREE.Group>())
@@ -72,6 +68,7 @@ export function GameScene({
   const nextShotAt = useRef(0)
   const muzzleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotElapsed = useRef(0)
+  const lookRotation = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const [muzzleFlash, setMuzzleFlash] = useState(false)
 
   const registerTarget = useCallback((id: number, target: THREE.Group | null) => {
@@ -167,6 +164,10 @@ export function GameScene({
     if (snapshotElapsed.current < 0.1) return
     snapshotElapsed.current = 0
 
+    sceneStateRef.current.camera = {
+      yaw: Number(camera.rotation.y.toFixed(3)),
+      pitch: Number(camera.rotation.x.toFixed(3)),
+    }
     sceneStateRef.current.targets = targets.map(target => {
       const position = targetObjects.current.get(target.id)?.position
       return {
@@ -201,17 +202,26 @@ export function GameScene({
   }, [gameStarted, handleShoot, useFallbackControls])
 
   useEffect(() => {
-    if (!gameStarted || useFallbackControls || !controls.current) return
-    const timer = setTimeout(() => {
-      try {
-        controls.current?.lock()
-      } catch (error) {
-        console.error('锁定指针失败:', error)
-        onError?.('无法锁定鼠标指针，请尝试使用备用控制模式')
-      }
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [gameStarted, onError, useFallbackControls])
+    if (!gameStarted || useFallbackControls) return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (document.pointerLockElement !== gl.domElement) return
+
+      const rotation = lookRotation.current
+      rotation.setFromQuaternion(camera.quaternion, 'YXZ')
+      rotation.y -= event.movementX * 0.002
+      rotation.x -= event.movementY * 0.002
+      rotation.x = THREE.MathUtils.clamp(
+        rotation.x,
+        -Math.PI / 2 + 0.05,
+        Math.PI / 2 - 0.05
+      )
+      camera.quaternion.setFromEuler(rotation)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    return () => document.removeEventListener('mousemove', handleMouseMove)
+  }, [camera, gameStarted, gl.domElement, useFallbackControls])
 
   useEffect(() => {
     const handlePointerLockChange = () => {
@@ -248,12 +258,6 @@ export function GameScene({
     <>
       <color attach="background" args={['#07141e']} />
       <fog attach="fog" args={['#07141e', 20, 58]} />
-
-      {!useFallbackControls && gameStarted && (
-        <Suspense fallback={null}>
-          <PointerLockControls ref={controls} />
-        </Suspense>
-      )}
 
       <hemisphereLight args={['#b9e7ff', '#10202a', 1.15]} />
       <directionalLight

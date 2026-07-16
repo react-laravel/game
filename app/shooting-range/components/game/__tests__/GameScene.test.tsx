@@ -14,17 +14,13 @@ vi.mock('@react-three/fiber', () => ({
   useFrame: vi.fn(),
 }))
 
-vi.mock('@react-three/drei', () => ({
-  PointerLockControls: vi.fn(() => null),
-}))
-
-vi.mock('three-stdlib', () => ({
-  PointerLockControls: {
-    current: null,
-  },
-}))
-
 vi.mock('three', () => ({
+  Euler: class MockEuler {
+    x = 0
+    y = 0
+    setFromQuaternion = vi.fn(() => this)
+  },
+  MathUtils: { clamp: vi.fn((value: number) => value) },
   Vector2: class MockVector2 {},
   Vector3: class MockVector3 {},
   Raycaster: class MockRaycaster {
@@ -80,7 +76,6 @@ describe('GameScene', () => {
     gameStarted: false,
     setGameStarted: vi.fn(),
     useFallbackControls: false,
-    onError: vi.fn(),
   }
 
   beforeEach(() => {
@@ -93,15 +88,6 @@ describe('GameScene', () => {
       expect(container).toBeDefined()
     })
 
-    it('should render pointer lock controls when not using fallback', () => {
-      render(<GameScene {...defaultProps} useFallbackControls={false} />)
-      // PointerLockControls is rendered via Suspense
-    })
-
-    it('should not render pointer lock controls when using fallback', () => {
-      render(<GameScene {...defaultProps} useFallbackControls={true} />)
-      // Should not render PointerLockControls
-    })
   })
 
   describe('Scene Elements', () => {
@@ -199,22 +185,9 @@ describe('GameScene', () => {
   })
 
   describe('Fallback Controls', () => {
-    it('should not render PointerLockControls when useFallbackControls is true', () => {
-      render(<GameScene {...defaultProps} useFallbackControls={true} gameStarted={true} />)
-      // Should use fallback controls instead
-    })
-
     it('should not lock pointer with fallback controls', () => {
       render(<GameScene {...defaultProps} useFallbackControls={true} gameStarted={true} />)
       // No pointer lock should be attempted
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('should call onError when pointer lock fails', () => {
-      const onError = vi.fn()
-      render(<GameScene {...defaultProps} onError={onError} gameStarted={true} />)
-      // onError should be called if pointer lock fails
     })
   })
 
@@ -240,6 +213,13 @@ describe('GameScene', () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function), {
         passive: false,
       })
+    })
+
+    it('should add mouse movement aiming when the game starts', () => {
+      const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
+      render(<GameScene {...defaultProps} gameStarted={true} useFallbackControls={false} />)
+
+      expect(addEventListenerSpy).toHaveBeenCalledWith('mousemove', expect.any(Function))
     })
   })
 

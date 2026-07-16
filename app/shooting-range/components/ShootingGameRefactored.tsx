@@ -238,7 +238,6 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
             gameStarted={gameStarted && !gameOver}
             setGameStarted={setGameStartedState}
             useFallbackControls={browserSupport.useFallback}
-            onError={setPointerLockError}
           />
         </Canvas>
 

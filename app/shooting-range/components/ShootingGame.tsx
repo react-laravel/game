@@ -51,7 +51,10 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
   })
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hitMarkerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const sceneStateRef = useRef<ShootingSceneSnapshot>({ targets: [] })
+  const sceneStateRef = useRef<ShootingSceneSnapshot>({
+    camera: { yaw: 0, pitch: 0 },
+    targets: [],
+  })
 
   const handleScore = useCallback(() => setScore(previous => previous + 10), [])
   const handleShot = useCallback(() => setShots(previous => previous + 1), [])
@@ -95,6 +98,8 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
         score,
         shots,
         timeLeft,
+        pointerLocked: document.pointerLockElement === canvasRef.current,
+        camera: sceneStateRef.current.camera,
         targets: sceneStateRef.current.targets,
       })
 
@@ -221,7 +226,6 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
           gameStarted={gameStarted && !gameOver}
           setGameStarted={setGameStartedState}
           useFallbackControls={browserSupport.useFallback}
-          onError={setPointerLockError}
           sceneStateRef={sceneStateRef}
         />
       </Canvas>

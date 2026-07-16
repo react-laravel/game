@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useSnakeGameStore } from './store'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
-import Link from 'next/link'
 
 type Position = { x: number; y: number }
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
@@ -396,13 +395,7 @@ export default function SnakeGame() {
     <div className="container mx-auto max-w-md px-4 py-4" onContextMenu={e => e.preventDefault()}>
       <div className="mb-6 text-center">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-muted-foreground text-sm">
-            <Link href="/" className="hover:text-foreground transition-colors">
-              游戏中心
-            </Link>
-            <span className="mx-1">{'>'}</span>{' '}
-            <span className="text-foreground font-medium">贪吃蛇</span>
-          </div>
+          <h1 className="text-xl font-bold">贪吃蛇</h1>
           <GameRulesDialog
             title="贪吃蛇游戏规则"
             rules={[

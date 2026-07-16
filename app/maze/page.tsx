@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import MazeGame from './components/MazeGame'
 
@@ -8,15 +7,8 @@ export default function MazePage() {
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto px-4 py-6">
-        {/* 头部 */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="text-muted-foreground text-sm">
-            <Link href="/" className="hover:text-foreground transition-colors">
-              游戏中心
-            </Link>
-            <span className="mx-1">{'>'}</span>{' '}
-            <span className="text-foreground font-medium">迷宫游戏</span>
-          </div>
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold">迷宫</h1>
           <GameRulesDialog
             title="迷宫游戏说明"
             rules={[
@@ -29,7 +21,6 @@ export default function MazePage() {
           />
         </div>
 
-        {/* 游戏区域 */}
         <MazeGame />
       </div>
     </div>

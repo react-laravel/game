@@ -6,8 +6,19 @@ Current prompt (2026-07-15): 修复 `/tetris` 空格硬降触底后仍能左右�
 
 Current prompt (2026-07-15): 修复 `/shooting-range` 因 `venice_sunset_1k.hdr` 加载失败而无法进入的问题。
 
+Current prompt (2026-07-16): 改善 `/shooting-range` 的 UI 和枪支外观，并修复击中目标时的画面卡顿。
+
+Current prompt (2026-07-16): 统一游戏中心卡片高度和页面背景；以一个可拖动、可展开的全局悬浮按钮统一浅色/深色切换与返回首页，并移除各游戏自己的面包屑和全局返回控件。
+
 ## Current work
 
+- Unified the game-center grid around fixed-height cards and one root background token, eliminating the uneven rows and dark-mode color seam.
+- Added one global draggable quick menu on game routes; it expands to light mode, dark mode, and return-home actions, and persists its position locally.
+- Removed the scattered game-center breadcrumbs, return-home links, and Monopoly-only top navigation while keeping game-specific titles, rules, and controls.
+- Redesigned Shooting Range's setup screen, in-game HUD, crosshair feedback, indoor range, moving drone targets, and first-person weapon.
+- Removed Shooting Range's render-loop React state updates: targets now move through Three.js refs, shooting uses immediate raycasts, and the unused animated bullet path is no longer mounted.
+- Replaced per-particle React state/geometries with one mutable points geometry per impact and added reusable prewarmed audio pools, eliminating the main hit-time allocation spikes.
+- Added shooting accuracy/shot counters plus a `render_game_to_text` state bridge; fallback target clicks now count as shots and use the same score/feedback path.
 - Removed Shooting Range's remote Drei `sunset` HDR environment dependency; the scene now relies on its existing local lights, fog, sun, and canvas background, so an external HDR fetch failure can no longer crash the route.
 - Fixed Tetris hard drop so Space locks the landed piece immediately and spawns the next piece before any later horizontal input can run.
 - Added synthesized Tetris sound effects for movement, rotation, landing, hard drop, line clear, and game over, with a persisted mute control.
@@ -28,6 +39,12 @@ Current prompt (2026-07-15): 修复 `/shooting-range` 因 `venice_sunset_1k.hdr`
 
 ## Validation
 
+- Browser validation covers all 13 game routes: each shows exactly one quick-menu trigger with no game-center breadcrumb or duplicate return-home link; representative Monopoly, Moon Dice, Shooting Range, and Tic-Tac-Toe screenshots were inspected.
+- The quick menu was exercised end to end in light and dark modes, dragged to a saved position, reopened, and used to return home without console or page errors.
+- The game-center screenshot and computed layout confirm all visible cards are exactly 224px high and the page/root backgrounds match in dark mode.
+- Shooting Range's focused suite passes: 6/6 files and 68/68 tests; its type-check and lint checks pass.
+- The `develop-web-game` browser client and a two-stage Playwright pointer-lock fallback run both render the redesigned settings/gameplay screens with complete text state and no console/page errors.
+- A projected-target browser smoke test exercises hit -> score -> accuracy -> respawn in fallback mode; score updates to 10 with one recorded shot and the browser observed the update in about 23 ms.
 - `npm run type-check` passes.
 - `npm run lint` passes with no warnings.
 - `npm test` passes: 53/53 test files and 484/484 tests.

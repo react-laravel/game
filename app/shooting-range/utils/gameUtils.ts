@@ -15,9 +15,9 @@ export const isGameOver = (): boolean => {
  */
 export const generateRandomPosition = (gameAreaSize: number): [number, number, number] => {
   return [
-    (Math.random() - 0.5) * gameAreaSize,
-    ((Math.random() - 0.5) * gameAreaSize) / 2 + 2,
-    (Math.random() - 0.5) * gameAreaSize - gameAreaSize / 2,
+    (Math.random() - 0.5) * gameAreaSize * 0.78,
+    Math.random() * Math.max(0.1, gameAreaSize / 4 + 1.2) + 0.8,
+    -(Math.random() * gameAreaSize + 8),
   ]
 }
 

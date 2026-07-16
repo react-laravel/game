@@ -1,55 +1,89 @@
 /**
- * 音频播放工具函数
+ * Small reusable audio pools keep hit feedback off the render-critical path.
+ * Creating a new HTMLAudioElement for every impact can trigger decoding and GC
+ * exactly when the frame is busiest.
  */
 
-/**
- * 播放音效
- * @param soundPath 音频文件路径
- * @param volume 音量 (0-1)
- * @param playbackRate 播放速度
- * @param maxDuration 最大播放时长（毫秒）
- */
+const POOL_SIZE = 4
+const audioPools = new Map<string, HTMLAudioElement[]>()
+const poolIndexes = new Map<string, number>()
+const stopTimers = new WeakMap<HTMLAudioElement, ReturnType<typeof setTimeout>>()
+
+function poolKey(soundPath: string, playbackRate: number) {
+  return `${soundPath}@${playbackRate}`
+}
+
+function createPool(soundPath: string, playbackRate: number) {
+  const pool = Array.from({ length: POOL_SIZE }, () => {
+    const audio = new Audio(soundPath)
+    audio.preload = 'auto'
+    audio.playbackRate = playbackRate
+    return audio
+  })
+
+  audioPools.set(poolKey(soundPath, playbackRate), pool)
+  return pool
+}
+
+function getAudio(soundPath: string, playbackRate: number) {
+  const key = poolKey(soundPath, playbackRate)
+  const pool = audioPools.get(key) ?? createPool(soundPath, playbackRate)
+  const available = pool.find(audio => audio.paused || audio.ended)
+
+  if (available) return available
+
+  const nextIndex = (poolIndexes.get(key) ?? 0) % pool.length
+  poolIndexes.set(key, nextIndex + 1)
+  return pool[nextIndex]
+}
+
+export const primeShootingAudio = () => {
+  if (typeof Audio === 'undefined') return
+  if (!audioPools.has(poolKey('/sounds/shot.mp3', 0.8))) createPool('/sounds/shot.mp3', 0.8)
+  if (!audioPools.has(poolKey('/sounds/shot.mp3', 1.35))) createPool('/sounds/shot.mp3', 1.35)
+}
+
 export const playSound = (
   soundPath: string,
   volume: number = 0.2,
-  playbackRate: number = 1.0,
+  playbackRate: number = 1,
   maxDuration?: number
 ) => {
   try {
-    const audio = new Audio(soundPath)
+    const audio = getAudio(soundPath, playbackRate)
+    const previousTimer = stopTimers.get(audio)
+    if (previousTimer) clearTimeout(previousTimer)
+
+    audio.pause()
+    audio.currentTime = 0
     audio.volume = volume
     audio.playbackRate = playbackRate
 
     if (maxDuration) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         audio.pause()
         audio.currentTime = 0
+        stopTimers.delete(audio)
       }, maxDuration)
+      stopTimers.set(audio, timer)
     }
 
-    audio.play().catch(err => console.log('音频播放失败', err))
-  } catch (e) {
-    console.log('音频初始化失败', e)
+    void audio.play().catch(() => {
+      // Browsers may reject audio before the first user gesture. Gameplay can continue silently.
+    })
+  } catch {
+    // Audio is optional feedback and must never interrupt the render loop.
   }
 }
 
-/**
- * 播放射击音效
- */
 export const playShotSound = () => {
-  playSound('/sounds/shot.mp3', 0.15, 0.8, 500)
+  playSound('/sounds/shot.mp3', 0.14, 0.8, 380)
 }
 
-/**
- * 播放爆炸音效。暂时复用已验证有效的射击音频，避免请求伪 MP3 资源。
- */
 export const playExplosionSound = () => {
-  playSound('/sounds/shot.mp3', 1, 3, 200)
+  playSound('/sounds/shot.mp3', 0.3, 1.45, 180)
 }
 
-/**
- * 播放击中音效。暂时复用已验证有效的射击音频。
- */
 export const playHitSound = () => {
-  playSound('/sounds/shot.mp3', 0.2, 1.0, 800)
+  playSound('/sounds/shot.mp3', 0.3, 1.35, 180)
 }

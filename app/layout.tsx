@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import { AuthBootstrap } from '@/components/AuthBootstrap'
 import { GameAuthGate } from '@/components/GameAuthGate'
 import { GameThemeProvider } from '@/components/GameThemeProvider'
+import { GameQuickMenu } from '@/components/GameQuickMenu'
 import { GAME_THEME_STORAGE_KEY } from '@/lib/theme'
 import './globals.css'
 
@@ -26,7 +27,7 @@ const themeBootstrapScript = `
       ? storedTheme
       : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     const isDark = theme === 'dark'
-    const backgroundColor = isDark ? '#171717' : '#ffffff'
+    const backgroundColor = isDark ? '#0a0a0a' : '#ffffff'
     document.documentElement.classList.toggle('dark', isDark)
     document.documentElement.style.colorScheme = theme
     document.documentElement.style.backgroundColor = backgroundColor
@@ -44,7 +45,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <GameThemeProvider>
           <AuthBootstrap />
-          <GameAuthGate>{children}</GameAuthGate>
+          <GameAuthGate>
+            {children}
+            <GameQuickMenu />
+          </GameAuthGate>
           <Toaster richColors position="top-center" />
         </GameThemeProvider>
       </body>

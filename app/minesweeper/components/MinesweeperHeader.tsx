@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { DIFFICULTY_LABELS } from '../config'
@@ -33,13 +32,7 @@ export function MinesweeperHeader({
   return (
     <div className="flex flex-col items-center space-y-6 text-center">
       <div className="flex w-full items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          <Link href="/" className="hover:text-foreground transition-colors">
-            游戏中心
-          </Link>
-          <span className="mx-1">{'>'}</span>{' '}
-          <span className="text-foreground font-medium">扫雷</span>
-        </div>
+        <h1 className="text-xl font-bold">扫雷</h1>
         <GameRulesDialog title="扫雷游戏规则" rules={GAME_RULES} />
       </div>
 

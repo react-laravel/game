@@ -205,12 +205,10 @@ describe('Game2048', () => {
     })
   })
 
-  describe('Link Navigation', () => {
-    it('should render game center link', () => {
+  describe('Global Navigation', () => {
+    it('leaves app navigation to the shared floating menu', () => {
       render(<Game2048 />)
-      const link = screen.getByText('游戏中心')
-      expect(link).toBeInTheDocument()
-      expect(link.closest('a')).toHaveAttribute('href', '/')
+      expect(screen.queryByText('游戏中心')).not.toBeInTheDocument()
     })
   })
 

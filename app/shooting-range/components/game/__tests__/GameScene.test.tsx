@@ -25,21 +25,12 @@ vi.mock('three-stdlib', () => ({
 }))
 
 vi.mock('three', () => ({
-  Vector3: vi.fn().mockImplementation(() => ({
-    clone: vi.fn(),
-    add: vi.fn(),
-    subtract: vi.fn(),
-    multiplyScalar: vi.fn(),
-    distanceTo: vi.fn(),
-  })),
-  Raycaster: vi.fn().mockImplementation(() => ({
-    ray: {
-      direction: { clone: vi.fn() },
-    },
-    setFromCamera: vi.fn(),
-    intersectSphere: vi.fn(),
-    intersectObjects: vi.fn(),
-  })),
+  Vector2: class MockVector2 {},
+  Vector3: class MockVector3 {},
+  Raycaster: class MockRaycaster {
+    setFromCamera = vi.fn()
+    intersectObjects = vi.fn(() => [])
+  },
   Sphere: vi.fn(),
   Mesh: class {},
   Object3D: class {},

@@ -8,7 +8,6 @@ import { Slider } from '@/components/ui/slider'
 import dynamic from 'next/dynamic'
 import { Upload, Image as ImageIcon } from 'lucide-react'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
-import Link from 'next/link'
 import { imageAsset } from '@/lib/helpers/assets'
 
 // 动态导入拼图游戏组件
@@ -90,13 +89,7 @@ function JigsawPuzzleGame() {
   return (
     <div className="flex min-h-screen flex-col items-center px-2 py-4">
       <div className="mb-4 flex w-full max-w-6xl items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          <Link href="/" className="hover:text-foreground transition-colors">
-            游戏中心
-          </Link>
-          <span className="mx-1">{'>'}</span>{' '}
-          <span className="text-foreground font-medium">传统拼图</span>
-        </div>
+        <h1 className="text-xl font-bold">传统拼图</h1>
         <GameRulesDialog
           title="传统拼图游戏规则"
           rules={[

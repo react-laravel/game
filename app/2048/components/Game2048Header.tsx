@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 
@@ -38,13 +37,7 @@ export function Game2048Header({
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          <Link href="/" className="hover:text-foreground transition-colors">
-            游戏中心
-          </Link>
-          <span className="mx-1">{'>'}</span>
-          <span className="text-foreground font-medium">2048</span>
-        </div>
+        <h1 className="text-xl font-bold">2048</h1>
         <GameRulesDialog title="2048游戏规则" rules={GAME_RULES} />
       </div>
 

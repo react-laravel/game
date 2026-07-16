@@ -31,29 +31,36 @@ const GAMES = [
 
 export default function HomePage() {
   return (
-    <PageContainer maxWidth="7xl">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">DogeOW 游戏中心</h1>
-        <p className="text-muted-foreground mt-1 text-sm">选择一个游戏开始挑战。</p>
-      </header>
-      <div className="flex flex-wrap gap-3 sm:gap-4" role="grid" aria-label="游戏列表">
-        {GAMES.map(game => (
-          <Link
-            key={game.id}
-            href={`/${game.id}`}
-            className={`w-28 sm:w-32 ${'hideOnMobile' in game && game.hideOnMobile ? 'hidden md:block' : ''}`}
-          >
-            <Card className="flex aspect-square flex-col items-center justify-center p-3 text-center transition hover:-translate-y-1 hover:shadow-md">
-              <span className="mb-2 text-3xl" role="img" aria-label={game.name}>
-                {game.icon}
-              </span>
-              <h2 className="font-medium">{game.name}</h2>
-              <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{game.description}</p>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </PageContainer>
+    <main className="bg-background min-h-dvh">
+      <PageContainer maxWidth="7xl" className="py-8 sm:py-10">
+        <header className="mb-8">
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DogeOW 游戏中心</h1>
+          <p className="text-muted-foreground mt-2 text-base">选择一个游戏开始挑战。</p>
+        </header>
+        <div
+          className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-4"
+          role="grid"
+          aria-label="游戏列表"
+        >
+          {GAMES.map(game => (
+            <Link
+              key={game.id}
+              href={`/${game.id}`}
+              className={`group flex ${'hideOnMobile' in game && game.hideOnMobile ? 'hidden md:flex' : ''}`}
+            >
+              <Card className="flex h-56 w-full flex-col items-center justify-center rounded-2xl p-4 text-center transition duration-200 group-hover:-translate-y-1 group-hover:border-primary/45 group-hover:shadow-lg">
+                <span className="mb-5 text-4xl" role="img" aria-label={game.name}>
+                  {game.icon}
+                </span>
+                <h2 className="text-lg font-bold">{game.name}</h2>
+                <p className="text-muted-foreground mt-4 flex min-h-10 items-center justify-center text-sm leading-5">
+                  {game.description}
+                </p>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </PageContainer>
+    </main>
   )
 }
-

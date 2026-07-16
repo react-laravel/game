@@ -15,7 +15,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useGameStore } from './stores/game-store'
 import { GameStats } from './components/game-stats'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
-import Link from 'next/link'
 
 const TicTacToe = () => {
   const {
@@ -43,13 +42,7 @@ const TicTacToe = () => {
             <Card className="mb-6">
               <CardHeader>
                 <div className="flex w-full items-center justify-between">
-                  <div className="text-muted-foreground text-sm">
-                    <Link href="/" className="hover:text-foreground transition-colors">
-                      游戏中心
-                    </Link>
-                    <span className="mx-1">{'>'}</span>{' '}
-                    <span className="text-foreground font-medium">井字棋</span>
-                  </div>
+                  <h1 className="text-xl font-bold">井字棋</h1>
                   <GameRulesDialog
                     title="井字棋游戏规则"
                     rules={[

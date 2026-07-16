@@ -32,7 +32,7 @@ function getSystemTheme(): GameTheme {
 function applyTheme(theme: GameTheme) {
   const root = document.documentElement
   const isDark = theme === 'dark'
-  const backgroundColor = isDark ? '#171717' : '#ffffff'
+  const backgroundColor = isDark ? '#0a0a0a' : '#ffffff'
 
   root.classList.toggle('dark', isDark)
   root.style.colorScheme = theme

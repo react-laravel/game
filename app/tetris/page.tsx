@@ -10,7 +10,6 @@ import { GameBoard } from './components/GameBoard'
 import { NextPieceDisplay } from './components/NextPieceDisplay'
 import { GameInfo } from './components/GameInfo'
 import { MobileControls } from './components/MobileControls'
-import Link from 'next/link'
 
 export default function TetrisGame() {
   const {
@@ -69,13 +68,7 @@ export default function TetrisGame() {
     <div className="container mx-auto max-w-7xl p-2 sm:p-4">
       <div className="mb-4 sm:mb-6">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-muted-foreground text-sm">
-            <Link href="/" className="hover:text-foreground transition-colors">
-              游戏中心
-            </Link>
-            <span className="mx-1">{'>'}</span>{' '}
-            <span className="text-foreground font-medium">俄罗斯方块</span>
-          </div>
+          <h1 className="text-xl font-bold">俄罗斯方块</h1>
           <div className="flex items-center gap-1">
             <Button
               type="button"

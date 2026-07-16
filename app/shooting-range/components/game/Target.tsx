@@ -1,134 +1,155 @@
-import { useRef, useState, useMemo, useLayoutEffect, useEffect, Suspense } from 'react'
-import { useFrame, ThreeEvent } from '@react-three/fiber'
+import { memo, useEffect, useRef } from 'react'
+import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Explosion } from './Explosion'
-import { playExplosionSound } from '../../utils/audioUtils'
 
 interface TargetProps {
   position: [number, number, number]
+  direction: [number, number, number]
+  speed: number
+  gameAreaSize: number
   hit: boolean
   scale: number
-  onClick: () => void
-  id?: number
+  onClick: (id: number) => void
+  onReady?: (id: number, target: THREE.Group | null) => void
+  id: number
 }
 
-/**
- * 目标组件
- * 包含击中效果、动画和爆炸效果
- */
-export function Target({ position, hit, scale, onClick, id }: TargetProps) {
-  const mesh = useRef<THREE.Mesh>(null)
-  const [destroyed, setDestroyed] = useState(false)
+/** A moving range drone. Movement is applied directly to Three.js objects. */
+function TargetComponent({
+  position,
+  direction,
+  speed,
+  gameAreaSize,
+  hit,
+  scale,
+  onClick,
+  onReady,
+  id,
+}: TargetProps) {
+  const rootRef = useRef<THREE.Group>(null)
+  const visualRef = useRef<THREE.Group>(null)
+  const directionRef = useRef(new THREE.Vector3(...direction).normalize())
+  const hitElapsed = useRef(0)
+  const previousHit = useRef(hit)
 
-  // hit 复位时在渲染期间重置消失状态（官方“根据 props 调整 state”模式），避免在 effect 中 setState
-  const [prevHit, setPrevHit] = useState(hit)
-  if (hit !== prevHit) {
-    setPrevHit(hit)
-    if (!hit) setDestroyed(false)
-  }
-
-  // 目标的材质完全由 hit 派生：被击中显示红色，否则显示蓝色
-  const targetMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: hit ? '#ff0000' : '#00aaff',
-        emissive: hit ? '#550000' : '#004488',
-        roughness: 0.2,
-        metalness: 0.8,
-      }),
-    [hit]
-  )
-
-  // 被击中时播放音效，并在 0.2 秒后开始消失动画（setState 在定时器回调中）
-
-  useLayoutEffect(() => {
-    if (!hit) return
-
-    playExplosionSound()
-
-    const timer = setTimeout(() => {
-      setDestroyed(true)
-    }, 200)
-
-    return () => clearTimeout(timer)
-  }, [hit])
-
-  // 为mesh添加id信息，方便射线检测
   useEffect(() => {
-    if (mesh.current && id !== undefined) {
-      mesh.current.userData.targetId = id
-      mesh.current.userData.isTarget = true
-      mesh.current.userData.hit = hit
-    }
-  }, [id, hit])
+    if (!rootRef.current) return
+    rootRef.current.userData.targetId = id
+    rootRef.current.userData.isTarget = true
+    onReady?.(id, rootRef.current)
+    return () => onReady?.(id, null)
+  }, [id, onReady])
 
-  // 使用useFrame添加轻微的动画效果
-  useFrame((_, delta) => {
-    if (mesh.current && !hit) {
-      // 轻微的脉动效果
-      mesh.current.scale.x = scale * (1 + Math.sin(Date.now() * 0.003) * 0.05)
-      mesh.current.scale.y = scale * (1 + Math.sin(Date.now() * 0.003) * 0.05)
-      mesh.current.scale.z = scale * (1 + Math.sin(Date.now() * 0.003) * 0.05)
-    } else if (mesh.current && hit && !destroyed) {
-      // 被击中后急速膨胀效果
-      mesh.current.scale.x += delta * 2
-      mesh.current.scale.y += delta * 2
-      mesh.current.scale.z += delta * 2
-    } else if (mesh.current && destroyed) {
-      // 被击中后快速缩小至消失
-      mesh.current.scale.x = Math.max(0.001, mesh.current.scale.x - delta * 6)
-      mesh.current.scale.y = Math.max(0.001, mesh.current.scale.y - delta * 6)
-      mesh.current.scale.z = Math.max(0.001, mesh.current.scale.z - delta * 6)
+  useFrame(({ camera }, delta) => {
+    const root = rootRef.current
+    const visual = visualRef.current
+    if (!root || !visual) return
+
+    if (previousHit.current !== hit) {
+      previousHit.current = hit
+      hitElapsed.current = 0
+      visual.visible = true
     }
+
+    if (!hit) {
+      const directionVector = directionRef.current
+      root.position.addScaledVector(directionVector, speed * 60 * delta)
+
+      const halfWidth = gameAreaSize * 0.42
+      const minY = 0.8
+      const maxY = Math.min(9, gameAreaSize * 0.42 + 2)
+      const nearZ = -7
+      const farZ = -(gameAreaSize + 9)
+
+      if (root.position.x < -halfWidth || root.position.x > halfWidth) directionVector.x *= -1
+      if (root.position.y < minY || root.position.y > maxY) directionVector.y *= -1
+      if (root.position.z > nearZ || root.position.z < farZ) directionVector.z *= -1
+
+      root.position.x = THREE.MathUtils.clamp(root.position.x, -halfWidth, halfWidth)
+      root.position.y = THREE.MathUtils.clamp(root.position.y, minY, maxY)
+      root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
+
+      if (Math.random() < delta * 0.3) {
+        directionVector
+          .add(new THREE.Vector3((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.2, 0))
+          .normalize()
+      }
+
+      const pulse = 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
+      visual.scale.setScalar(pulse)
+    } else {
+      hitElapsed.current += delta
+      const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2 - hitElapsed.current ** 2 * 45)
+      visual.scale.setScalar(impactScale)
+      visual.visible = hitElapsed.current < 0.15
+    }
+
+    root.lookAt(camera.position)
   })
 
-  // 直接在组件内处理点击事件
-  const handleMeshClick = (e: ThreeEvent<MouseEvent>) => {
-    // React Three Fiber 事件处理
-    if (e.stopPropagation) {
-      e.stopPropagation()
-    }
-
-    console.log(`直接点击了目标 ${id}`)
-    if (!hit) {
-      onClick()
-    }
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    if (!hit) onClick(id)
   }
 
   return (
-    <>
-      <mesh
-        ref={mesh}
-        position={position}
-        scale={[scale, scale, scale]}
-        onClick={handleMeshClick}
-        castShadow
-        receiveShadow
-        visible={!destroyed}
-        userData={{ targetId: id, isTarget: true, hit: hit }}
-      >
-        <sphereGeometry args={[1, 16, 16]} />
-        <primitive object={targetMaterial} attach="material" />
+    <group
+      ref={rootRef}
+      position={position}
+      scale={scale}
+      onClick={handleClick}
+      userData={{ targetId: id, isTarget: true, hit }}
+    >
+      <group ref={visualRef}>
+        <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[1.05, 1.05, 0.16, 32]} />
+          <meshStandardMaterial color="#142738" metalness={0.8} roughness={0.28} />
+        </mesh>
 
-        {/* 击中特效 */}
-        {hit && !destroyed && (
-          <Suspense fallback={null}>
-            <pointLight intensity={3} distance={5} color="#ff0000" />
-            <mesh scale={[1.2, 1.2, 1.2]}>
-              <sphereGeometry args={[1, 8, 8]} />
-              <meshBasicMaterial color="#ff6600" transparent opacity={0.6} />
-            </mesh>
-          </Suspense>
-        )}
-      </mesh>
+        <mesh position={[0, 0, 0.1]}>
+          <circleGeometry args={[0.91, 32]} />
+          <meshStandardMaterial
+            color={hit ? '#ff3b3b' : '#e8f0f7'}
+            emissive={hit ? '#7f1010' : '#07131d'}
+            emissiveIntensity={hit ? 2.5 : 0.35}
+            roughness={0.5}
+          />
+        </mesh>
 
-      {/* 爆炸效果 */}
+        <mesh position={[0, 0, 0.115]}>
+          <ringGeometry args={[0.55, 0.73, 32]} />
+          <meshBasicMaterial color={hit ? '#ffb020' : '#1d9bf0'} toneMapped={false} />
+        </mesh>
+
+        <mesh position={[0, 0, 0.125]}>
+          <circleGeometry args={[0.33, 32]} />
+          <meshBasicMaterial color={hit ? '#fff1c2' : '#102a3c'} toneMapped={false} />
+        </mesh>
+
+        <mesh position={[0, 0, 0.135]}>
+          <circleGeometry args={[0.13, 24]} />
+          <meshBasicMaterial color={hit ? '#ffffff' : '#ff9f1c'} toneMapped={false} />
+        </mesh>
+
+        <mesh position={[-1.18, 0, 0]}>
+          <boxGeometry args={[0.24, 0.42, 0.22]} />
+          <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
+        </mesh>
+        <mesh position={[1.18, 0, 0]}>
+          <boxGeometry args={[0.24, 0.42, 0.22]} />
+          <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
+        </mesh>
+      </group>
+
       {hit && (
-        <Suspense fallback={null}>
-          <Explosion position={position} color="#ff6600" />
-          <pointLight position={position} intensity={5} distance={8} decay={2} color="#ff8800" />
-        </Suspense>
+        <>
+          <Explosion position={[0, 0, 0.3]} color="#ffb020" />
+          <pointLight position={[0, 0, 0.5]} intensity={2.5} distance={4} color="#ff8a00" />
+        </>
       )}
-    </>
+    </group>
   )
 }
+
+export const Target = memo(TargetComponent)

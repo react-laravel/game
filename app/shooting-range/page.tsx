@@ -1,127 +1,170 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
+import { Crosshair, Gauge, MousePointer2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
-import Link from 'next/link'
 
-// 动态导入ThreeJS组件以避免SSR问题
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
   ssr: false,
-  loading: () => <div className="flex h-96 items-center justify-center">加载中...</div>,
+  loading: () => (
+    <div className="flex h-full items-center justify-center rounded-2xl bg-slate-950 text-cyan-100">
+      正在装载射击场…
+    </div>
+  ),
 })
+
+type Difficulty = 'easy' | 'medium' | 'hard'
+
+const DIFFICULTIES: Array<{
+  id: Difficulty
+  name: string
+  label: string
+  detail: string
+}> = [
+  { id: 'easy', name: '新兵', label: '8 个目标', detail: '移动速度较慢，适合熟悉瞄准' },
+  { id: 'medium', name: '精英', label: '12 个目标', detail: '目标更多，移动节奏明显加快' },
+  { id: 'hard', name: '专家', label: '16 个目标', detail: '高机动目标，考验快速反应' },
+]
 
 export default function ShootingRangePage() {
   const [isStarted, setIsStarted] = useState(false)
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy')
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy')
 
-  // 防止空格键引起页面滚动
   useEffect(() => {
-    const preventSpacebarScroll = (e: KeyboardEvent) => {
-      // 如果按下空格键
-      if (e.code === 'Space' || e.key === ' ') {
-        // 阻止默认行为（滚动）
-        e.preventDefault()
-        return false
-      }
+    const preventSpacebarScroll = (event: KeyboardEvent) => {
+      if (event.code === 'Space') event.preventDefault()
     }
-
-    // 添加事件监听器
-    window.addEventListener('keydown', preventSpacebarScroll)
-
-    // 清理函数移除事件监听器
-    return () => {
-      window.removeEventListener('keydown', preventSpacebarScroll)
-    }
+    window.addEventListener('keydown', preventSpacebarScroll, { passive: false })
+    return () => window.removeEventListener('keydown', preventSpacebarScroll)
   }, [])
 
-  // 处理返回设置按钮点击，确保释放指针锁定 - 暂时未使用
-  // const handleBackToSettings = () => {
-  //   // 尝试释放指针锁定
-  //   if (document.exitPointerLock) {
-  //     document.exitPointerLock();
-  //   } else if ((document as Document & { mozExitPointerLock?: () => void }).mozExitPointerLock) {
-  //     (document as Document & { mozExitPointerLock?: () => void }).mozExitPointerLock?.();
-  //   } else if ((document as Document & { webkitExitPointerLock?: () => void }).webkitExitPointerLock) {
-  //     (document as Document & { webkitExitPointerLock?: () => void }).webkitExitPointerLock?.();
-  //   }
-  //
-  //   // 设置一个短暂的延迟，确保指针锁释放后再更改状态
-  //   setTimeout(() => {
-  //     setIsStarted(false);
-  //   }, 50);
-  // }
-
   return (
-    <div className="flex flex-col items-center px-2 py-4">
-      <div className="mb-4 flex w-full max-w-md items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          <Link href="/" className="hover:text-foreground transition-colors">
-            游戏中心
-          </Link>
-          <span className="mx-1">{'>'}</span>{' '}
-          <span className="text-foreground font-medium">射击游戏</span>
-        </div>
+    <main className="relative flex min-h-dvh flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)] p-3 sm:p-4">
+      <div className="absolute top-3 right-3 z-40 sm:top-4 sm:right-4">
         <GameRulesDialog
-          title="射击游戏规则"
+          title="战术射击场规则"
           rules={[
-            '使用鼠标移动瞄准目标',
-            '点击鼠标左键射击',
-            '尽可能快速准确地击中所有目标',
-            '按ESC键暂停游戏',
-            '游戏时间为60秒',
-            '击中目标获得10分',
+            '移动鼠标控制准星，点击左键射击',
+            '击中一个目标可获得 10 分',
+            '训练时间为 60 秒',
+            '按 ESC 可释放鼠标并暂停操作',
+            '精准度按命中次数与射击次数计算',
           ]}
         />
       </div>
 
       {!isStarted ? (
-        <Card className="mx-auto max-w-md p-6">
-          <h2 className="mb-4 text-2xl font-semibold">游戏设置</h2>
+        <div className="flex w-full flex-1 items-center justify-center pb-10">
+          <Card className="border-border/70 relative w-full max-w-3xl overflow-hidden p-0 shadow-2xl">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-amber-400 to-cyan-400" />
+            <div className="grid md:grid-cols-[0.9fr_1.5fr]">
+              <div className="relative overflow-hidden bg-slate-950 p-7 text-white sm:p-9">
+                <div className="absolute -top-20 -left-20 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
+                <div className="relative">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 ring-1 ring-cyan-200/20">
+                    <Crosshair className="h-7 w-7 text-cyan-200" />
+                  </div>
+                  <p className="mt-7 text-xs font-bold tracking-[0.24em] text-amber-300 uppercase">
+                    Tactical range
+                  </p>
+                  <h1 className="mt-2 text-3xl font-black tracking-tight">精准反应训练</h1>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    在 60 秒内追踪移动靶，稳定命中并提升射击精准度。
+                  </p>
+                  <div className="mt-8 space-y-3 text-sm text-slate-300">
+                    <div className="flex items-center gap-3">
+                      <MousePointer2 className="h-4 w-4 text-cyan-300" />
+                      鼠标瞄准与射击
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Gauge className="h-4 w-4 text-cyan-300" />
+                      实时命中率统计
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="h-4 w-4 text-cyan-300" />
+                      动态无人靶训练
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <div className="mb-4">
-            <h3 className="mb-2 font-medium">难度选择：</h3>
-            <div className="flex gap-2">
-              <Button
-                variant={difficulty === 'easy' ? 'default' : 'outline'}
-                onClick={() => setDifficulty('easy')}
-              >
-                简单
-              </Button>
-              <Button
-                variant={difficulty === 'medium' ? 'default' : 'outline'}
-                onClick={() => setDifficulty('medium')}
-              >
-                中等
-              </Button>
-              <Button
-                variant={difficulty === 'hard' ? 'default' : 'outline'}
-                onClick={() => setDifficulty('hard')}
-              >
-                困难
-              </Button>
+              <div className="bg-card p-7 sm:p-9">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-primary text-xs font-bold tracking-[0.18em] uppercase">
+                      训练配置
+                    </p>
+                    <h2 className="mt-1 text-2xl font-bold">选择难度</h2>
+                  </div>
+                  <span className="text-muted-foreground text-xs">可随时返回调整</span>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {DIFFICULTIES.map(option => {
+                    const selected = difficulty === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setDifficulty(option.id)}
+                        className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all ${
+                          selected
+                            ? 'border-primary bg-primary/7 shadow-sm ring-1 ring-primary/20'
+                            : 'border-border hover:border-primary/40 hover:bg-muted/40'
+                        }`}
+                      >
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black ${
+                            selected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {option.id === 'easy' ? '01' : option.id === 'medium' ? '02' : '03'}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="font-bold">{option.name}</span>
+                            <span className="text-muted-foreground text-xs">{option.label}</span>
+                          </span>
+                          <span className="text-muted-foreground mt-1 block text-xs">
+                            {option.detail}
+                          </span>
+                        </span>
+                        <span
+                          className={`h-3 w-3 rounded-full border-2 ${
+                            selected ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                          }`}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <Button className="mt-7 w-full py-6 text-base font-bold" onClick={() => setIsStarted(true)}>
+                  进入射击场
+                </Button>
+              </div>
             </div>
-          </div>
-
-          <Button className="w-full" onClick={() => setIsStarted(true)}>
-            开始游戏
-          </Button>
-        </Card>
+          </Card>
+        </div>
       ) : (
-        <div className="relative h-[90vh] w-full">
-          <div className="relative h-full w-full overflow-hidden">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center">加载游戏中...</div>
-              }
-            >
-              <ShootingGame difficulty={difficulty} setGameStarted={setIsStarted} />
-            </Suspense>
-          </div>
+        <div className="relative min-h-[520px] w-full max-w-[1600px] flex-1">
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center rounded-2xl bg-slate-950 text-cyan-100">
+                加载游戏中…
+              </div>
+            }
+          >
+            <ShootingGame difficulty={difficulty} setGameStarted={setIsStarted} />
+          </Suspense>
         </div>
       )}
-    </div>
+    </main>
   )
 }

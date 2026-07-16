@@ -1,35 +1,16 @@
-import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react'
-import { useThree, useFrame } from '@react-three/fiber'
+import { MutableRefObject, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
 import { PointerLockControls } from '@react-three/drei'
 import { PointerLockControls as PointerLockControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { Target } from './Target'
-import { Bullet } from './Bullet'
 import { FPSWeapon } from './FPSWeapon'
-import { Explosion } from './Explosion'
 import {
   difficultySettings,
-  generateRandomPosition,
   generateRandomDirection,
+  generateRandomPosition,
 } from '../../utils/gameUtils'
-import { playShotSound, playHitSound } from '../../utils/audioUtils'
-
-function generateStars(count: number) {
-  const stars = []
-  for (let i = 0; i < count; i++) {
-    const x = (Math.random() - 0.5) * 180
-    const y = Math.random() * 40 + 10
-    const z = (Math.random() - 0.5) * 180
-    const size = Math.random() * 0.15 + 0.05
-    stars.push(
-      <mesh key={i} position={[x, y, z]}>
-        <sphereGeometry args={[size, 4, 4]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.7} />
-      </mesh>
-    )
-  }
-  return stars
-}
+import { playHitSound, playShotSound } from '../../utils/audioUtils'
 
 interface TargetData {
   id: number
@@ -40,451 +21,206 @@ interface TargetData {
   direction: [number, number, number]
 }
 
-/** 按难度设置生成一批随机目标 */
+export interface ShootingSceneSnapshot {
+  targets: Array<{ id: number; x: number; y: number; z: number; hit: boolean }>
+}
+
 function createTargets(settings: (typeof difficultySettings)[keyof typeof difficultySettings]) {
-  const newTargets: TargetData[] = []
-
-  for (let i = 0; i < settings.targetCount; i++) {
-    newTargets.push({
-      id: i,
-      position: generateRandomPosition(settings.gameAreaSize),
-      hit: false,
-      scale: Math.random() * 0.3 + 0.5,
-      speed: Math.random() * 0.01 + settings.targetSpeed,
-      direction: generateRandomDirection(),
-    })
-  }
-
-  return newTargets
-}
-
-interface BulletData {
-  id: number
-  position: THREE.Vector3
-  direction: THREE.Vector3
-}
-
-interface ExplosionData {
-  id: number
-  position: [number, number, number]
-  color: string
+  return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
+    id,
+    position: generateRandomPosition(settings.gameAreaSize),
+    hit: false,
+    scale: Math.random() * 0.18 + 0.55,
+    speed: Math.random() * 0.008 + settings.targetSpeed,
+    direction: generateRandomDirection(),
+  }))
 }
 
 interface GameSceneProps {
   difficulty: 'easy' | 'medium' | 'hard'
   onScore: () => void
+  onShot?: () => void
+  onHitFeedback?: () => void
   gameStarted: boolean
   setGameStarted: (started: boolean) => void
   useFallbackControls?: boolean
   onError?: (message: string) => void
+  sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
 }
 
-/**
- * 游戏场景组件
- * 包含所有3D元素和游戏逻辑
- */
+/** The render loop only mutates Three.js objects; React state changes on discrete game events. */
 export function GameScene({
   difficulty,
   onScore,
+  onShot,
+  onHitFeedback,
   gameStarted,
   setGameStarted,
   useFallbackControls = false,
-  onError = () => {},
+  onError,
+  sceneStateRef,
 }: GameSceneProps) {
-  const { camera, gl, scene } = useThree()
+  const { camera, gl } = useThree()
   const controls = useRef<PointerLockControlsImpl | null>(null)
-
-  // 根据难度设置参数
   const settings = difficultySettings[difficulty]
-
   const [targets, setTargets] = useState<TargetData[]>(() => createTargets(settings))
-
-  // 难度变化时在渲染期间重建目标（官方“根据 props 调整 state”模式），避免在 effect 中 setState
-  const [prevSettings, setPrevSettings] = useState(settings)
-  if (settings !== prevSettings) {
-    setPrevSettings(settings)
-    setTargets(createTargets(settings))
-  }
-
-  // 子弹状态
-  const [bullets, setBullets] = useState<BulletData[]>([])
-  const bulletCounter = useRef(0)
-
-  // 射击冷却控制
-  const [canShoot, setCanShoot] = useState(true)
-  const shootCooldown = useRef(500)
-
-  // 指针锁状态
-  const [, setPointerLocked] = useState(false)
-
-  // 爆炸效果
-  const [explosions, setExplosions] = useState<ExplosionData[]>([])
-
-  const startExplosion = useCallback(
-    (position: [number, number, number], color: string = '#ff4444') => {
-      const explosionId = Date.now() + Math.random()
-      setExplosions(prev => [...prev, { id: explosionId, position, color }])
-
-      // 2秒后移除爆炸效果
-      setTimeout(() => {
-        setExplosions(prev => prev.filter(exp => exp.id !== explosionId))
-      }, 2000)
-    },
-    []
-  )
-
-  // 处理击中目标
-  const handleTargetHit = useCallback(
-    (id: number) => {
-      console.log('击中目标:', id)
-
-      // 播放击中音效
-      playHitSound()
-
-      // 添加震动反馈（如果浏览器支持）
-      if (navigator.vibrate) {
-        navigator.vibrate(50)
-      }
-
-      // 立即更新目标状态
-      setTargets(prev => prev.map(target => (target.id === id ? { ...target, hit: true } : target)))
-
-      onScore()
-
-      // 2秒后重生目标
-      setTimeout(() => {
-        setTargets(prev =>
-          prev.map(target => {
-            if (target.id === id) {
-              const position = generateRandomPosition(settings.gameAreaSize)
-              const direction = generateRandomDirection()
-
-              return {
-                ...target,
-                position,
-                hit: false,
-                direction,
-              }
-            }
-            return target
-          })
-        )
-      }, 2000)
-    },
-    [onScore, settings.gameAreaSize]
-  )
-
-  // 每帧更新目标位置
-  useFrame((_, delta) => {
-    if (!gameStarted) return
-
-    setTargets(prev =>
-      prev.map(target => {
-        if (target.hit) return target
-
-        const gameArea = settings.gameAreaSize
-        let [x, y, z] = target.position
-        const [dx, dy, dz] = target.direction
-
-        // 移动目标
-        x += dx * target.speed * 60 * delta
-        y += dy * target.speed * 60 * delta
-        z += dz * target.speed * 60 * delta
-
-        // 边界检查和反弹
-        let newDx = dx
-        let newDy = dy
-        let newDz = dz
-
-        const halfArea = gameArea / 2
-
-        // 增加随机改变方向的概率
-        const shouldChangeDirection = Math.random() < 0.02
-
-        if (x < -halfArea || x > halfArea) {
-          newDx = -dx
-          if (Math.random() < 0.5) {
-            newDy = (Math.random() - 0.5) * 2
-            newDz = (Math.random() - 0.5) * 2
-          }
-        }
-        if (y < -halfArea / 2 || y > halfArea / 2 + 5) {
-          newDy = -dy
-          if (Math.random() < 0.5) {
-            newDx = (Math.random() - 0.5) * 2
-            newDz = (Math.random() - 0.5) * 2
-          }
-        }
-        if (z < -halfArea - 5 || z > halfArea - 5) {
-          newDz = -dz
-          if (Math.random() < 0.5) {
-            newDx = (Math.random() - 0.5) * 2
-            newDy = (Math.random() - 0.5) * 2
-          }
-        }
-
-        // 随机改变方向
-        if (shouldChangeDirection) {
-          newDx = (Math.random() - 0.5) * 2
-          newDy = (Math.random() - 0.5) * 2
-          newDz = (Math.random() - 0.5) * 2
-        }
-
-        // 归一化方向向量
-        const length = Math.sqrt(newDx ** 2 + newDy ** 2 + newDz ** 2)
-        newDx /= length
-        newDy /= length
-        newDz /= length
-
-        return {
-          ...target,
-          position: [x, y, z] as [number, number, number],
-          direction: [newDx, newDy, newDz] as [number, number, number],
-        }
-      })
-    )
-  })
-
-  // 枪口闪光效果
+  const targetObjects = useRef(new Map<number, THREE.Group>())
+  const hitTargetIds = useRef(new Set<number>())
+  const respawnTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
+  const raycaster = useRef(new THREE.Raycaster())
+  const screenCenter = useRef(new THREE.Vector2(0, 0))
+  const nextShotAt = useRef(0)
+  const muzzleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const snapshotElapsed = useRef(0)
   const [muzzleFlash, setMuzzleFlash] = useState(false)
 
-  // 显示射击反馈
-  const showMuzzleFlash = useCallback(() => {
-    setMuzzleFlash(true)
-    setTimeout(() => setMuzzleFlash(false), 100)
+  const registerTarget = useCallback((id: number, target: THREE.Group | null) => {
+    if (target) targetObjects.current.set(id, target)
+    else targetObjects.current.delete(id)
   }, [])
 
-  // 处理子弹碰撞检测
-  const checkBulletCollisions = useCallback(() => {
-    setBullets(prevBullets => {
-      return prevBullets.filter(bullet => {
-        const raycaster = new THREE.Raycaster(
-          bullet.position.clone(),
-          bullet.direction.clone(),
-          0,
-          2
+  const handleTargetHit = useCallback(
+    (id: number) => {
+      if (hitTargetIds.current.has(id)) return
+      hitTargetIds.current.add(id)
+
+      setTargets(previous =>
+        previous.map(target => (target.id === id ? { ...target, hit: true } : target))
+      )
+      playHitSound()
+      navigator.vibrate?.(28)
+      onScore()
+      onHitFeedback?.()
+
+      const previousTimer = respawnTimers.current.get(id)
+      if (previousTimer) clearTimeout(previousTimer)
+
+      const timer = setTimeout(() => {
+        setTargets(previous =>
+          previous.map(target =>
+            target.id === id
+              ? {
+                  ...target,
+                  position: generateRandomPosition(settings.gameAreaSize),
+                  direction: generateRandomDirection(),
+                  hit: false,
+                }
+              : target
+          )
         )
+        hitTargetIds.current.delete(id)
+        respawnTimers.current.delete(id)
+      }, 900)
 
-        const hitTargets: { id: number; distance: number }[] = []
+      respawnTimers.current.set(id, timer)
+    },
+    [onHitFeedback, onScore, settings.gameAreaSize]
+  )
 
-        targets.forEach(target => {
-          if (!target.hit) {
-            const sphere = new THREE.Sphere(
-              new THREE.Vector3(...target.position),
-              target.scale * 1.2
-            )
+  const showMuzzleFlash = useCallback(() => {
+    if (muzzleTimer.current) clearTimeout(muzzleTimer.current)
+    setMuzzleFlash(true)
+    muzzleTimer.current = setTimeout(() => setMuzzleFlash(false), 55)
+  }, [])
 
-            const intersectionPoint = new THREE.Vector3()
-            if (raycaster.ray.intersectSphere(sphere, intersectionPoint)) {
-              const distance = intersectionPoint.distanceTo(bullet.position)
-              hitTargets.push({ id: target.id, distance })
-            }
-          }
-        })
-
-        if (hitTargets.length > 0) {
-          hitTargets.sort((a, b) => a.distance - b.distance)
-          handleTargetHit(hitTargets[0].id)
-          return false
-        }
-
-        return true
-      })
-    })
-  }, [targets, handleTargetHit])
-
-  // 每帧更新子弹碰撞
-  useFrame(() => {
-    if (gameStarted && bullets.length > 0) {
-      checkBulletCollisions()
-    }
-  })
-
-  // 处理普通模式下的射击
   const handleShoot = useCallback(() => {
-    if (!gameStarted || !canShoot) return
+    if (!gameStarted) return
 
-    setCanShoot(false)
-    setTimeout(() => {
-      setCanShoot(true)
-    }, shootCooldown.current)
+    const now = performance.now()
+    if (now < nextShotAt.current) return
+    nextShotAt.current = now + 145
 
     showMuzzleFlash()
-
-    const raycaster = new THREE.Raycaster()
-    const exactCenter = new THREE.Vector2(0, 0)
-    raycaster.setFromCamera(exactCenter, camera)
-
-    const bulletDirection = raycaster.ray.direction.clone()
-    const bulletPosition = camera.position.clone()
-    bulletPosition.add(bulletDirection.clone().multiplyScalar(0.1))
-
-    setBullets(prev => [
-      ...prev,
-      {
-        id: bulletCounter.current++,
-        position: bulletPosition,
-        direction: bulletDirection,
-      },
-    ])
-
-    if (bullets.length > 20) {
-      setBullets(prev => prev.slice(prev.length - 20))
-    }
-
     playShotSound()
+    onShot?.()
 
-    const hittableTargets: { targetId: number; distance: number; point: THREE.Vector3 }[] = []
+    raycaster.current.setFromCamera(screenCenter.current, camera)
+    const objects = Array.from(targetObjects.current.values())
+    const intersections = raycaster.current.intersectObjects(objects, true)
 
-    targets.forEach(target => {
-      if (!target.hit) {
-        const sphere = new THREE.Sphere(new THREE.Vector3(...target.position), target.scale * 1.2)
+    for (const intersection of intersections) {
+      let object: THREE.Object3D | null = intersection.object
+      while (object && object.userData?.targetId === undefined) object = object.parent
 
-        const intersectPoint = new THREE.Vector3()
-        const didIntersect = raycaster.ray.intersectSphere(sphere, intersectPoint)
+      const targetId = object?.userData?.targetId
+      if (typeof targetId === 'number' && !hitTargetIds.current.has(targetId)) {
+        handleTargetHit(targetId)
+        break
+      }
+    }
+  }, [camera, gameStarted, handleTargetHit, onShot, showMuzzleFlash])
 
-        if (didIntersect) {
-          const distance = intersectPoint.distanceTo(camera.position)
-          hittableTargets.push({
-            targetId: target.id,
-            distance: distance,
-            point: intersectPoint.clone(),
-          })
-        }
+  const handleFallbackTargetClick = useCallback(
+    (id: number) => {
+      if (!gameStarted || !useFallbackControls || hitTargetIds.current.has(id)) return
+      showMuzzleFlash()
+      playShotSound()
+      onShot?.()
+      handleTargetHit(id)
+    },
+    [gameStarted, handleTargetHit, onShot, showMuzzleFlash, useFallbackControls]
+  )
+
+  useFrame((_, delta) => {
+    if (!sceneStateRef) return
+    snapshotElapsed.current += delta
+    if (snapshotElapsed.current < 0.1) return
+    snapshotElapsed.current = 0
+
+    sceneStateRef.current.targets = targets.map(target => {
+      const position = targetObjects.current.get(target.id)?.position
+      return {
+        id: target.id,
+        x: Number((position?.x ?? target.position[0]).toFixed(2)),
+        y: Number((position?.y ?? target.position[1]).toFixed(2)),
+        z: Number((position?.z ?? target.position[2]).toFixed(2)),
+        hit: target.hit,
       }
     })
+  })
 
-    if (hittableTargets.length === 0) {
-      const targetMeshes: THREE.Object3D[] = []
-      scene.traverse(object => {
-        if (
-          object instanceof THREE.Mesh &&
-          object.userData &&
-          object.userData.isTarget &&
-          !object.userData.hit
-        ) {
-          targetMeshes.push(object)
-        }
-      })
-
-      const intersects = raycaster.intersectObjects(targetMeshes, true)
-
-      for (const intersect of intersects) {
-        let targetObject: THREE.Object3D | null = intersect.object
-
-        while (targetObject && !targetObject.userData?.targetId) {
-          targetObject = targetObject.parent
-        }
-
-        if (targetObject && targetObject.userData?.targetId !== undefined) {
-          hittableTargets.push({
-            targetId: targetObject.userData.targetId,
-            distance: intersect.distance,
-            point: intersect.point.clone(),
-          })
-        }
-      }
-    }
-
-    if (hittableTargets.length > 0) {
-      hittableTargets.sort((a, b) => a.distance - b.distance)
-      const hitResult = hittableTargets[0]
-      handleTargetHit(hitResult.targetId)
-    }
-  }, [
-    camera,
-    gameStarted,
-    scene,
-    handleTargetHit,
-    showMuzzleFlash,
-    targets,
-    bullets.length,
-    bulletCounter,
-    canShoot,
-    shootCooldown,
-  ])
-
-  // 监听鼠标点击事件
   useEffect(() => {
     if (useFallbackControls || !gameStarted) return
 
-    const handleClick = () => {
-      handleShoot()
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.button === 0) handleShoot()
     }
-
-    window.addEventListener('click', handleClick)
-    window.addEventListener('mousedown', handleClick)
-
-    return () => {
-      window.removeEventListener('click', handleClick)
-      window.removeEventListener('mousedown', handleClick)
-    }
-  }, [gameStarted, handleShoot, useFallbackControls])
-
-  // 添加键盘快捷键
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === ' ' && gameStarted && !useFallbackControls) {
-        e.preventDefault()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault()
         handleShoot()
       }
     }
 
+    window.addEventListener('mousedown', handleMouseDown)
     window.addEventListener('keydown', handleKeyDown, { passive: false })
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [gameStarted, handleShoot, useFallbackControls])
 
-  // 使用effect来检测gameStarted状态的变化
   useEffect(() => {
-    let pointerLockErrorReported = false
-
-    if (gameStarted && !useFallbackControls && controls.current) {
+    if (!gameStarted || useFallbackControls || !controls.current) return
+    const timer = setTimeout(() => {
       try {
-        const timeoutId = setTimeout(() => {
-          try {
-            if (controls.current && typeof controls.current.lock === 'function') {
-              controls.current.lock()
-            }
-          } catch (error) {
-            if (!pointerLockErrorReported) {
-              console.error('锁定指针失败:', error)
-              onError('无法锁定鼠标指针，请尝试使用备用控制模式')
-              pointerLockErrorReported = true
-            }
-          }
-        }, 300)
-
-        return () => clearTimeout(timeoutId)
+        controls.current?.lock()
       } catch (error) {
-        if (!pointerLockErrorReported) {
-          console.error('请求动画帧失败:', error)
-          onError('无法锁定鼠标指针，请尝试使用备用控制模式')
-          pointerLockErrorReported = true
-        }
+        console.error('锁定指针失败:', error)
+        onError?.('无法锁定鼠标指针，请尝试使用备用控制模式')
       }
-    }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [gameStarted, onError, useFallbackControls])
 
+  useEffect(() => {
     const handlePointerLockChange = () => {
-      const isLocked =
-        document.pointerLockElement === gl.domElement ||
-        (document as Document & { mozPointerLockElement?: Element }).mozPointerLockElement ===
-          gl.domElement ||
-        (document as Document & { webkitPointerLockElement?: Element }).webkitPointerLockElement ===
-          gl.domElement
-
-      setPointerLocked(isLocked)
-
-      if (gameStarted && !isLocked) {
-        console.log('指针锁定已退出，更新游戏状态')
+      const locked = document.pointerLockElement === gl.domElement
+      if (gameStarted && !useFallbackControls && !locked && document.pointerLockElement !== null) {
         setGameStarted(false)
       }
     }
-
-    const handleBeforeUnload = () => {
-      if (document.exitPointerLock) {
-        document.exitPointerLock()
-      }
-    }
+    const handleBeforeUnload = () => document.exitPointerLock?.()
 
     document.addEventListener('pointerlockchange', handlePointerLockChange)
     document.addEventListener('mozpointerlockchange', handlePointerLockChange)
@@ -492,118 +228,100 @@ export function GameScene({
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
-      try {
-        if (
-          document.pointerLockElement ||
-          (document as Document & { mozPointerLockElement?: Element }).mozPointerLockElement ||
-          (document as Document & { webkitPointerLockElement?: Element }).webkitPointerLockElement
-        ) {
-          if (document.exitPointerLock) {
-            document.exitPointerLock()
-          } else if (
-            (document as Document & { mozExitPointerLock?: () => void }).mozExitPointerLock
-          ) {
-            ;(document as Document & { mozExitPointerLock?: () => void }).mozExitPointerLock?.()
-          } else if (
-            (document as Document & { webkitExitPointerLock?: () => void }).webkitExitPointerLock
-          ) {
-            ;(
-              document as Document & { webkitExitPointerLock?: () => void }
-            ).webkitExitPointerLock?.()
-          }
-        }
-      } catch (e) {
-        console.error('释放指针锁出错:', e)
-      }
-
       document.removeEventListener('pointerlockchange', handlePointerLockChange)
       document.removeEventListener('mozpointerlockchange', handlePointerLockChange)
       document.removeEventListener('webkitpointerlockchange', handlePointerLockChange)
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [gameStarted, useFallbackControls, onError, gl, setGameStarted, startExplosion])
+  }, [gameStarted, gl.domElement, setGameStarted, useFallbackControls])
+
+  useEffect(
+    () => () => {
+      respawnTimers.current.forEach(clearTimeout)
+      if (muzzleTimer.current) clearTimeout(muzzleTimer.current)
+      document.exitPointerLock?.()
+    },
+    []
+  )
 
   return (
     <>
-      {!useFallbackControls && (
+      <color attach="background" args={['#07141e']} />
+      <fog attach="fog" args={['#07141e', 20, 58]} />
+
+      {!useFallbackControls && gameStarted && (
         <Suspense fallback={null}>
-          {gameStarted ? <PointerLockControls ref={controls} /> : null}
+          <PointerLockControls ref={controls} />
         </Suspense>
       )}
 
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-
-      <fog attach="fog" args={['#0c1445', 15, 50]} />
-
-      {/* 太阳 */}
-      <mesh position={[0, 15, -40]} rotation={[0, 0, 0]}>
-        <circleGeometry args={[10, 32]} />
-        <meshStandardMaterial
-          color="#ff3300"
-          emissive="#ff3300"
-          emissiveIntensity={2}
-          toneMapped={false}
-        />
-      </mesh>
-
-      <pointLight
-        position={[0, 15, -40]}
-        color="#ff5500"
-        intensity={10}
-        distance={200}
-        decay={0.5}
-      />
-
+      <hemisphereLight args={['#b9e7ff', '#10202a', 1.15]} />
       <directionalLight
-        position={[0, 100, -100]}
-        intensity={1}
-        color="#fffbe0"
+        position={[6, 12, 2]}
+        intensity={2.2}
+        color="#d9f3ff"
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={250}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-far={65}
+        shadow-camera-left={-20}
+        shadow-camera-right={20}
+        shadow-camera-top={15}
+        shadow-camera-bottom={-5}
       />
 
-      {/* 地面 */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#1a2b4a" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -20]} receiveShadow>
+        <planeGeometry args={[44, 80]} />
+        <meshStandardMaterial color="#16232c" metalness={0.15} roughness={0.82} />
+      </mesh>
+      <gridHelper position={[0, -1.97, -20]} args={[80, 40, '#2b7688', '#24404b']} />
+
+      <mesh position={[-18, 6, -24]}>
+        <boxGeometry args={[0.4, 16, 56]} />
+        <meshStandardMaterial color="#10232d" metalness={0.25} roughness={0.75} />
+      </mesh>
+      <mesh position={[18, 6, -24]}>
+        <boxGeometry args={[0.4, 16, 56]} />
+        <meshStandardMaterial color="#10232d" metalness={0.25} roughness={0.75} />
+      </mesh>
+      <mesh position={[0, 6, -48]}>
+        <boxGeometry args={[36, 16, 0.5]} />
+        <meshStandardMaterial color="#0b1b24" metalness={0.35} roughness={0.66} />
       </mesh>
 
-      {/* 星星 */}
-      {useMemo(() => generateStars(50), [])}
+      {[-11, -22, -33, -44].map(z => (
+        <group key={z} position={[0, 10, z]}>
+          <mesh>
+            <boxGeometry args={[18, 0.12, 0.14]} />
+            <meshBasicMaterial color="#7ce8ff" toneMapped={false} />
+          </mesh>
+          <pointLight intensity={1.25} distance={11} color="#7ce8ff" />
+        </group>
+      ))}
 
-      {/* 目标 */}
+      {[-6, 6].map(x => (
+        <mesh key={x} position={[x, -1.2, -21]}>
+          <boxGeometry args={[0.12, 1.6, 48]} />
+          <meshStandardMaterial color="#233744" metalness={0.55} roughness={0.42} />
+        </mesh>
+      ))}
+
       {targets.map(target => (
         <Target
           key={target.id}
           id={target.id}
           position={target.position}
+          direction={target.direction}
+          speed={target.speed}
+          gameAreaSize={settings.gameAreaSize}
           hit={target.hit}
           scale={target.scale}
-          onClick={() => handleTargetHit(target.id)}
+          onReady={registerTarget}
+          onClick={handleFallbackTargetClick}
         />
       ))}
 
-      {/* 子弹 */}
-      {bullets.map(bullet => (
-        <Bullet key={bullet.id} initialPosition={bullet.position} direction={bullet.direction} />
-      ))}
-
-      {/* 武器 */}
-      <Suspense fallback={null}>
-        <FPSWeapon muzzleFlash={muzzleFlash} />
-      </Suspense>
-
-      {/* 爆炸效果 */}
-      {explosions.map(explosion => (
-        <Explosion key={explosion.id} position={explosion.position} color={explosion.color} />
-      ))}
+      <FPSWeapon muzzleFlash={muzzleFlash} />
     </>
   )
 }

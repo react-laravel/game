@@ -42,7 +42,11 @@ export default function ShootingRangePage() {
   }, [])
 
   return (
-    <main className="relative flex min-h-dvh flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)] p-3 sm:p-4">
+    <main
+      className={`relative flex flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)] p-3 sm:p-4 ${
+        isStarted ? 'h-dvh' : 'min-h-dvh'
+      }`}
+    >
       <div className="absolute top-3 right-3 z-40 sm:top-4 sm:right-4">
         <GameRulesDialog
           title="战术射击场规则"
@@ -153,7 +157,7 @@ export default function ShootingRangePage() {
           </Card>
         </div>
       ) : (
-        <div className="relative min-h-[520px] w-full max-w-[1600px] flex-1">
+        <div className="relative h-full min-h-0 w-full max-w-[1600px] flex-1">
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center rounded-2xl bg-slate-950 text-cyan-100">

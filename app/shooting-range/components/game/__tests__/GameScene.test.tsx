@@ -36,10 +36,6 @@ vi.mock('../Target', () => ({
   Target: vi.fn(() => <div data-testid="target">Target</div>),
 }))
 
-vi.mock('../Bullet', () => ({
-  Bullet: vi.fn(() => <div data-testid="bullet">Bullet</div>),
-}))
-
 vi.mock('../FPSWeapon', () => ({
   FPSWeapon: vi.fn(() => <div data-testid="fps-weapon">FPSWeapon</div>),
 }))
@@ -155,13 +151,6 @@ describe('GameScene', () => {
     it('should render Target components', () => {
       render(<GameScene {...defaultProps} gameStarted={true} />)
       // Targets should be rendered as children
-    })
-  })
-
-  describe('Bullets', () => {
-    it('should render Bullet components when bullets exist', () => {
-      render(<GameScene {...defaultProps} gameStarted={true} />)
-      // Bullet components should be rendered when shooting
     })
   })
 

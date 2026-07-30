@@ -14,8 +14,12 @@ Current prompt (2026-07-16): 修复 `/shooting-range` 选择难度进入训练�
 
 Current prompt (2026-07-16): 修复 `/shooting-range` 开始训练后鼠标移动无法带动相机、准星和枪械的问题。
 
+Current prompt (2026-07-31): 改进代码并进行真实组件化提取；在保持现有游戏行为和技术栈稳定的前提下，清理重复实现与不再需要的依赖。
+
 ## Current work
 
+- Refactored Shooting Range into a thin page/game orchestrator plus focused setup, Canvas, overlay, session-state, pointer-lock, and debug-bridge modules while preserving the route and gameplay contracts.
+- Removed the unused alternate ShootingGame, legacy Gun/Bullet implementations, obsolete `three-stdlib` declaration, and the no-longer-needed direct dependency; added focused coverage for the extracted session, pointer-lock, and setup boundaries.
 - Replaced Shooting Range's mismatched third-party pointer-lock binding with direct Canvas-locked mouse movement handling, so camera/reticle/weapon rotation follows `movementX/Y` from the exact element acquired during the start gesture.
 - Made Shooting Range's active-training page height explicit and replaced the unresolved minimum-height chain, allowing the Three.js canvas and overlays to fill the complete viewport training area.
 - Unified the game-center grid around fixed-height cards and one root background token, eliminating the uneven rows and dark-mode color seam.
@@ -45,17 +49,18 @@ Current prompt (2026-07-16): 修复 `/shooting-range` 开始训练后鼠标移�
 
 ## Validation
 
+- Shooting Range componentization validation passes 9/9 focused files and 69/69 tests. Browser flows confirm hard difficulty creates 16 moving targets, Canvas pointer lock rotates camera/weapon, one shot increments the counter, ending training returns to setup, and pointer-lock failure cleanly enters click-target fallback with no page errors.
 - Shooting Range pointer-control validation uses a Canvas-locked browser simulation through the real start flow: a 180/90 movement delta changes camera yaw/pitch from 0/0 to -0.354/-0.192, the weapon view rotates with it, target coordinates continue changing, and no console/page errors occur; the standard web-game client also returns a healthy ready state and full-scene screenshot.
 - Shooting Range height regression validation at a 2038x591 viewport confirms the page is 591px with no document scrolling, while the training wrapper, Three.js canvas, and ready overlay all match at 559px; the standard web-game client screenshot also shows the scene filling the complete game panel with a valid `ready` text state and no browser errors.
 - Browser validation covers all 13 game routes: each shows exactly one quick-menu trigger with no game-center breadcrumb or duplicate return-home link; representative Monopoly, Moon Dice, Shooting Range, and Tic-Tac-Toe screenshots were inspected.
 - The quick menu was exercised end to end in light and dark modes, dragged to a saved position, reopened, and used to return home without console or page errors.
 - The game-center screenshot and computed layout confirm all visible cards are exactly 224px high and the page/root backgrounds match in dark mode.
-- Shooting Range's focused suite passes: 6/6 files and 68/68 tests; its type-check and lint checks pass.
+- Shooting Range's focused suite passes: 9/9 files and 69/69 tests; its type-check and lint checks pass.
 - The `develop-web-game` browser client and a two-stage Playwright pointer-lock fallback run both render the redesigned settings/gameplay screens with complete text state and no console/page errors.
 - A projected-target browser smoke test exercises hit -> score -> accuracy -> respawn in fallback mode; score updates to 10 with one recorded shot and the browser observed the update in about 23 ms.
 - `npm run type-check` passes.
 - `npm run lint` passes with no warnings.
-- `npm test` passes: 53/53 test files and 484/484 tests.
+- `npm test` passes: 56/56 test files and 485/485 tests.
 - `npm run build` passes and generates the game center, auth callback, and all 13 root game routes.
 - Shooting Range validation passes in the local production build and `develop-web-game` browser client: the full 3D scene renders without console/page errors, and neither the source nor built assets reference `venice_sunset_1k.hdr` or the remote `sunset` environment preset.
 - Tetris hard-drop validation passes in unit tests and the `develop-web-game` browser client: Space immediately adds the landed piece to settled rows, a following Left input only moves the newly spawned top piece, sound playback schedules correctly, and mute state persists without console/page errors.

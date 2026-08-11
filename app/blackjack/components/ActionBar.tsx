@@ -27,41 +27,54 @@ export function ActionBar() {
 
   if (phase === 'setup') return null
 
+  const shell =
+    'shrink-0 border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80'
+
   if (phase === 'betting' && config.role === 'player') {
     const maxBet = human ? Math.min(MAX_BET, human.chips) : MIN_BET
     return (
-      <div className="bg-card/95 sticky bottom-0 z-10 space-y-3 rounded-t-2xl border p-4 shadow-lg backdrop-blur">
-        <p className="text-center text-sm font-medium">选择下注金额</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {BET_PRESETS.filter(p => p <= maxBet).map(p => (
+      <div className={shell}>
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {BET_PRESETS.filter(p => p <= maxBet).map(p => (
+              <Button
+                key={p}
+                size="sm"
+                className="h-8 px-2.5"
+                variant={humanBetDraft === p ? 'default' : 'outline'}
+                onClick={() => setHumanBetDraft(p)}
+                disabled={busy || !human || human.chips < p}
+              >
+                {p}
+              </Button>
+            ))}
+            {human && human.chips >= MIN_BET && (
+              <Button
+                size="sm"
+                className="h-8 px-2.5"
+                variant="outline"
+                onClick={() =>
+                  setHumanBetDraft(Math.floor(Math.min(maxBet, human.chips) / 10) * 10)
+                }
+                disabled={busy}
+              >
+                全下
+              </Button>
+            )}
+          </div>
+          <div className="flex w-full justify-center gap-2">
             <Button
-              key={p}
               size="sm"
-              variant={humanBetDraft === p ? 'default' : 'outline'}
-              onClick={() => setHumanBetDraft(p)}
-              disabled={busy || !human || human.chips < p}
+              className="min-w-28"
+              onClick={placeHumanBet}
+              disabled={busy || !human || human.chips < MIN_BET}
             >
-              {p}
+              下注 {humanBetDraft}
             </Button>
-          ))}
-          {human && human.chips >= MIN_BET && (
-            <Button
-              size="sm"
-              variant={humanBetDraft === Math.min(maxBet, human.chips) ? 'default' : 'outline'}
-              onClick={() => setHumanBetDraft(Math.floor(Math.min(maxBet, human.chips) / 10) * 10)}
-              disabled={busy}
-            >
-              全下
+            <Button size="sm" variant="ghost" onClick={backToSetup} disabled={busy}>
+              离开
             </Button>
-          )}
-        </div>
-        <div className="flex justify-center gap-3">
-          <Button onClick={placeHumanBet} disabled={busy || !human || human.chips < MIN_BET}>
-            确认下注 {humanBetDraft}
-          </Button>
-          <Button variant="outline" onClick={backToSetup} disabled={busy}>
-            离开牌桌
-          </Button>
+          </div>
         </div>
       </div>
     )
@@ -69,21 +82,29 @@ export function ActionBar() {
 
   if (phase === 'player_turns' && config.role === 'player') {
     return (
-      <div className="bg-card/95 sticky bottom-0 z-10 space-y-3 rounded-t-2xl border p-4 shadow-lg backdrop-blur">
+      <div className={shell}>
         {busy && !isHumanTurn ? (
-          <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            等待其他玩家 / 发牌…
+          <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            等待中…
           </div>
         ) : (
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button onClick={hit} disabled={!isHumanTurn}>
+          <div className="flex justify-center gap-2">
+            <Button size="sm" className="min-w-20" onClick={hit} disabled={!isHumanTurn}>
               要牌
             </Button>
-            <Button variant="secondary" onClick={stand} disabled={!isHumanTurn}>
+            <Button
+              size="sm"
+              className="min-w-20"
+              variant="secondary"
+              onClick={stand}
+              disabled={!isHumanTurn}
+            >
               停牌
             </Button>
             <Button
+              size="sm"
+              className="min-w-20"
               variant="outline"
               onClick={doubleDown}
               disabled={!isHumanTurn || !canDoubleDown(human)}
@@ -98,28 +119,29 @@ export function ActionBar() {
 
   if (phase === 'round_end') {
     return (
-      <div className="bg-card/95 sticky bottom-0 z-10 flex flex-wrap justify-center gap-3 rounded-t-2xl border p-4 shadow-lg backdrop-blur">
-        <Button onClick={nextRound}>下一局</Button>
-        <Button variant="outline" onClick={backToSetup}>
-          返回设置
+      <div className={`${shell} flex justify-center gap-2`}>
+        <Button size="sm" className="min-w-24" onClick={nextRound}>
+          下一局
+        </Button>
+        <Button size="sm" variant="ghost" onClick={backToSetup}>
+          设置
         </Button>
       </div>
     )
   }
 
-  // 发牌 / 庄家回合 / 坐庄时的下注等待
   return (
-    <div className="bg-card/95 sticky bottom-0 z-10 flex items-center justify-center gap-2 rounded-t-2xl border p-4 text-sm shadow-lg backdrop-blur">
+    <div className={`${shell} flex items-center justify-center gap-2 text-xs`}>
       {busy ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
           <span className="text-muted-foreground">进行中…</span>
         </>
       ) : (
         <span className="text-muted-foreground">请稍候</span>
       )}
       {config.role === 'dealer' && phase === 'betting' && (
-        <Button variant="outline" size="sm" onClick={backToSetup} className="ml-4">
+        <Button variant="ghost" size="sm" onClick={backToSetup} className="ml-2 h-7">
           离开
         </Button>
       )}

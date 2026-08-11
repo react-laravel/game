@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { BET_PRESETS, MAX_BET, MIN_BET } from '../constants'
+import { BET_PRESETS, MIN_BET, getMaxBet } from '../constants'
 import { canDoubleDown, canSplit, getActiveHand, getHumanSeat, useBlackjackStore } from '../store'
 import { emitBlackjackSfx } from '../utils/sfx'
 import type { ChipDenom } from '../utils/chips'
 import { Chip, ChipStack } from './Chip'
-import { Loader2, RotateCcw } from 'lucide-react'
+import { Loader2, RotateCcw, Undo2 } from 'lucide-react'
 
 export function ActionBar() {
   const phase = useBlackjackStore(s => s.phase)
@@ -15,8 +15,13 @@ export function ActionBar() {
   const seats = useBlackjackStore(s => s.seats)
   const activeSeatIndex = useBlackjackStore(s => s.activeSeatIndex)
   const humanBetDraft = useBlackjackStore(s => s.humanBetDraft)
+  const betChipStack = useBlackjackStore(s => s.betChipStack)
+  const lastBetAmount = useBlackjackStore(s => s.lastBetAmount)
   const config = useBlackjackStore(s => s.config)
-  const setHumanBetDraft = useBlackjackStore(s => s.setHumanBetDraft)
+  const addBetChip = useBlackjackStore(s => s.addBetChip)
+  const undoBetChip = useBlackjackStore(s => s.undoBetChip)
+  const clearBetDraft = useBlackjackStore(s => s.clearBetDraft)
+  const applyLastBet = useBlackjackStore(s => s.applyLastBet)
   const placeHumanBet = useBlackjackStore(s => s.placeHumanBet)
   const hit = useBlackjackStore(s => s.hit)
   const stand = useBlackjackStore(s => s.stand)
@@ -24,6 +29,7 @@ export function ActionBar() {
   const split = useBlackjackStore(s => s.split)
   const nextRound = useBlackjackStore(s => s.nextRound)
   const backToSetup = useBlackjackStore(s => s.backToSetup)
+  const autoPlay = useBlackjackStore(s => s.autoPlay)
 
   const human = getHumanSeat(seats)
   const active = seats[activeSeatIndex]
@@ -38,8 +44,6 @@ export function ActionBar() {
 
   const shell =
     'shrink-0 border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80'
-
-  const autoPlay = useBlackjackStore(s => s.autoPlay)
 
   if (phase === 'betting' && config.role === 'player') {
     if (autoPlay.enabled) {
@@ -62,26 +66,8 @@ export function ActionBar() {
     }
 
     const chipsLeft = human?.chips ?? 0
-    const room = Math.max(0, Math.min(MAX_BET, chipsLeft) - humanBetDraft)
-
-    const addChip = (value: ChipDenom) => {
-      if (busy || !human) return
-      if (value > room) return
-      emitBlackjackSfx('chip')
-      setHumanBetDraft(humanBetDraft + value)
-    }
-
-    const clearBet = () => {
-      emitBlackjackSfx('click')
-      setHumanBetDraft(0)
-    }
-
-    const maxBet = Math.min(MAX_BET, chipsLeft)
-    // 全下：尽量用筹码面额凑满
-    const allIn = () => {
-      emitBlackjackSfx('chip')
-      setHumanBetDraft(Math.floor(maxBet / 5) * 5)
-    }
+    const maxBet = getMaxBet(chipsLeft)
+    const room = Math.max(0, Math.min(maxBet, chipsLeft) - humanBetDraft)
 
     return (
       <motion.div
@@ -91,7 +77,15 @@ export function ActionBar() {
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
       >
         <div className="mx-auto flex max-w-lg flex-col items-center gap-2">
-          {/* 当前投注筹码堆 */}
+          <div className="text-muted-foreground flex w-full items-center justify-between text-[11px] tabular-nums">
+            <span>
+              可用 <span className="text-foreground font-semibold">{chipsLeft}</span>
+            </span>
+            <span>
+              本注上限 <span className="text-foreground font-semibold">{maxBet}</span>
+            </span>
+          </div>
+
           <div className="flex min-h-10 items-end justify-center gap-3">
             {humanBetDraft > 0 ? (
               <ChipStack amount={humanBetDraft} size="sm" maxVisible={8} />
@@ -100,15 +94,17 @@ export function ActionBar() {
             )}
           </div>
 
-          {/* 筹码选择 */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {BET_PRESETS.map(value => (
               <Chip
                 key={value}
                 value={value}
                 size="md"
-                disabled={busy || !human || value > room || humanBetDraft + value > MAX_BET}
-                onClick={() => addChip(value)}
+                disabled={busy || !human || value > room}
+                onClick={() => {
+                  emitBlackjackSfx('chip')
+                  addBetChip(value)
+                }}
               />
             ))}
           </div>
@@ -118,17 +114,54 @@ export function ActionBar() {
               size="sm"
               variant="outline"
               className="h-8 gap-1"
-              onClick={clearBet}
+              onClick={() => {
+                emitBlackjackSfx('click')
+                undoBetChip()
+              }}
+              disabled={busy || betChipStack.length === 0}
+              title="撤销上一枚筹码"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              撤销
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1"
+              onClick={() => {
+                emitBlackjackSfx('click')
+                clearBetDraft()
+              }}
               disabled={busy || humanBetDraft <= 0}
             >
               <RotateCcw className="h-3.5 w-3.5" />
               清空
             </Button>
+            {lastBetAmount >= MIN_BET && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => {
+                  emitBlackjackSfx('chip')
+                  applyLastBet()
+                }}
+                disabled={busy || chipsLeft < MIN_BET}
+                title={`跟注上一局 ${lastBetAmount}`}
+              >
+                跟注 {lastBetAmount}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
               className="h-8"
-              onClick={allIn}
+              onClick={() => {
+                emitBlackjackSfx('chip')
+                const all = Math.floor(maxBet / 5) * 5
+                clearBetDraft()
+                if (all >= MIN_BET) addBetChip(all)
+              }}
               disabled={busy || chipsLeft < MIN_BET}
             >
               全下

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { Crown, Spade, Volume2, VolumeX } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
-import { GAME_RULES } from '../constants'
+import { DECK_COUNT, GAME_RULES } from '../constants'
+import { getHumanSeat } from '../store'
 import { useBlackjackKeyboard } from '../hooks/useBlackjackKeyboard'
 import { useBlackjackSounds } from '../hooks/useBlackjackSounds'
 import { useBlackjackStore } from '../store'
@@ -35,8 +36,21 @@ export default function BlackjackGame() {
   const bankSessionProfit = useBlackjackStore(s => s.bankSessionProfit)
   const accountChips = useBlackjackStore(s => s.accountChips)
   const hydrateWallet = useBlackjackStore(s => s.hydrateWallet)
+  const shoe = useBlackjackStore(s => s.shoe)
   const user = useAuthStore(s => s.user)
   const { muted, toggleMuted, playSound } = useBlackjackSounds()
+
+  const humanSeat = getHumanSeat(seats)
+  /** 局中优先显示座位实时筹码（下注后会变） */
+  const displayChips =
+    phase !== 'setup' && config.role === 'player' && humanSeat
+      ? humanSeat.chips
+      : config.role === 'dealer' && phase !== 'setup'
+        ? bankChips
+        : accountChips
+
+  const shoeFull = DECK_COUNT * 52
+  const shoePct = shoe.length > 0 ? Math.round((shoe.length / shoeFull) * 100) : 0
 
   useEffect(() => {
     hydrateWallet(user?.id ?? 'guest')
@@ -59,10 +73,29 @@ export default function BlackjackGame() {
               21 点
             </h1>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              坐庄 / 闲家 · 托管 · 快捷键 H/S/D/P
+              余额{' '}
+              <span
+                className={cn(
+                  'font-semibold tabular-nums',
+                  accountChips < 5
+                    ? 'text-red-500'
+                    : 'text-amber-600 dark:text-amber-400'
+                )}
+              >
+                {accountChips.toLocaleString()}
+              </span>
+              {' · '}
+              坐庄 / 闲家 · 托管
             </p>
           </div>
           <div className="flex items-center gap-1">
+            <Badge
+              variant="secondary"
+              className="h-8 gap-1 px-2.5 text-sm tabular-nums"
+              title="我的账号筹码"
+            >
+              💰 {accountChips.toLocaleString()}
+            </Badge>
             <AutoPlayPanel />
             <Button
               type="button"
@@ -113,10 +146,25 @@ export default function BlackjackGame() {
           <Badge
             variant="secondary"
             className="h-5 px-1.5 text-[10px] tabular-nums"
-            title="账号筹码（无上限，首次赠送 10000）"
+            title="我的筹码"
           >
-            {config.role === 'dealer' ? bankChips : accountChips}
+            💰 {displayChips.toLocaleString()}
           </Badge>
+          {shoe.length > 0 && (
+            <Badge
+              variant="outline"
+              className="text-muted-foreground h-5 gap-1 px-1.5 text-[10px] tabular-nums"
+              title={`牌靴剩余 ${shoe.length}/${shoeFull}`}
+            >
+              <span className="bg-muted inline-block h-1.5 w-8 overflow-hidden rounded-full">
+                <span
+                  className="bg-primary block h-full rounded-full transition-all"
+                  style={{ width: `${shoePct}%` }}
+                />
+              </span>
+              {shoePct}%
+            </Badge>
+          )}
           {config.role === 'dealer' && bankSessionProfit !== 0 && (
             <Badge
               className={cn(

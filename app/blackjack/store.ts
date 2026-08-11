@@ -7,7 +7,7 @@ import {
   DEAL_CARD_MS,
   DEALER_HIT_MS,
   DEFAULT_CONFIG,
-  MAX_BET,
+  getMaxBet,
   MIN_BET,
   RESHUFFLE_RATIO,
   DECK_COUNT,
@@ -57,6 +57,10 @@ interface BlackjackState {
   busy: boolean
   log: string[]
   humanBetDraft: number
+  /** 本次累加的筹码面额栈，用于撤销 */
+  betChipStack: number[]
+  /** 上一局确认的注额，便于跟注 */
+  lastBetAmount: number
   autoPlay: AutoPlayConfig
   /** 本会话统计（闲家真人，或坐庄时的庄家局数） */
   sessionStats: { wins: number; losses: number; pushes: number; blackjacks: number }
@@ -71,6 +75,10 @@ interface BlackjackState {
   setRole: (role: Role) => void
   setSeatCount: (n: number) => void
   setHumanBetDraft: (n: number) => void
+  addBetChip: (value: number) => void
+  undoBetChip: () => void
+  clearBetDraft: () => void
+  applyLastBet: () => void
   setAutoPlay: (partial: Partial<AutoPlayConfig>) => void
   toggleAutoPlay: () => void
   /** 按登录用户加载/初始化钱包 */
@@ -844,6 +852,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     busy: false,
     log: [],
     humanBetDraft: 0,
+    betChipStack: [],
+    lastBetAmount: 0,
     autoPlay: loadAutoPlayConfig(),
     sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
     lastBankDelta: null,
@@ -853,7 +863,44 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     setRole: role => set(s => ({ config: { ...s.config, role } })),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
-    setHumanBetDraft: n => set({ humanBetDraft: n }),
+    setHumanBetDraft: n => set({ humanBetDraft: n, betChipStack: n > 0 ? [n] : [] }),
+    addBetChip: value => {
+      const st = get()
+      const human = st.seats.find(s => s.isHuman)
+      const chipsLeft = human?.chips ?? st.accountChips
+      const maxBet = getMaxBet(chipsLeft)
+      const room = Math.max(0, Math.min(maxBet, chipsLeft) - st.humanBetDraft)
+      if (value <= 0 || value > room) return
+      set({
+        humanBetDraft: st.humanBetDraft + value,
+        betChipStack: [...st.betChipStack, value],
+      })
+    },
+    undoBetChip: () => {
+      const st = get()
+      if (st.betChipStack.length === 0) {
+        set({ humanBetDraft: 0 })
+        return
+      }
+      const stack = [...st.betChipStack]
+      const last = stack.pop()!
+      set({
+        betChipStack: stack,
+        humanBetDraft: Math.max(0, st.humanBetDraft - last),
+      })
+    },
+    clearBetDraft: () => set({ humanBetDraft: 0, betChipStack: [] }),
+    applyLastBet: () => {
+      const st = get()
+      const human = st.seats.find(s => s.isHuman)
+      const chipsLeft = human?.chips ?? st.accountChips
+      const maxBet = getMaxBet(chipsLeft)
+      let bet = st.lastBetAmount || st.autoPlay.autoBet
+      bet = Math.max(MIN_BET, Math.min(maxBet, bet, chipsLeft))
+      bet = Math.floor(bet / 5) * 5
+      if (bet < MIN_BET) return
+      set({ humanBetDraft: bet, betChipStack: [bet] })
+    },
     hydrateWallet: ownerId => {
       const chips = loadAccountChips(ownerId)
       set({
@@ -960,6 +1007,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         message:
           config.role === 'dealer' ? '你是庄家。机器人正在下注…' : '请下注',
         humanBetDraft: 0,
+        betChipStack: [],
         lastBankDelta: null,
         bankSessionProfit: 0,
         sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
@@ -1009,8 +1057,9 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       const human = st.seats.find(s => s.isHuman)
       if (!human) return
 
+      const maxBet = getMaxBet(human.chips)
       let bet = st.autoPlay.enabled ? st.autoPlay.autoBet : st.humanBetDraft
-      bet = Math.max(MIN_BET, Math.min(MAX_BET, bet, human.chips))
+      bet = Math.max(MIN_BET, Math.min(maxBet, bet, human.chips))
       bet = Math.floor(bet / 5) * 5
       if (st.autoPlay.enabled && bet > human.chips) {
         bet = Math.floor(human.chips / 5) * 5
@@ -1019,7 +1068,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         set({ message: st.autoPlay.enabled ? '筹码不足，无法托管下注' : '下注金额无效' })
         return
       }
-      if (st.autoPlay.enabled) set({ humanBetDraft: bet })
+      if (st.autoPlay.enabled) set({ humanBetDraft: bet, betChipStack: [bet] })
 
       const seats = st.seats.map(s =>
         s.isHuman
@@ -1035,6 +1084,9 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       set({
         seats,
         accountChips,
+        lastBetAmount: bet,
+        humanBetDraft: 0,
+        betChipStack: [],
         message: st.autoPlay.enabled
           ? `托管下注 ${bet}，开始发牌`
           : `你下注 ${bet}，开始发牌`,
@@ -1128,6 +1180,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         busy: false,
         message: st.config.role === 'dealer' ? '机器人下注中…' : '请下注',
         humanBetDraft: 0,
+        betChipStack: [],
         lastBankDelta: null,
       })
 

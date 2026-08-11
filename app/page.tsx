@@ -10,7 +10,12 @@ const GAMES = [
     icon: '🏙️',
   },
   { id: 'moon-dice', name: '月饼骰子', description: '博饼规则的双人骰子游戏', icon: '🎲' },
-  { id: 'blackjack', name: '21 点', description: '可选坐庄或闲家，空位机器人补齐', icon: '🃏' },
+  {
+    id: 'blackjack',
+    name: '21 点',
+    description: '坐庄/闲家 · 账号筹码 · 托管分牌',
+    icon: '🃏',
+  },
   { id: 'sliding-puzzle', name: '滑块拼图', description: '经典数字滑块拼图', icon: '🧩' },
   { id: 'picture-puzzle', name: '图片拼图', description: '将打乱的图片重新拼合', icon: '🖼️' },
   { id: 'jigsaw-puzzle', name: '传统拼图', description: '拖拽拼图块完成图片', icon: '🧩' },

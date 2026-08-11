@@ -10,9 +10,21 @@ export const RESHUFFLE_RATIO = 0.25
 export const BLACKJACK_PAYOUT = 1.5
 
 export const MIN_BET = 5
+/** 单注基础上限（余额更大时会按比例放宽） */
 export const MAX_BET = 500
+/** 单注绝对上限，防止一次梭哈 UI 失控 */
+export const ABSOLUTE_MAX_BET = 10_000
 /** 可选筹码面额（小到大，用于下注选择） */
 export const BET_PRESETS = [5, 10, 20, 50, 100, 200] as const
+
+/** 根据当前余额计算本局最大可下注 */
+export function getMaxBet(chips: number): number {
+  if (chips < MIN_BET) return 0
+  // 余额充足时允许下到约 25%，但不低于基础 MAX_BET、不超过绝对上限
+  const scaled = Math.floor((chips * 0.25) / 5) * 5
+  const cap = Math.min(ABSOLUTE_MAX_BET, Math.max(MAX_BET, scaled))
+  return Math.min(chips, cap)
+}
 
 export const MIN_SEATS = 1
 export const MAX_SEATS = 4
@@ -66,4 +78,5 @@ export const GAME_RULES = [
   '托管模式：可设定硬牌/软牌停牌点（如 17 不加）、是否加倍、自动下注与自动下一局。',
   '分牌：首两张点数相同（含 10/J/Q/K 互为 10 点）可分成两手，需再押等额赌注；分 A 每手只补一张；分牌后的 21 按 1:1 赔付。',
   '账号筹码：新注册用户固定发放 10000，余额无上限，只靠对局输赢变动；归零后不会重置，需自己赢回来。',
+  '下注支持撤销上一枚筹码、跟注上一局、全下；单注随余额放宽（约 25%，上限 10000）。',
 ] as const

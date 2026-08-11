@@ -1,8 +1,10 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { BET_PRESETS, MAX_BET, MIN_BET } from '../constants'
 import { canDoubleDown, getHumanSeat, useBlackjackStore } from '../store'
+import { emitBlackjackSfx } from '../utils/sfx'
 import { Loader2 } from 'lucide-react'
 
 export function ActionBar() {
@@ -33,7 +35,12 @@ export function ActionBar() {
   if (phase === 'betting' && config.role === 'player') {
     const maxBet = human ? Math.min(MAX_BET, human.chips) : MIN_BET
     return (
-      <div className={shell}>
+      <motion.div
+        className={shell}
+        initial={{ y: 16, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+      >
         <div className="mx-auto flex max-w-lg flex-col items-center gap-2">
           <div className="flex flex-wrap justify-center gap-1.5">
             {BET_PRESETS.filter(p => p <= maxBet).map(p => (
@@ -42,7 +49,10 @@ export function ActionBar() {
                 size="sm"
                 className="h-8 px-2.5"
                 variant={humanBetDraft === p ? 'default' : 'outline'}
-                onClick={() => setHumanBetDraft(p)}
+                onClick={() => {
+                  emitBlackjackSfx('click')
+                  setHumanBetDraft(p)
+                }}
                 disabled={busy || !human || human.chips < p}
               >
                 {p}
@@ -53,9 +63,10 @@ export function ActionBar() {
                 size="sm"
                 className="h-8 px-2.5"
                 variant="outline"
-                onClick={() =>
+                onClick={() => {
+                  emitBlackjackSfx('click')
                   setHumanBetDraft(Math.floor(Math.min(maxBet, human.chips) / 10) * 10)
-                }
+                }}
                 disabled={busy}
               >
                 全下
@@ -76,13 +87,17 @@ export function ActionBar() {
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     )
   }
 
   if (phase === 'player_turns' && config.role === 'player') {
     return (
-      <div className={shell}>
+      <motion.div
+        className={shell}
+        initial={{ y: 12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
         {busy && !isHumanTurn ? (
           <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -90,43 +105,53 @@ export function ActionBar() {
           </div>
         ) : (
           <div className="flex justify-center gap-2">
-            <Button size="sm" className="min-w-20" onClick={hit} disabled={!isHumanTurn}>
-              要牌
-            </Button>
-            <Button
-              size="sm"
-              className="min-w-20"
-              variant="secondary"
-              onClick={stand}
-              disabled={!isHumanTurn}
-            >
-              停牌
-            </Button>
-            <Button
-              size="sm"
-              className="min-w-20"
-              variant="outline"
-              onClick={doubleDown}
-              disabled={!isHumanTurn || !canDoubleDown(human)}
-            >
-              加倍
-            </Button>
+            <motion.div whileTap={{ scale: 0.94 }}>
+              <Button size="sm" className="min-w-20" onClick={hit} disabled={!isHumanTurn}>
+                要牌
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.94 }}>
+              <Button
+                size="sm"
+                className="min-w-20"
+                variant="secondary"
+                onClick={stand}
+                disabled={!isHumanTurn}
+              >
+                停牌
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.94 }}>
+              <Button
+                size="sm"
+                className="min-w-20"
+                variant="outline"
+                onClick={doubleDown}
+                disabled={!isHumanTurn || !canDoubleDown(human)}
+              >
+                加倍
+              </Button>
+            </motion.div>
           </div>
         )}
-      </div>
+      </motion.div>
     )
   }
 
   if (phase === 'round_end') {
     return (
-      <div className={`${shell} flex justify-center gap-2`}>
+      <motion.div
+        className={`${shell} flex justify-center gap-2`}
+        initial={{ y: 12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
         <Button size="sm" className="min-w-24" onClick={nextRound}>
           下一局
         </Button>
         <Button size="sm" variant="ghost" onClick={backToSetup}>
           设置
         </Button>
-      </div>
+      </motion.div>
     )
   }
 

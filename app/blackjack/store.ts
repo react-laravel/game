@@ -18,6 +18,7 @@ import { createShoe, drawCard } from './utils/cards'
 import { decideBotAction, decideBotBet } from './utils/bot'
 import { dealerMustHit, evaluateHand } from './utils/hand'
 import { settleAllSeats } from './utils/settle'
+import { emitBlackjackSfx } from './utils/sfx'
 
 interface BlackjackState {
   phase: Phase
@@ -120,6 +121,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       i === seatIndex ? { ...s, cards: [...s.cards, card] } : s
     )
     set({ shoe, seats })
+    emitBlackjackSfx('deal')
     return card
   }
 
@@ -130,6 +132,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       shoe,
       dealer: { ...state.dealer, cards: [...state.dealer.cards, card] },
     })
+    emitBlackjackSfx('deal')
     return card
   }
 
@@ -144,6 +147,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           set({ busy: true, message: `${seats[i].name} 思考中…` })
           later(() => get().tickBots(), BOT_THINK_MS)
         } else {
+          emitBlackjackSfx('turn')
           set({ message: '轮到你行动：要牌 / 停牌 / 加倍' })
         }
         return
@@ -160,6 +164,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       message: '庄家翻开暗牌…',
       dealer: { ...get().dealer, holeRevealed: true },
     })
+    emitBlackjackSfx('reveal')
 
     later(() => {
       const runDealer = () => {
@@ -175,6 +180,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
               status: hv.isBust ? 'bust' : 'stand',
             },
           })
+          if (hv.isBust) emitBlackjackSfx('bust')
+          else emitBlackjackSfx('stand')
           later(() => doSettlement(), DEALER_HIT_MS)
           return
         }
@@ -185,6 +192,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
             ? `庄家要牌后爆牌（${hv.total}）`
             : `庄家要牌 → ${hv.total} 点`,
         })
+        if (hv.isBust) emitBlackjackSfx('bust')
         later(runDealer, DEALER_HIT_MS)
       }
       runDealer()
@@ -245,6 +253,18 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       message: '本局结算完成',
       log,
     })
+
+    // 结算音效：优先跟真人结果，坐庄时跟庄家盈亏
+    const human = seats.find(s => s.isHuman)
+    if (human?.result === 'blackjack') emitBlackjackSfx('blackjack')
+    else if (human?.result === 'win') emitBlackjackSfx('win')
+    else if (human?.result === 'lose') emitBlackjackSfx('lose')
+    else if (human?.result === 'push') emitBlackjackSfx('push')
+    else if (state.config.role === 'dealer') {
+      if (bankDelta > 0) emitBlackjackSfx('win')
+      else if (bankDelta < 0) emitBlackjackSfx('lose')
+      else emitBlackjackSfx('push')
+    }
   }
 
   const beginDealing = () => {
@@ -271,6 +291,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         message: '重新洗牌…',
         log: pushLog(state0.log, '牌靴剩余不足，重新洗牌'),
       })
+      emitBlackjackSfx('shuffle')
     }
 
     const activeSeats = get()
@@ -318,12 +339,14 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       return { ...seat, status: 'playing' as const }
     })
 
-    const dealerHv = evaluateHand(state.dealer.cards)
+    if (seats.some(s => s.status === 'blackjack')) {
+      emitBlackjackSfx('blackjack')
+    }
+
     // 庄家两张都已发，但暗牌未翻；仅在需要时检查
     // 标准流程：若有玩家非 BJ，进入玩家回合；BJ 玩家跳过行动
     set({ seats, log, dealer: { ...state.dealer, status: 'playing' } })
 
-    // 若庄家明牌为 A 或 10，简化处理：不查保险，直接继续
     // 若所有闲家都是 BJ，直接庄家翻牌结算
     const needPlay = seats.some(s => s.status === 'playing')
 
@@ -334,9 +357,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         message: '全部闲家黑杰克，庄家亮牌…',
         dealer: { ...get().dealer, holeRevealed: true },
       })
-      // 庄家 BJ 检查在 settlement
+      emitBlackjackSfx('reveal')
       later(() => {
-        // 若庄家也需凑点？黑杰克时不用要牌
         const d = evaluateHand(get().dealer.cards)
         set({
           dealer: {
@@ -360,14 +382,12 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     const seat = seats[first]
     if (seat.isHuman) {
+      emitBlackjackSfx('turn')
       set({ message: '轮到你行动：要牌 / 停牌 / 加倍' })
     } else {
       set({ busy: true, message: `${seat.name} 思考中…` })
       later(() => get().tickBots(), BOT_THINK_MS)
     }
-
-    // 抑制未使用
-    void dealerHv
   }
 
   const applyHit = (seatIndex: number) => {
@@ -383,6 +403,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         log: pushLog(get().log, `${seat.name} 爆牌`),
         busy: true,
       })
+      emitBlackjackSfx('bust')
       later(() => afterPlayerDone(seatIndex), BOT_THINK_MS)
       return
     }
@@ -394,6 +415,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         message: `${seat.name} 停牌（${hv.total}）`,
         busy: true,
       })
+      emitBlackjackSfx('stand')
       later(() => afterPlayerDone(seatIndex), BOT_THINK_MS)
       return
     }
@@ -416,6 +438,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       message: `${seat.name} 停牌（${hv.total}）`,
       busy: true,
     })
+    emitBlackjackSfx('stand')
     later(() => afterPlayerDone(seatIndex), BOT_THINK_MS / 2)
   }
 
@@ -443,6 +466,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       message: `${seat.name} 加倍`,
       busy: true,
     })
+    emitBlackjackSfx('double')
     later(() => applyHit(seatIndex), DEAL_CARD_MS)
   }
 
@@ -505,6 +529,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           }
         })
         set({ seats: nextSeats, log })
+        if (nextSeats.some(s => s.bet > 0)) emitBlackjackSfx('chip')
 
         // 坐庄：无真人闲家，全部 bot 下完直接发牌
         if (st.config.role === 'dealer') {
@@ -552,6 +577,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         log: pushLog(st.log, `你下注 ${bet}`),
         busy: true,
       })
+      emitBlackjackSfx('chip')
       later(() => beginDealing(), BOT_THINK_MS / 2)
     },
 
@@ -559,6 +585,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       if (!canAct()) return
       const idx = get().activeSeatIndex
       set({ busy: true, message: '你要牌…' })
+      emitBlackjackSfx('hit')
       applyHit(idx)
     },
 
@@ -658,6 +685,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           }
         })
         set({ seats: nextSeats, log })
+        if (nextSeats.some(s => s.bet > 0)) emitBlackjackSfx('chip')
 
         if (cur.config.role === 'dealer') {
           const anyBet = nextSeats.some(s => s.bet > 0)

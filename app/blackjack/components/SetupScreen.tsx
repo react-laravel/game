@@ -10,6 +10,7 @@ import {
   MIN_SEATS,
 } from '../constants'
 import { useBlackjackStore } from '../store'
+import { emitBlackjackSfx } from '../utils/sfx'
 import { cn } from '@/lib/helpers'
 
 export function SetupScreen() {
@@ -34,7 +35,10 @@ export function SetupScreen() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setRole('player')}
+              onClick={() => {
+                emitBlackjackSfx('click')
+                setRole('player')
+              }}
               className={cn(
                 'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition',
                 config.role === 'player'
@@ -50,7 +54,10 @@ export function SetupScreen() {
             </button>
             <button
               type="button"
-              onClick={() => setRole('dealer')}
+              onClick={() => {
+                emitBlackjackSfx('click')
+                setRole('dealer')
+              }}
               className={cn(
                 'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition',
                 config.role === 'dealer'
@@ -127,7 +134,14 @@ export function SetupScreen() {
           )}
         </div>
 
-        <Button className="w-full" size="lg" onClick={startGame}>
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={() => {
+            emitBlackjackSfx('chip')
+            startGame()
+          }}
+        >
           <Coins className="h-4 w-4" />
           开始游戏
         </Button>

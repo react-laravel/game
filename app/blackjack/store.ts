@@ -2,7 +2,6 @@
 
 import { create } from 'zustand'
 import {
-  BET_PRESETS,
   BOT_NAMES,
   BOT_THINK_MS,
   DEAL_CARD_MS,
@@ -481,7 +480,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     message: '选择身份并开始游戏',
     busy: false,
     log: [],
-    humanBetDraft: BET_PRESETS[1],
+    humanBetDraft: 0,
 
     setRole: role => set(s => ({ config: { ...s.config, role } })),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
@@ -506,7 +505,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           config.role === 'dealer'
             ? '你是庄家。机器人正在下注…'
             : '请下注',
-        humanBetDraft: Math.min(BET_PRESETS[1], config.startingChips),
+        humanBetDraft: 0,
       })
 
       // 机器人自动下注
@@ -560,7 +559,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
       let bet = st.humanBetDraft
       bet = Math.max(MIN_BET, Math.min(MAX_BET, bet, human.chips))
-      bet = Math.floor(bet / 10) * 10
+      bet = Math.floor(bet / 5) * 5
       if (bet < MIN_BET || bet > human.chips) {
         set({ message: '下注金额无效' })
         return
@@ -659,9 +658,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         phase: 'betting',
         busy: false,
         message: st.config.role === 'dealer' ? '机器人下注中…' : '请下注',
-        humanBetDraft: human
-          ? Math.min(st.humanBetDraft, human.chips)
-          : st.humanBetDraft,
+        humanBetDraft: 0,
       })
 
       later(() => {

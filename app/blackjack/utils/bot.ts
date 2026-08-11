@@ -62,15 +62,14 @@ function dealerUpcardValue(card: Card): number {
 }
 
 /**
- * 机器人下注：约 5%–15% 筹码，对齐到 10 的倍数，夹在 MIN/MAX 之间。
+ * 机器人下注：约 5%–15% 筹码，对齐到 5 的倍数，夹在 MIN/MAX 之间。
  */
 export function decideBotBet(chips: number): number {
   if (chips < MIN_BET) return 0
   const ratio = 0.05 + Math.random() * 0.1
-  let bet = Math.floor((chips * ratio) / 10) * 10
+  let bet = Math.floor((chips * ratio) / 5) * 5
   bet = Math.max(MIN_BET, Math.min(MAX_BET, bet, chips))
-  // 对齐到 10
-  bet = Math.floor(bet / 10) * 10
+  bet = Math.floor(bet / 5) * 5
   if (bet < MIN_BET) bet = Math.min(MIN_BET, chips)
   return Math.min(bet, chips)
 }

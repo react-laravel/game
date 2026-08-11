@@ -135,11 +135,12 @@ export default function BlackjackGame() {
           )}
         </AnimatePresence>
 
-        <div className="relative flex min-h-0 flex-1 flex-col justify-center gap-2.5 py-2 sm:gap-3">
+        {/* 庄家靠上、闲家靠下，中间留出桌面距离 */}
+        <div className="relative flex min-h-0 flex-1 flex-col py-3 sm:py-4">
           {/* 庄家 */}
           <motion.div
             layout
-            className="flex shrink-0 flex-col items-center gap-1"
+            className="flex shrink-0 flex-col items-center gap-1 pt-1 sm:pt-2"
             animate={dealerBust ? { x: [0, -5, 5, -3, 3, 0] } : { x: 0 }}
             transition={dealerBust ? { duration: 0.45 } : undefined}
           >
@@ -182,8 +183,8 @@ export default function BlackjackGame() {
             </div>
           </motion.div>
 
-          {/* 消息 */}
-          <div className="mx-auto flex min-h-7 max-w-[90%] shrink-0 items-center justify-center">
+          {/* 消息：占满中间区域并垂直居中 */}
+          <div className="mx-auto flex min-h-12 max-w-[90%] flex-1 items-center justify-center py-4 sm:py-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={message}
@@ -199,7 +200,7 @@ export default function BlackjackGame() {
           </div>
 
           {/* 闲家 */}
-          <div className="flex shrink-0 items-end justify-around gap-0.5 px-1 sm:px-3">
+          <div className="flex shrink-0 items-end justify-around gap-0.5 px-1 pb-1 sm:px-3 sm:pb-2">
             {seats.map((seat, i) => (
               <PlayerSeat
                 key={seat.id}

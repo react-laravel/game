@@ -5,6 +5,7 @@ import { Bot, User } from 'lucide-react'
 import type { Seat } from '../types'
 import { displayTotal } from '../utils/hand'
 import { CardFan } from './PlayingCard'
+import { ChipStack } from './Chip'
 import { cn } from '@/lib/helpers'
 
 interface PlayerSeatProps {
@@ -43,7 +44,7 @@ export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
             : { duration: 0.2 }
       }
       className={cn(
-        'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1.5 py-2 transition-colors',
+        'flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 transition-colors',
         isActive && 'bg-white/10 ring-1 ring-amber-300/70 shadow-[0_0_16px_rgba(251,191,36,0.2)]'
       )}
     >
@@ -56,6 +57,23 @@ export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
         <span className="truncate font-medium">{seat.name}</span>
       </div>
       <div className="text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
+
+      {/* 桌上筹码 */}
+      <div className="flex min-h-8 items-end justify-center">
+        <AnimatePresence mode="popLayout">
+          {seat.bet > 0 && (
+            <motion.div
+              key={`bet-${seat.bet}`}
+              initial={{ scale: 0, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 16 }}
+            >
+              <ChipStack amount={seat.bet} size="xs" maxVisible={5} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <div className="flex min-h-12 items-end justify-center py-0.5">
         {showCards ? (
@@ -83,21 +101,6 @@ export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
         >
           {totalText}
         </motion.span>
-
-        <AnimatePresence>
-          {seat.bet > 0 && (
-            <motion.span
-              key={`bet-${seat.bet}`}
-              initial={{ scale: 0, y: 6 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 16 }}
-              className="text-[10px] font-medium tabular-nums text-amber-300/90"
-            >
-              {seat.bet}
-            </motion.span>
-          )}
-        </AnimatePresence>
 
         <AnimatePresence>
           {seat.result && (

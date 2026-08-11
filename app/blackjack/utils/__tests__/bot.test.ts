@@ -39,15 +39,15 @@ describe('decideBotAction', () => {
 
 describe('decideBotBet', () => {
   it('筹码不足最小注返回 0', () => {
-    expect(decideBotBet(5)).toBe(0)
+    expect(decideBotBet(4)).toBe(0)
   })
 
-  it('下注在范围内且为 10 的倍数', () => {
+  it('下注在范围内且为 5 的倍数', () => {
     for (let i = 0; i < 20; i++) {
       const bet = decideBotBet(1000)
       expect(bet).toBeGreaterThanOrEqual(MIN_BET)
       expect(bet).toBeLessThanOrEqual(500)
-      expect(bet % 10).toBe(0)
+      expect(bet % 5).toBe(0)
     }
   })
 

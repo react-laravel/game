@@ -9,9 +9,10 @@ export const RESHUFFLE_RATIO = 0.25
 /** 黑杰克赔率 3:2 */
 export const BLACKJACK_PAYOUT = 1.5
 
-export const MIN_BET = 10
+export const MIN_BET = 5
 export const MAX_BET = 500
-export const BET_PRESETS = [10, 25, 50, 100, 200] as const
+/** 可选筹码面额（小到大，用于下注选择） */
+export const BET_PRESETS = [5, 10, 20, 50, 100, 200] as const
 
 export const MIN_SEATS = 1
 export const MAX_SEATS = 4
@@ -57,4 +58,5 @@ export const GAME_RULES = [
   '闲家全部行动后，庄家翻开暗牌；点数未达 17 必须要牌，软/硬 17 均停牌。',
   '庄家爆牌则未爆闲家皆赢；否则比点数，高者赢，相同平局退回赌注。',
   '可选择坐庄或做闲家；空座位由机器人自动下注与出牌。',
+  '下注使用筹码：面额 5 / 10 / 20 / 50 / 100 / 200，点击累加后确认。',
 ] as const

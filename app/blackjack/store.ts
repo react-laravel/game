@@ -14,8 +14,9 @@ import {
 } from './constants'
 import type { Card, Dealer, GameConfig, Phase, Role, Seat } from './types'
 import {
-  DEFAULT_AUTO_PLAY,
   decideAutoPlayAction,
+  loadAutoPlayConfig,
+  saveAutoPlayConfig,
   type AutoPlayConfig,
 } from './utils/autoPlay'
 import { createShoe, drawCard } from './utils/cards'
@@ -49,6 +50,8 @@ interface BlackjackState {
   log: string[]
   humanBetDraft: number
   autoPlay: AutoPlayConfig
+  /** 本会话统计（真人闲家） */
+  sessionStats: { wins: number; losses: number; pushes: number; blackjacks: number }
 
   setRole: (role: Role) => void
   setSeatCount: (n: number) => void
@@ -67,6 +70,7 @@ interface BlackjackState {
   backToSetup: () => void
   tickBots: () => void
   tickAutoPlay: () => void
+  resetSessionStats: () => void
 }
 
 const emptyDealer = (): Dealer => ({
@@ -376,10 +380,9 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     })
 
     const human = seats.find(s => s.isHuman)
-    const humanNet = human
-      ? results.find(r => r.seatId === human.id)?.net ?? 0
-      : 0
-    if (human && results.find(r => r.seatId === human.id)?.result === 'blackjack') {
+    const humanResult = human ? results.find(r => r.seatId === human.id) : undefined
+    const humanNet = humanResult?.net ?? 0
+    if (humanResult?.result === 'blackjack') {
       emitBlackjackSfx('blackjack')
     } else if (humanNet > 0) emitBlackjackSfx('win')
     else if (humanNet < 0) emitBlackjackSfx('lose')
@@ -388,6 +391,20 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       if (bankDelta > 0) emitBlackjackSfx('win')
       else if (bankDelta < 0) emitBlackjackSfx('lose')
       else emitBlackjackSfx('push')
+    }
+
+    // 会话统计
+    if (humanResult) {
+      set(s => {
+        const stats = { ...s.sessionStats }
+        if (humanResult.result === 'blackjack') {
+          stats.blackjacks += 1
+          stats.wins += 1
+        } else if (humanResult.result === 'win') stats.wins += 1
+        else if (humanResult.result === 'lose') stats.losses += 1
+        else if (humanResult.result === 'push') stats.pushes += 1
+        return { sessionStats: stats }
+      })
     }
 
     if (state.autoPlay.enabled && state.autoPlay.autoNextRound) {
@@ -554,12 +571,23 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       return
     }
 
+    // 加倍：只再拿这一张，之后必须停牌（标准规则）
     if (hv.total === 21 || hand.status === 'doubled' || hand.isSplitAces) {
+      const reason =
+        hand.status === 'doubled'
+          ? `加倍后停牌（${hv.total}）`
+          : hand.isSplitAces
+            ? `分 A 停牌（${hv.total}）`
+            : `停牌（${hv.total}）`
       set({
         seats: get().seats.map((s, i) =>
           i === seatIndex ? updateHand(s, handIndex, { status: 'stand' }) : s
         ),
-        message: `${seat.name} 停牌（${hv.total}）`,
+        message: `${seat.name} ${reason}`,
+        log:
+          hand.status === 'doubled'
+            ? pushLog(get().log, `${seat.name} 加倍拿一张后停牌 ${hv.total}`)
+            : get().log,
         busy: true,
       })
       emitBlackjackSfx('stand')
@@ -595,29 +623,43 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     later(() => afterHandDone(seatIndex), BOT_THINK_MS / 2)
   }
 
+  /**
+   * 加倍（Double Down）：
+   * 1. 仅首两张（分 A 后不可加倍）
+   * 2. 再押与当前手等额赌注
+   * 3. 只再发一张牌，然后强制停牌（由 applyHit 根据 status=doubled 处理）
+   */
   const applyDouble = (seatIndex: number) => {
     const state = get()
     const seat = state.seats[seatIndex]
     const handIndex = seat.activeHandIndex
     const hand = seat.hands[handIndex]
     if (hand.cards.length !== 2 || seat.chips < hand.bet || hand.isSplitAces) {
-      applyHit(seatIndex)
+      // 不满足条件时不偷偷改成要牌，避免误解
+      set({
+        message: '无法加倍：需恰好两张牌，且有等额筹码',
+        busy: false,
+      })
       return
     }
     const extra = hand.bet
+    const newBet = hand.bet + extra
     set({
       seats: state.seats.map((s, i) => {
         if (i !== seatIndex) return s
         return {
           ...updateHand(s, handIndex, {
-            bet: hand.bet + extra,
+            bet: newBet,
             status: 'doubled',
           }),
           chips: s.chips - extra,
         }
       }),
-      log: pushLog(state.log, `${seat.name} 加倍，赌注 ${hand.bet + extra}`),
-      message: `${seat.name} 加倍`,
+      log: pushLog(
+        state.log,
+        `${seat.name} 加倍 ${hand.bet}→${newBet}（只再拿一张后停牌）`
+      ),
+      message: `${seat.name} 加倍至 ${newBet}，再发一张…`,
       busy: true,
     })
     emitBlackjackSfx('double')
@@ -732,16 +774,23 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     busy: false,
     log: [],
     humanBetDraft: 0,
-    autoPlay: { ...DEFAULT_AUTO_PLAY },
+    autoPlay: loadAutoPlayConfig(),
+    sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
 
     setRole: role => set(s => ({ config: { ...s.config, role } })),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
     setStartingChips: n => set(s => ({ config: { ...s.config, startingChips: n } })),
     setBankChipsConfig: n => set(s => ({ config: { ...s.config, bankChips: n } })),
     setHumanBetDraft: n => set({ humanBetDraft: n }),
+    resetSessionStats: () =>
+      set({ sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 } }),
 
     setAutoPlay: partial => {
-      set(s => ({ autoPlay: { ...s.autoPlay, ...partial } }))
+      set(s => {
+        const autoPlay = { ...s.autoPlay, ...partial }
+        saveAutoPlayConfig(autoPlay)
+        return { autoPlay }
+      })
       const st = get()
       if (!st.autoPlay.enabled) return
       const seat = st.seats[st.activeSeatIndex]
@@ -766,17 +815,20 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     toggleAutoPlay: () => {
       const next = !get().autoPlay.enabled
       get().setAutoPlay({ enabled: next })
-      set(s => ({
-        message: next
-          ? `已开启托管（硬≥${s.autoPlay.hardStandAt}停 · 软≥${s.autoPlay.softStandAt}停）`
-          : '已关闭托管',
-        log: pushLog(
-          s.log,
-          next
-            ? `开启托管：硬牌≥${s.autoPlay.hardStandAt}停，软牌≥${s.autoPlay.softStandAt}停`
-            : '关闭托管'
-        ),
-      }))
+      set(s => {
+        saveAutoPlayConfig(s.autoPlay)
+        return {
+          message: next
+            ? `已开启托管（硬≥${s.autoPlay.hardStandAt}停 · 软≥${s.autoPlay.softStandAt}停）`
+            : '已关闭托管',
+          log: pushLog(
+            s.log,
+            next
+              ? `开启托管：硬牌≥${s.autoPlay.hardStandAt}停，软牌≥${s.autoPlay.softStandAt}停`
+              : '关闭托管'
+          ),
+        }
+      })
     },
 
     startGame: () => {

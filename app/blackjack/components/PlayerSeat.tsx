@@ -36,6 +36,7 @@ function HandBlock({
     : '—'
   const bust = hand.status === 'bust'
   const bj = hand.status === 'blackjack'
+  const doubled = hand.status === 'doubled'
 
   return (
     <div
@@ -46,6 +47,11 @@ function HandBlock({
     >
       {label && (
         <span className="text-[9px] text-emerald-100/50">{label}</span>
+      )}
+      {doubled && (
+        <span className="rounded bg-orange-500/30 px-1 text-[9px] font-semibold text-orange-100">
+          加倍×2
+        </span>
       )}
       {hand.bet > 0 && (
         <ChipStack amount={hand.bet} size="xs" maxVisible={4} />

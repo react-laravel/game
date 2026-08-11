@@ -40,6 +40,49 @@ export const DEFAULT_AUTO_PLAY: AutoPlayConfig = {
   autoNextRound: true,
 }
 
+const AUTO_PLAY_STORAGE_KEY = 'blackjack-auto-play-v1'
+
+export function loadAutoPlayConfig(): AutoPlayConfig {
+  if (typeof window === 'undefined') return { ...DEFAULT_AUTO_PLAY }
+  try {
+    const raw = window.localStorage.getItem(AUTO_PLAY_STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_AUTO_PLAY }
+    const parsed = JSON.parse(raw) as Partial<AutoPlayConfig>
+    return {
+      ...DEFAULT_AUTO_PLAY,
+      ...parsed,
+      // 刷新后默认不自动开托管，避免误开；规则仍恢复
+      enabled: false,
+      hardStandAt: Number(parsed.hardStandAt) || DEFAULT_AUTO_PLAY.hardStandAt,
+      softStandAt: Number(parsed.softStandAt) || DEFAULT_AUTO_PLAY.softStandAt,
+      doubleHardMin: Number(parsed.doubleHardMin) || DEFAULT_AUTO_PLAY.doubleHardMin,
+      doubleHardMax: Number(parsed.doubleHardMax) || DEFAULT_AUTO_PLAY.doubleHardMax,
+      autoBet: Number(parsed.autoBet) || DEFAULT_AUTO_PLAY.autoBet,
+      allowDouble: parsed.allowDouble ?? DEFAULT_AUTO_PLAY.allowDouble,
+      autoNextRound: parsed.autoNextRound ?? DEFAULT_AUTO_PLAY.autoNextRound,
+    }
+  } catch {
+    return { ...DEFAULT_AUTO_PLAY }
+  }
+}
+
+export function saveAutoPlayConfig(config: AutoPlayConfig) {
+  if (typeof window === 'undefined') return
+  try {
+    // 持久化规则，不强制持久化 enabled（enabled 另存为上次偏好）
+    window.localStorage.setItem(
+      AUTO_PLAY_STORAGE_KEY,
+      JSON.stringify({
+        ...config,
+        // 记住是否曾开启，但 load 时仍默认 false；若希望记住开启可改为 config.enabled
+        lastEnabled: config.enabled,
+      })
+    )
+  } catch {
+    // ignore quota
+  }
+}
+
 /**
  * 根据托管规则决定动作。
  * - 硬牌：total < hardStandAt → 要；否则停

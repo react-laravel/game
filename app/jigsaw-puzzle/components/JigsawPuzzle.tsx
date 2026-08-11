@@ -42,7 +42,7 @@ export default function JigsawPuzzle({ imageUrl, size, onComplete }: JigsawPuzzl
   const [lastWronglyPlacedPiece, setLastWronglyPlacedPiece] = useState<number | null>(null)
   const [currentTab, setCurrentTab] = useState('0')
   const [showPieceNumbers, setShowPieceNumbers] = useState(false)
-  const [showDebugInfo, setShowDebugInfo] = useState(true)
+  const [showDebugInfo, setShowDebugInfo] = useState(false)
   const [tabsNeedScrolling, setTabsNeedScrolling] = useState(false)
   const [piecePreviewVisible, setPiecePreviewVisible] = useState(false)
   const [piecePreviewPiece, setPiecePreviewPiece] = useState<PuzzlePiece | null>(null)

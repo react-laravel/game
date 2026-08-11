@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { Crown, Spade, Volume2, VolumeX } from 'lucide-react'
 import { GAME_RULES } from '../constants'
+import { useBlackjackKeyboard } from '../hooks/useBlackjackKeyboard'
 import { useBlackjackSounds } from '../hooks/useBlackjackSounds'
 import { useBlackjackStore } from '../store'
 import { displayTotal } from '../utils/hand'
@@ -26,7 +27,15 @@ export default function BlackjackGame() {
   const log = useBlackjackStore(s => s.log)
   const activeSeatIndex = useBlackjackStore(s => s.activeSeatIndex)
   const autoPlay = useBlackjackStore(s => s.autoPlay)
+  const sessionStats = useBlackjackStore(s => s.sessionStats)
   const { muted, toggleMuted, playSound } = useBlackjackSounds()
+
+  useBlackjackKeyboard({
+    onToggleMute: () => {
+      playSound('click')
+      toggleMuted()
+    },
+  })
 
   if (phase === 'setup') {
     return (
@@ -38,7 +47,7 @@ export default function BlackjackGame() {
               21 点
             </h1>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              坐庄 / 闲家 · 空位机器人 · 可托管
+              坐庄 / 闲家 · 托管 · 快捷键 H/S/D/P
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -100,6 +109,17 @@ export default function BlackjackGame() {
           {autoPlay.enabled && (
             <Badge className="h-5 bg-violet-600 px-1.5 text-[10px] text-white hover:bg-violet-600">
               托管 硬≥{autoPlay.hardStandAt}
+            </Badge>
+          )}
+          {(sessionStats.wins > 0 ||
+            sessionStats.losses > 0 ||
+            sessionStats.pushes > 0) && (
+            <Badge
+              variant="outline"
+              className="text-muted-foreground h-5 max-w-[9rem] truncate px-1.5 text-[10px] tabular-nums"
+              title={`胜 ${sessionStats.wins} · 负 ${sessionStats.losses} · 平 ${sessionStats.pushes} · BJ ${sessionStats.blackjacks}`}
+            >
+              {sessionStats.wins}W/{sessionStats.losses}L/{sessionStats.pushes}P
             </Badge>
           )}
         </div>

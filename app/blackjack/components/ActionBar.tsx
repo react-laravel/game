@@ -182,45 +182,58 @@ export function ActionBar() {
             等待中…
           </div>
         ) : (
-          <div className="flex flex-wrap justify-center gap-2">
-            <motion.div whileTap={{ scale: 0.94 }}>
-              <Button size="sm" className="min-w-16" onClick={hit} disabled={!isHumanTurn}>
-                要牌
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.94 }}>
-              <Button
-                size="sm"
-                className="min-w-16"
-                variant="secondary"
-                onClick={stand}
-                disabled={!isHumanTurn}
-              >
-                停牌
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.94 }}>
-              <Button
-                size="sm"
-                className="min-w-16"
-                variant="outline"
-                onClick={doubleDown}
-                disabled={!isHumanTurn || !canDoubleDown(human)}
-              >
-                加倍
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.94 }}>
-              <Button
-                size="sm"
-                className="min-w-16"
-                variant="outline"
-                onClick={split}
-                disabled={!isHumanTurn || !canSplit(human)}
-              >
-                分牌
-              </Button>
-            </motion.div>
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-wrap justify-center gap-2">
+              <motion.div whileTap={{ scale: 0.94 }}>
+                <Button size="sm" className="min-w-16" onClick={hit} disabled={!isHumanTurn}>
+                  要牌
+                  <kbd className="text-primary-foreground/70 ml-1 hidden text-[10px] sm:inline">
+                    H
+                  </kbd>
+                </Button>
+              </motion.div>
+              <motion.div whileTap={{ scale: 0.94 }}>
+                <Button
+                  size="sm"
+                  className="min-w-16"
+                  variant="secondary"
+                  onClick={stand}
+                  disabled={!isHumanTurn}
+                >
+                  停牌
+                  <kbd className="ml-1 hidden text-[10px] opacity-70 sm:inline">S</kbd>
+                </Button>
+              </motion.div>
+              <motion.div whileTap={{ scale: 0.94 }}>
+                <Button
+                  size="sm"
+                  className="min-w-16"
+                  variant="outline"
+                  onClick={doubleDown}
+                  disabled={!isHumanTurn || !canDoubleDown(human)}
+                  title="加倍下注，只再拿一张牌后必须停牌"
+                >
+                  加倍
+                  <kbd className="ml-1 hidden text-[10px] opacity-70 sm:inline">D</kbd>
+                </Button>
+              </motion.div>
+              <motion.div whileTap={{ scale: 0.94 }}>
+                <Button
+                  size="sm"
+                  className="min-w-16"
+                  variant="outline"
+                  onClick={split}
+                  disabled={!isHumanTurn || !canSplit(human)}
+                  title="对子可分牌，需等额筹码"
+                >
+                  分牌
+                  <kbd className="ml-1 hidden text-[10px] opacity-70 sm:inline">P</kbd>
+                </Button>
+              </motion.div>
+            </div>
+            <p className="text-muted-foreground hidden text-[10px] sm:block">
+              快捷键 H/S/D/P · Enter 确认 · A 托管 · M 静音
+            </p>
           </div>
         )}
       </motion.div>

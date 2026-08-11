@@ -111,6 +111,15 @@ export default function BlackjackGame() {
               托管 硬≥{autoPlay.hardStandAt}
             </Badge>
           )}
+          {autoPlay.autoNextRound && (
+            <Badge
+              variant="secondary"
+              className="h-5 px-1.5 text-[10px]"
+              title="结算后自动开下一局"
+            >
+              自动下局
+            </Badge>
+          )}
           {(sessionStats.wins > 0 ||
             sessionStats.losses > 0 ||
             sessionStats.pushes > 0) && (

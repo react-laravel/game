@@ -57,7 +57,7 @@ export function useBlackjackKeyboard(options?: { onToggleMute?: () => void }) {
           st.placeHumanBet()
           return
         }
-        if (phase === 'round_end' && !autoPlay.enabled) {
+        if (phase === 'round_end' && !autoPlay.autoNextRound) {
           e.preventDefault()
           st.nextRound()
           return

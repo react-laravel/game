@@ -169,7 +169,7 @@ export function AutoPlayPanel({ compact }: { compact?: boolean }) {
 
             <ToggleRow
               label="自动下一局"
-              description="结算后短暂停留，自动开下一局"
+              description="结算后自动开新局；坐庄时也可单独开启，无需完整托管"
               checked={autoPlay.autoNextRound}
               onChange={v => patch({ autoNextRound: v })}
             />

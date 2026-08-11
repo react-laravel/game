@@ -407,10 +407,11 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       })
     }
 
-    if (state.autoPlay.enabled && state.autoPlay.autoNextRound) {
+    // 自动下一局：不依赖完整「托管出牌」，坐庄时也可单独开启
+    if (state.autoPlay.autoNextRound) {
       later(() => {
         const cur = get()
-        if (cur.phase === 'round_end' && cur.autoPlay.enabled && cur.autoPlay.autoNextRound) {
+        if (cur.phase === 'round_end' && cur.autoPlay.autoNextRound) {
           get().nextRound()
         }
       }, AUTO_NEXT_MS)
@@ -807,7 +808,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         scheduleAutoBetIfNeeded()
       } else if (st.phase === 'round_end' && st.autoPlay.autoNextRound) {
         later(() => {
-          if (get().phase === 'round_end' && get().autoPlay.enabled) get().nextRound()
+          if (get().phase === 'round_end' && get().autoPlay.autoNextRound) get().nextRound()
         }, 600)
       }
     },

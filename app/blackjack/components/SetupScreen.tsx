@@ -19,6 +19,8 @@ export function SetupScreen() {
   const setSeatCount = useBlackjackStore(s => s.setSeatCount)
   const setStartingChips = useBlackjackStore(s => s.setStartingChips)
   const setBankChipsConfig = useBlackjackStore(s => s.setBankChipsConfig)
+  const autoPlay = useBlackjackStore(s => s.autoPlay)
+  const setAutoPlay = useBlackjackStore(s => s.setAutoPlay)
   const startGame = useBlackjackStore(s => s.startGame)
 
   return (
@@ -97,10 +99,15 @@ export function SetupScreen() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          className={cn(
+            'grid gap-4',
+            config.role === 'dealer' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
+          )}
+        >
           <div>
             <p className="mb-2 text-sm font-medium">闲家初始筹码</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-nowrap gap-2">
               {[500, 1000, 2000].map(n => (
                 <Button
                   key={n}
@@ -117,7 +124,7 @@ export function SetupScreen() {
           {config.role === 'dealer' && (
             <div>
               <p className="mb-2 text-sm font-medium">庄家资金</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-nowrap gap-2">
                 {[3000, 5000, 10000].map(n => (
                   <Button
                     key={n}
@@ -133,6 +140,29 @@ export function SetupScreen() {
             </div>
           )}
         </div>
+
+        {/* 坐庄时机器人全自动，常用「自动下一局」单独开关 */}
+        {config.role === 'dealer' && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">自动下一局</p>
+              <p className="text-muted-foreground text-xs">
+                结算后自动开新局（闲家机器人会继续下注）
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant={autoPlay.autoNextRound ? 'default' : 'outline'}
+              onClick={() => {
+                emitBlackjackSfx('click')
+                setAutoPlay({ autoNextRound: !autoPlay.autoNextRound })
+              }}
+            >
+              {autoPlay.autoNextRound ? '已开启' : '关闭'}
+            </Button>
+          </div>
+        )}
 
         <Button
           className="w-full"

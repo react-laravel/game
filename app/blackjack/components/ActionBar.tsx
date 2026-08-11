@@ -247,10 +247,10 @@ export function ActionBar() {
         initial={{ y: 12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
-        {autoPlay.enabled && autoPlay.autoNextRound ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+        {autoPlay.autoNextRound ? (
+          <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
-            托管：即将下一局…
+            自动下一局…
             <Button size="sm" variant="outline" className="h-7" onClick={nextRound}>
               立即开始
             </Button>
@@ -258,9 +258,11 @@ export function ActionBar() {
               size="sm"
               variant="ghost"
               className="h-7"
-              onClick={() => useBlackjackStore.getState().setAutoPlay({ enabled: false })}
+              onClick={() =>
+                useBlackjackStore.getState().setAutoPlay({ autoNextRound: false })
+              }
             >
-              停止托管
+              关闭自动
             </Button>
           </div>
         ) : (
@@ -268,6 +270,17 @@ export function ActionBar() {
             <Button size="sm" className="min-w-24" onClick={nextRound}>
               下一局
             </Button>
+            {config.role === 'dealer' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  useBlackjackStore.getState().setAutoPlay({ autoNextRound: true })
+                }
+              >
+                自动下一局
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={backToSetup}>
               设置
             </Button>

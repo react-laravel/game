@@ -2,36 +2,60 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bot, Coins, Crown, User } from 'lucide-react'
-import {
-  DEFAULT_BANK_CHIPS,
-  DEFAULT_STARTING_CHIPS,
-  MAX_SEATS,
-  MIN_SEATS,
-} from '../constants'
+import { Bot, Coins, Crown, User, Wallet } from 'lucide-react'
+import { MAX_SEATS, MIN_BET, MIN_SEATS } from '../constants'
 import { useBlackjackStore } from '../store'
 import { emitBlackjackSfx } from '../utils/sfx'
+import { ACCOUNT_INITIAL_CHIPS } from '../utils/wallet'
 import { cn } from '@/lib/helpers'
 
 export function SetupScreen() {
   const config = useBlackjackStore(s => s.config)
+  const accountChips = useBlackjackStore(s => s.accountChips)
   const setRole = useBlackjackStore(s => s.setRole)
   const setSeatCount = useBlackjackStore(s => s.setSeatCount)
-  const setStartingChips = useBlackjackStore(s => s.setStartingChips)
-  const setBankChipsConfig = useBlackjackStore(s => s.setBankChipsConfig)
   const autoPlay = useBlackjackStore(s => s.autoPlay)
   const setAutoPlay = useBlackjackStore(s => s.setAutoPlay)
   const startGame = useBlackjackStore(s => s.startGame)
+
+  const broke = accountChips < MIN_BET
 
   return (
     <Card className="mx-auto max-w-lg border-emerald-900/10 shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl">开设牌桌</CardTitle>
         <CardDescription>
-          选择坐庄或做闲家。没有真实玩家的座位将由机器人自动下注与出牌。
+          选择坐庄或做闲家。账号筹码持久保存，只靠对局输赢变动。
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* 账号钱包 */}
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Wallet className="h-5 w-5 shrink-0 text-amber-500" />
+            <div>
+              <p className="text-sm font-medium">账号筹码</p>
+              <p className="text-muted-foreground text-xs">
+                新用户赠送 {ACCOUNT_INITIAL_CHIPS} · 余额无上限 · 归零不重置
+              </p>
+            </div>
+          </div>
+          <div
+            className={cn(
+              'text-lg font-bold tabular-nums',
+              broke ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'
+            )}
+          >
+            {accountChips}
+          </div>
+        </div>
+
+        {broke && (
+          <p className="rounded-lg bg-red-500/10 px-3 py-2 text-center text-sm text-red-600 dark:text-red-400">
+            筹码已耗尽，不会自动重置。请靠对局赢取后再来。
+          </p>
+        )}
+
         <div>
           <p className="mb-2 text-sm font-medium">你的身份</p>
           <div className="grid grid-cols-2 gap-3">
@@ -51,7 +75,7 @@ export function SetupScreen() {
               <User className="text-primary h-8 w-8" />
               <span className="font-semibold">做闲家</span>
               <span className="text-muted-foreground text-center text-xs">
-                你自己下注出牌，庄家为系统，其余座位机器人
+                用账号筹码下注，与系统庄家对战
               </span>
             </button>
             <button
@@ -70,7 +94,7 @@ export function SetupScreen() {
               <Crown className="h-8 w-8 text-amber-500" />
               <span className="font-semibold">坐庄</span>
               <span className="text-muted-foreground text-center text-xs">
-                你持有庄家筹码，闲家全为机器人（庄家按规则自动要牌）
+                账号筹码作为庄家资金，对战机器人闲家
               </span>
             </button>
           </div>
@@ -99,49 +123,6 @@ export function SetupScreen() {
           </p>
         </div>
 
-        <div
-          className={cn(
-            'grid gap-4',
-            config.role === 'dealer' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
-          )}
-        >
-          <div>
-            <p className="mb-2 text-sm font-medium">闲家初始筹码</p>
-            <div className="flex flex-nowrap gap-2">
-              {[500, 1000, 2000].map(n => (
-                <Button
-                  key={n}
-                  type="button"
-                  size="sm"
-                  variant={config.startingChips === n ? 'default' : 'outline'}
-                  onClick={() => setStartingChips(n)}
-                >
-                  {n}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {config.role === 'dealer' && (
-            <div>
-              <p className="mb-2 text-sm font-medium">庄家资金</p>
-              <div className="flex flex-nowrap gap-2">
-                {[3000, 5000, 10000].map(n => (
-                  <Button
-                    key={n}
-                    type="button"
-                    size="sm"
-                    variant={config.bankChips === n ? 'default' : 'outline'}
-                    onClick={() => setBankChipsConfig(n)}
-                  >
-                    {n}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 坐庄时机器人全自动，常用「自动下一局」单独开关 */}
         {config.role === 'dealer' && (
           <div className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5">
             <div className="min-w-0">
@@ -167,19 +148,18 @@ export function SetupScreen() {
         <Button
           className="w-full"
           size="lg"
+          disabled={broke}
           onClick={() => {
             emitBlackjackSfx('chip')
             startGame()
           }}
         >
           <Coins className="h-4 w-4" />
-          开始游戏
+          {broke ? '筹码不足' : '开始游戏'}
         </Button>
 
         <p className="text-muted-foreground text-center text-xs">
-          默认：闲家 {DEFAULT_STARTING_CHIPS} 筹码
-          {config.role === 'dealer' ? ` · 庄家 ${DEFAULT_BANK_CHIPS}` : ''} · 黑杰克 3:2 · 庄家软
-          17 停牌
+          黑杰克 3:2 · 庄家软 17 停牌 · 新用户 {ACCOUNT_INITIAL_CHIPS} 起步
         </p>
       </CardContent>
     </Card>

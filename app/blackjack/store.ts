@@ -34,6 +34,14 @@ import {
   seatTotalBet,
   shouldBotSplit,
 } from './utils/split'
+import {
+  ACCOUNT_INITIAL_CHIPS,
+  BOT_STARTING_CHIPS,
+  clampAccountChips,
+  loadAccountChips,
+  saveAccountChips,
+  type WalletOwnerId,
+} from './utils/wallet'
 
 const AUTO_NEXT_MS = 1400
 
@@ -50,16 +58,23 @@ interface BlackjackState {
   log: string[]
   humanBetDraft: number
   autoPlay: AutoPlayConfig
-  /** 本会话统计（真人闲家） */
+  /** 本会话统计（闲家真人，或坐庄时的庄家局数） */
   sessionStats: { wins: number; losses: number; pushes: number; blackjacks: number }
+  /** 坐庄时本局庄家净盈亏（正赢负输），非结算阶段为 null */
+  lastBankDelta: number | null
+  /** 坐庄时本牌桌累计盈亏（相对开桌庄家资金） */
+  bankSessionProfit: number
+  /** 当前账号钱包余额（与持久化同步） */
+  accountChips: number
+  walletOwnerId: WalletOwnerId
 
   setRole: (role: Role) => void
   setSeatCount: (n: number) => void
-  setStartingChips: (n: number) => void
-  setBankChipsConfig: (n: number) => void
   setHumanBetDraft: (n: number) => void
   setAutoPlay: (partial: Partial<AutoPlayConfig>) => void
   toggleAutoPlay: () => void
+  /** 按登录用户加载/初始化钱包 */
+  hydrateWallet: (ownerId: WalletOwnerId) => void
   startGame: () => void
   placeHumanBet: () => void
   hit: () => void
@@ -79,7 +94,7 @@ const emptyDealer = (): Dealer => ({
   status: 'waiting',
 })
 
-function makeSeats(config: GameConfig): Seat[] {
+function makeSeats(config: GameConfig, accountChips: number): Seat[] {
   const seats: Seat[] = []
   const names = [...BOT_NAMES].sort(() => Math.random() - 0.5)
   let botIdx = 0
@@ -90,7 +105,8 @@ function makeSeats(config: GameConfig): Seat[] {
       id: `seat-${i}`,
       name: isHuman ? '你' : names[botIdx++ % names.length],
       isHuman,
-      chips: config.startingChips,
+      // 真人用账号钱包；机器人用固定桌内筹码
+      chips: isHuman ? accountChips : BOT_STARTING_CHIPS,
       hands: [],
       activeHandIndex: 0,
     })
@@ -323,8 +339,13 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     const seats = state.seats.map(seat => {
       const r = results.find(x => x.seatId === seat.id)!
-      const chips = seat.chips + r.payout
+      let chips = seat.chips + r.payout
       bankDelta -= r.net
+
+      // 真人闲家：余额无上限，仅保底 ≥0
+      if (seat.isHuman && state.config.role === 'player') {
+        chips = clampAccountChips(chips)
+      }
 
       const resultText =
         r.result === 'blackjack'
@@ -362,21 +383,52 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       }
     })
 
-    const bankChips = state.bankChips + bankDelta
+    let bankChips = state.bankChips + bankDelta
+    // 坐庄时庄家筹码即账号钱包：无上限，仅 ≥0
+    if (state.config.role === 'dealer') {
+      bankChips = clampAccountChips(bankChips)
+      bankDelta = bankChips - state.bankChips
+    }
+
+    const bankProfit = state.bankSessionProfit + bankDelta
     log = pushLog(
       log,
       state.config.role === 'dealer'
-        ? `本局庄家筹码变化 ${bankDelta >= 0 ? '+' : ''}${bankDelta}，余额 ${bankChips}`
+        ? `本局庄家 ${bankDelta > 0 ? '赢' : bankDelta < 0 ? '输' : '平'} ${bankDelta >= 0 ? '+' : ''}${bankDelta}，余额 ${bankChips}，累计 ${bankProfit >= 0 ? '+' : ''}${bankProfit}`
         : `本局结束`
     )
+
+    // 持久化账号钱包
+    let accountChips = state.accountChips
+    if (state.config.role === 'dealer') {
+      accountChips = saveAccountChips(state.walletOwnerId, bankChips)
+    } else {
+      const human = seats.find(s => s.isHuman)
+      if (human) {
+        accountChips = saveAccountChips(state.walletOwnerId, human.chips)
+      }
+    }
+
+    const dealerMsg =
+      state.config.role === 'dealer'
+        ? bankDelta > 0
+          ? `本局庄家赢 +${bankDelta}`
+          : bankDelta < 0
+            ? `本局庄家输 ${bankDelta}`
+            : '本局庄家平局'
+        : '本局结算完成'
 
     set({
       phase: 'round_end',
       seats,
       bankChips,
       busy: false,
-      message: '本局结算完成',
+      message: dealerMsg,
       log,
+      lastBankDelta: state.config.role === 'dealer' ? bankDelta : null,
+      bankSessionProfit:
+        state.config.role === 'dealer' ? bankProfit : state.bankSessionProfit,
+      accountChips,
     })
 
     const human = seats.find(s => s.isHuman)
@@ -393,7 +445,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       else emitBlackjackSfx('push')
     }
 
-    // 会话统计
+    // 会话统计：闲家按真人结果；坐庄按庄家本局盈亏
     if (humanResult) {
       set(s => {
         const stats = { ...s.sessionStats }
@@ -403,6 +455,14 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         } else if (humanResult.result === 'win') stats.wins += 1
         else if (humanResult.result === 'lose') stats.losses += 1
         else if (humanResult.result === 'push') stats.pushes += 1
+        return { sessionStats: stats }
+      })
+    } else if (state.config.role === 'dealer') {
+      set(s => {
+        const stats = { ...s.sessionStats }
+        if (bankDelta > 0) stats.wins += 1
+        else if (bankDelta < 0) stats.losses += 1
+        else stats.pushes += 1
         return { sessionStats: stats }
       })
     }
@@ -419,7 +479,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
   }
 
   const beginDealing = () => {
-    set({ phase: 'dealing', busy: true, message: '发牌中…' })
+    set({ phase: 'dealing', busy: true, message: '发牌中…', lastBankDelta: null })
 
     set(s => ({
       seats: s.seats.map(seat => {
@@ -664,6 +724,11 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       busy: true,
     })
     emitBlackjackSfx('double')
+    // 真人加倍立即落账，防止刷新刷回
+    const after = get().seats[seatIndex]
+    if (after?.isHuman && get().config.role === 'player') {
+      set({ accountChips: saveAccountChips(get().walletOwnerId, after.chips) })
+    }
     later(() => applyHit(seatIndex), DEAL_CARD_MS)
   }
 
@@ -710,6 +775,10 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       busy: true,
     })
     emitBlackjackSfx('chip')
+    const afterSplit = get().seats[seatIndex]
+    if (afterSplit?.isHuman && get().config.role === 'player') {
+      set({ accountChips: saveAccountChips(get().walletOwnerId, afterSplit.chips) })
+    }
 
     // 先给第一手补一张
     later(() => {
@@ -777,14 +846,32 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     humanBetDraft: 0,
     autoPlay: loadAutoPlayConfig(),
     sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
+    lastBankDelta: null,
+    bankSessionProfit: 0,
+    accountChips: ACCOUNT_INITIAL_CHIPS,
+    walletOwnerId: 'guest',
 
     setRole: role => set(s => ({ config: { ...s.config, role } })),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
-    setStartingChips: n => set(s => ({ config: { ...s.config, startingChips: n } })),
-    setBankChipsConfig: n => set(s => ({ config: { ...s.config, bankChips: n } })),
     setHumanBetDraft: n => set({ humanBetDraft: n }),
+    hydrateWallet: ownerId => {
+      const chips = loadAccountChips(ownerId)
+      set({
+        walletOwnerId: ownerId,
+        accountChips: chips,
+        config: {
+          ...get().config,
+          startingChips: chips,
+          bankChips: chips,
+        },
+      })
+    },
     resetSessionStats: () =>
-      set({ sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 } }),
+      set({
+        sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
+        bankSessionProfit: 0,
+        lastBankDelta: null,
+      }),
 
     setAutoPlay: partial => {
       set(s => {
@@ -835,22 +922,47 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     startGame: () => {
       clearTimers()
       resetHandSeq()
-      const { config } = get()
-      const seats = makeSeats(config)
+      const st0 = get()
+      // 开桌前刷新钱包
+      const accountChips = loadAccountChips(st0.walletOwnerId)
+      const config = {
+        ...st0.config,
+        startingChips: accountChips,
+        bankChips: accountChips,
+      }
+
+      if (accountChips < MIN_BET) {
+        set({
+          accountChips,
+          config,
+          message: `筹码为 ${accountChips}，已耗尽且不会重置。请靠赢取积累后再来。`,
+          log: pushLog(st0.log, '筹码不足，无法开桌'),
+        })
+        return
+      }
+
+      const seats = makeSeats(config, accountChips)
       set({
         phase: 'betting',
+        config,
         seats,
         shoe: createShoe(),
         dealer: emptyDealer(),
-        bankChips: config.bankChips,
+        // 坐庄：庄家资金=账号钱包；做闲家：系统庄家用独立池，不花账号钱
+        // 做闲家时系统庄家使用大额筹码池，与账号无关
+        bankChips: config.role === 'dealer' ? accountChips : Math.max(1_000_000, accountChips * 50),
+        accountChips,
         activeSeatIndex: 0,
         busy: false,
         log: [
-          `新牌桌：你选择${config.role === 'dealer' ? '坐庄' : '做闲家'}，${config.seatCount} 个闲家位`,
+          `新牌桌：${config.role === 'dealer' ? '坐庄' : '闲家'} · 账号筹码 ${accountChips}`,
         ],
         message:
           config.role === 'dealer' ? '你是庄家。机器人正在下注…' : '请下注',
         humanBetDraft: 0,
+        lastBankDelta: null,
+        bankSessionProfit: 0,
+        sessionStats: { wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
       })
 
       later(() => {
@@ -880,7 +992,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           const human = nextSeats.find(s => s.isHuman)
           if (!human || human.chips < MIN_BET) {
             set({
-              message: '你的筹码不足，无法继续',
+              message: '你的筹码不足，无法继续（归零不会重置）',
               phase: 'round_end',
             })
             return
@@ -918,8 +1030,11 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
             }
           : s
       )
+      const humanAfter = seats.find(s => s.isHuman)!
+      const accountChips = saveAccountChips(st.walletOwnerId, humanAfter.chips)
       set({
         seats,
+        accountChips,
         message: st.autoPlay.enabled
           ? `托管下注 ${bet}，开始发牌`
           : `你下注 ${bet}，开始发牌`,
@@ -1013,6 +1128,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         busy: false,
         message: st.config.role === 'dealer' ? '机器人下注中…' : '请下注',
         humanBetDraft: 0,
+        lastBankDelta: null,
       })
 
       later(() => {

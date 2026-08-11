@@ -1,15 +1,18 @@
 'use client'
 
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { Crown, Spade, Volume2, VolumeX } from 'lucide-react'
+import useAuthStore from '@/stores/authStore'
 import { GAME_RULES } from '../constants'
 import { useBlackjackKeyboard } from '../hooks/useBlackjackKeyboard'
 import { useBlackjackSounds } from '../hooks/useBlackjackSounds'
 import { useBlackjackStore } from '../store'
 import { displayTotal } from '../utils/hand'
+
 import { ActionBar } from './ActionBar'
 import { AutoPlayPanel } from './AutoPlayPanel'
 import { PlayerSeat } from './PlayerSeat'
@@ -28,7 +31,16 @@ export default function BlackjackGame() {
   const activeSeatIndex = useBlackjackStore(s => s.activeSeatIndex)
   const autoPlay = useBlackjackStore(s => s.autoPlay)
   const sessionStats = useBlackjackStore(s => s.sessionStats)
+  const lastBankDelta = useBlackjackStore(s => s.lastBankDelta)
+  const bankSessionProfit = useBlackjackStore(s => s.bankSessionProfit)
+  const accountChips = useBlackjackStore(s => s.accountChips)
+  const hydrateWallet = useBlackjackStore(s => s.hydrateWallet)
+  const user = useAuthStore(s => s.user)
   const { muted, toggleMuted, playSound } = useBlackjackSounds()
+
+  useEffect(() => {
+    hydrateWallet(user?.id ?? 'guest')
+  }, [user?.id, hydrateWallet])
 
   useBlackjackKeyboard({
     onToggleMute: () => {
@@ -98,9 +110,25 @@ export default function BlackjackGame() {
               '闲'
             )}
           </Badge>
-          {config.role === 'dealer' && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] tabular-nums">
-              {bankChips}
+          <Badge
+            variant="secondary"
+            className="h-5 px-1.5 text-[10px] tabular-nums"
+            title="账号筹码（无上限，首次赠送 10000）"
+          >
+            {config.role === 'dealer' ? bankChips : accountChips}
+          </Badge>
+          {config.role === 'dealer' && bankSessionProfit !== 0 && (
+            <Badge
+              className={cn(
+                'h-5 px-1.5 text-[10px] tabular-nums',
+                bankSessionProfit > 0
+                  ? 'bg-emerald-600/90 text-white hover:bg-emerald-600/90'
+                  : 'bg-red-600/90 text-white hover:bg-red-600/90'
+              )}
+              title="本牌桌庄家累计盈亏"
+            >
+              累计 {bankSessionProfit > 0 ? '+' : ''}
+              {bankSessionProfit}
             </Badge>
           )}
           <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
@@ -126,7 +154,11 @@ export default function BlackjackGame() {
             <Badge
               variant="outline"
               className="text-muted-foreground h-5 max-w-[9rem] truncate px-1.5 text-[10px] tabular-nums"
-              title={`胜 ${sessionStats.wins} · 负 ${sessionStats.losses} · 平 ${sessionStats.pushes} · BJ ${sessionStats.blackjacks}`}
+              title={
+                config.role === 'dealer'
+                  ? `庄家局数 胜 ${sessionStats.wins} · 负 ${sessionStats.losses} · 平 ${sessionStats.pushes}`
+                  : `胜 ${sessionStats.wins} · 负 ${sessionStats.losses} · 平 ${sessionStats.pushes} · BJ ${sessionStats.blackjacks}`
+              }
             >
               {sessionStats.wins}W/{sessionStats.losses}L/{sessionStats.pushes}P
             </Badge>
@@ -219,6 +251,43 @@ export default function BlackjackGame() {
                 />
               )}
             </div>
+
+            {/* 坐庄：本局输赢（与闲家结果徽章对齐） */}
+            <AnimatePresence>
+              {config.role === 'dealer' &&
+                phase === 'round_end' &&
+                lastBankDelta !== null && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0, y: 6 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-1 flex flex-wrap items-center justify-center gap-1.5"
+                  >
+                    <span
+                      className={cn(
+                        'rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums shadow-sm',
+                        lastBankDelta > 0
+                          ? 'bg-emerald-400/30 text-emerald-50 ring-1 ring-emerald-300/40'
+                          : lastBankDelta < 0
+                            ? 'bg-red-500/30 text-red-100 ring-1 ring-red-300/40'
+                            : 'bg-white/15 text-emerald-50 ring-1 ring-white/20'
+                      )}
+                    >
+                      {lastBankDelta > 0
+                        ? `庄家赢 +${lastBankDelta}`
+                        : lastBankDelta < 0
+                          ? `庄家输 ${lastBankDelta}`
+                          : '庄家平局'}
+                    </span>
+                    {bankSessionProfit !== 0 && (
+                      <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10px] tabular-nums text-emerald-100/85">
+                        累计 {bankSessionProfit > 0 ? '+' : ''}
+                        {bankSessionProfit}
+                      </span>
+                    )}
+                  </motion.div>
+                )}
+            </AnimatePresence>
           </motion.div>
 
           {/* 消息：占满中间区域并垂直居中 */}

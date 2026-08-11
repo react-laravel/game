@@ -17,8 +17,9 @@ export const BET_PRESETS = [5, 10, 20, 50, 100, 200] as const
 export const MIN_SEATS = 1
 export const MAX_SEATS = 4
 
-export const DEFAULT_STARTING_CHIPS = 1000
-export const DEFAULT_BANK_CHIPS = 5000
+/** @deprecated 账号筹码见 wallet ACCOUNT_*；此处仅兼容类型默认值 */
+export const DEFAULT_STARTING_CHIPS = 10_000
+export const DEFAULT_BANK_CHIPS = 10_000
 
 export const DEFAULT_CONFIG: GameConfig = {
   role: 'player',
@@ -64,4 +65,5 @@ export const GAME_RULES = [
   '下注使用筹码：面额 5 / 10 / 20 / 50 / 100 / 200，点击累加后确认。',
   '托管模式：可设定硬牌/软牌停牌点（如 17 不加）、是否加倍、自动下注与自动下一局。',
   '分牌：首两张点数相同（含 10/J/Q/K 互为 10 点）可分成两手，需再押等额赌注；分 A 每手只补一张；分牌后的 21 按 1:1 赔付。',
+  '账号筹码：新注册用户固定发放 10000，余额无上限，只靠对局输赢变动；归零后不会重置，需自己赢回来。',
 ] as const

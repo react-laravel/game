@@ -10,6 +10,7 @@ import { useBlackjackSounds } from '../hooks/useBlackjackSounds'
 import { useBlackjackStore } from '../store'
 import { displayTotal } from '../utils/hand'
 import { ActionBar } from './ActionBar'
+import { AutoPlayPanel } from './AutoPlayPanel'
 import { PlayerSeat } from './PlayerSeat'
 import { CardFan } from './PlayingCard'
 import { SetupScreen } from './SetupScreen'
@@ -24,6 +25,7 @@ export default function BlackjackGame() {
   const message = useBlackjackStore(s => s.message)
   const log = useBlackjackStore(s => s.log)
   const activeSeatIndex = useBlackjackStore(s => s.activeSeatIndex)
+  const autoPlay = useBlackjackStore(s => s.autoPlay)
   const { muted, toggleMuted, playSound } = useBlackjackSounds()
 
   if (phase === 'setup') {
@@ -36,10 +38,11 @@ export default function BlackjackGame() {
               21 点
             </h1>
             <p className="text-muted-foreground mt-0.5 text-xs">
-              坐庄 / 闲家 · 空位机器人
+              坐庄 / 闲家 · 空位机器人 · 可托管
             </p>
           </div>
           <div className="flex items-center gap-1">
+            <AutoPlayPanel />
             <Button
               type="button"
               variant="ghost"
@@ -94,8 +97,14 @@ export default function BlackjackGame() {
           <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
             {phaseLabel(phase)}
           </Badge>
+          {autoPlay.enabled && (
+            <Badge className="h-5 bg-violet-600 px-1.5 text-[10px] text-white hover:bg-violet-600">
+              托管 硬≥{autoPlay.hardStandAt}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
+          <AutoPlayPanel compact />
           <Button
             type="button"
             variant="ghost"

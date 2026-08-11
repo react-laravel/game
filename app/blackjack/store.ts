@@ -13,11 +13,28 @@ import {
   DECK_COUNT,
 } from './constants'
 import type { Card, Dealer, GameConfig, Phase, Role, Seat } from './types'
+import {
+  DEFAULT_AUTO_PLAY,
+  decideAutoPlayAction,
+  type AutoPlayConfig,
+} from './utils/autoPlay'
 import { createShoe, drawCard } from './utils/cards'
 import { decideBotAction, decideBotBet } from './utils/bot'
 import { dealerMustHit, evaluateHand } from './utils/hand'
 import { settleAllSeats } from './utils/settle'
 import { emitBlackjackSfx } from './utils/sfx'
+import {
+  canSplitHand,
+  createHand,
+  getActiveHand,
+  isAcePair,
+  resetHandSeq,
+  seatNeedsPlay,
+  seatTotalBet,
+  shouldBotSplit,
+} from './utils/split'
+
+const AUTO_NEXT_MS = 1400
 
 interface BlackjackState {
   phase: Phase
@@ -25,31 +42,31 @@ interface BlackjackState {
   shoe: Card[]
   seats: Seat[]
   dealer: Dealer
-  /** 坐庄时的庄家筹码；做闲家时为赌场无限庄（仅记账用） */
   bankChips: number
   activeSeatIndex: number
   message: string
-  /** 是否在自动推进中（机器人/发牌动画） */
   busy: boolean
-  /** 本局日志 */
   log: string[]
   humanBetDraft: number
+  autoPlay: AutoPlayConfig
 
-  // actions
   setRole: (role: Role) => void
   setSeatCount: (n: number) => void
   setStartingChips: (n: number) => void
   setBankChipsConfig: (n: number) => void
   setHumanBetDraft: (n: number) => void
+  setAutoPlay: (partial: Partial<AutoPlayConfig>) => void
+  toggleAutoPlay: () => void
   startGame: () => void
   placeHumanBet: () => void
   hit: () => void
   stand: () => void
   doubleDown: () => void
+  split: () => void
   nextRound: () => void
   backToSetup: () => void
-  /** 内部调度用，暴露给 effect 推进 */
   tickBots: () => void
+  tickAutoPlay: () => void
 }
 
 const emptyDealer = (): Dealer => ({
@@ -70,11 +87,8 @@ function makeSeats(config: GameConfig): Seat[] {
       name: isHuman ? '你' : names[botIdx++ % names.length],
       isHuman,
       chips: config.startingChips,
-      bet: 0,
-      cards: [],
-      status: 'waiting',
-      result: null,
-      resultAmount: 0,
+      hands: [],
+      activeHandIndex: 0,
     })
   }
   return seats
@@ -82,6 +96,17 @@ function makeSeats(config: GameConfig): Seat[] {
 
 function pushLog(log: string[], line: string, max = 40): string[] {
   return [line, ...log].slice(0, max)
+}
+
+function updateHand(
+  seat: Seat,
+  handIndex: number,
+  patch: Partial<Seat['hands'][0]>
+): Seat {
+  return {
+    ...seat,
+    hands: seat.hands.map((h, i) => (i === handIndex ? { ...h, ...patch } : h)),
+  }
 }
 
 let timerIds: number[] = []
@@ -107,18 +132,17 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     const s = get()
     if (s.busy || s.phase !== 'player_turns') return false
     const seat = s.seats[s.activeSeatIndex]
-    return !!seat?.isHuman && (seat.status === 'playing' || seat.status === 'doubled')
+    const hand = seat ? getActiveHand(seat) : undefined
+    return !!seat?.isHuman && hand?.status === 'playing'
   }
 
-  /** 发一张牌给闲家 */
-  const dealToSeat = (seatIndex: number) => {
+  const dealToHand = (seatIndex: number, handIndex: number) => {
     const state = get()
-    let shoe = state.shoe
-    const { card, shoe: next } = drawCard(shoe)
-    shoe = next
-    const seats = state.seats.map((s, i) =>
-      i === seatIndex ? { ...s, cards: [...s.cards, card] } : s
-    )
+    const { card, shoe } = drawCard(state.shoe)
+    const seats = state.seats.map((s, i) => {
+      if (i !== seatIndex) return s
+      return updateHand(s, handIndex, { cards: [...s.hands[handIndex].cards, card] })
+    })
     set({ shoe, seats })
     emitBlackjackSfx('deal')
     return card
@@ -135,24 +159,113 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     return card
   }
 
-  const afterPlayerDone = (fromIndex: number) => {
+  const scheduleHumanTurn = () => {
+    const { autoPlay } = get()
+    if (autoPlay.enabled) {
+      set({ busy: true, message: '托管决策中…' })
+      later(() => get().tickAutoPlay(), BOT_THINK_MS)
+    } else {
+      emitBlackjackSfx('turn')
+      set({ busy: false, message: '轮到你行动：要牌 / 停牌 / 加倍 / 分牌' })
+    }
+  }
+
+  const scheduleAutoBetIfNeeded = () => {
+    const st = get()
+    if (
+      st.autoPlay.enabled &&
+      st.config.role === 'player' &&
+      st.phase === 'betting' &&
+      !st.busy
+    ) {
+      later(() => get().placeHumanBet(), BOT_THINK_MS)
+    }
+  }
+
+  /** 当前手结束后：同座下一手 → 下一座位 → 庄家 */
+  const afterHandDone = (seatIndex: number) => {
+    const seat = get().seats[seatIndex]
+    if (!seat) {
+      startDealerTurn()
+      return
+    }
+
+    // 同座还有未完成的手
+    for (let h = seat.activeHandIndex + 1; h < seat.hands.length; h++) {
+      if (seat.hands[h].status === 'playing') {
+        // 分牌第二手可能还只有一张牌，需先补第二张
+        const hand = seat.hands[h]
+        set({
+          seats: get().seats.map((s, i) =>
+            i === seatIndex ? { ...s, activeHandIndex: h } : s
+          ),
+          busy: true,
+          message: `${seat.name} 第 ${h + 1} 手…`,
+        })
+
+        const continueHand = () => {
+          const cur = get().seats[seatIndex]
+          const curHand = cur.hands[h]
+          if (curHand.cards.length < 2) {
+            dealToHand(seatIndex, h)
+            const after = get().seats[seatIndex].hands[h]
+            // 分 A：补一张后强制停
+            if (after.isSplitAces) {
+              set({
+                seats: get().seats.map((s, i) =>
+                  i === seatIndex ? updateHand(s, h, { status: 'stand' }) : s
+                ),
+                message: `${seat.name} 分 A 第 ${h + 1} 手停牌`,
+              })
+              later(() => afterHandDone(seatIndex), BOT_THINK_MS)
+              return
+            }
+            const hv = evaluateHand(after.cards)
+            if (hv.total === 21) {
+              set({
+                seats: get().seats.map((s, i) =>
+                  i === seatIndex ? updateHand(s, h, { status: 'stand' }) : s
+                ),
+              })
+              later(() => afterHandDone(seatIndex), BOT_THINK_MS)
+              return
+            }
+          }
+
+          if (cur.isHuman) {
+            scheduleHumanTurn()
+          } else {
+            set({ busy: true, message: `${cur.name} 思考中…` })
+            later(() => get().tickBots(), BOT_THINK_MS)
+          }
+        }
+
+        later(continueHand, DEAL_CARD_MS)
+        return
+      }
+    }
+
+    // 下一座位
     const { seats } = get()
-    // 找下一个还在 playing 的座位
-    for (let i = fromIndex + 1; i < seats.length; i++) {
-      if (seats[i].status === 'playing') {
-        set({ activeSeatIndex: i, busy: false })
-        // 若是机器人，稍后 tick
-        if (!seats[i].isHuman) {
-          set({ busy: true, message: `${seats[i].name} 思考中…` })
-          later(() => get().tickBots(), BOT_THINK_MS)
+    for (let i = seatIndex + 1; i < seats.length; i++) {
+      if (seatNeedsPlay(seats[i])) {
+        const next = seats[i]
+        const firstPlaying = next.hands.findIndex(h => h.status === 'playing')
+        set({
+          activeSeatIndex: i,
+          seats: seats.map((s, si) =>
+            si === i ? { ...s, activeHandIndex: Math.max(0, firstPlaying) } : s
+          ),
+        })
+        if (next.isHuman) {
+          scheduleHumanTurn()
         } else {
-          emitBlackjackSfx('turn')
-          set({ message: '轮到你行动：要牌 / 停牌 / 加倍' })
+          set({ busy: true, message: `${next.name} 思考中…` })
+          later(() => get().tickBots(), BOT_THINK_MS)
         }
         return
       }
     }
-    // 全部闲家结束 → 庄家回合
     startDealerTurn()
   }
 
@@ -206,9 +319,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     const seats = state.seats.map(seat => {
       const r = results.find(x => x.seatId === seat.id)!
-      // 下注时已扣 bet，结算时按 payout 加回
       const chips = seat.chips + r.payout
-      bankDelta -= r.net // 庄家与闲家盈亏相反
+      bankDelta -= r.net
 
       const resultText =
         r.result === 'blackjack'
@@ -226,13 +338,23 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         `${seat.name}：${resultText} ${r.net >= 0 ? '+' : ''}${r.net}（筹码 ${chips}）`
       )
 
+      const hands = seat.hands.map(h => {
+        const hr = r.hands.find(x => x.handId === h.id)
+        if (!hr) return { ...h, bet: 0, status: 'settled' as const }
+        return {
+          ...h,
+          bet: 0,
+          status: 'settled' as const,
+          result: hr.result,
+          resultAmount: hr.net,
+        }
+      })
+
       return {
         ...seat,
         chips,
-        status: 'settled' as const,
-        result: r.result,
-        resultAmount: r.net,
-        bet: 0,
+        hands,
+        activeHandIndex: 0,
       }
     })
 
@@ -253,35 +375,60 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       log,
     })
 
-    // 结算音效：优先跟真人结果，坐庄时跟庄家盈亏
     const human = seats.find(s => s.isHuman)
-    if (human?.result === 'blackjack') emitBlackjackSfx('blackjack')
-    else if (human?.result === 'win') emitBlackjackSfx('win')
-    else if (human?.result === 'lose') emitBlackjackSfx('lose')
-    else if (human?.result === 'push') emitBlackjackSfx('push')
+    const humanNet = human
+      ? results.find(r => r.seatId === human.id)?.net ?? 0
+      : 0
+    if (human && results.find(r => r.seatId === human.id)?.result === 'blackjack') {
+      emitBlackjackSfx('blackjack')
+    } else if (humanNet > 0) emitBlackjackSfx('win')
+    else if (humanNet < 0) emitBlackjackSfx('lose')
+    else if (human) emitBlackjackSfx('push')
     else if (state.config.role === 'dealer') {
       if (bankDelta > 0) emitBlackjackSfx('win')
       else if (bankDelta < 0) emitBlackjackSfx('lose')
       else emitBlackjackSfx('push')
+    }
+
+    if (state.autoPlay.enabled && state.autoPlay.autoNextRound) {
+      later(() => {
+        const cur = get()
+        if (cur.phase === 'round_end' && cur.autoPlay.enabled && cur.autoPlay.autoNextRound) {
+          get().nextRound()
+        }
+      }, AUTO_NEXT_MS)
     }
   }
 
   const beginDealing = () => {
     set({ phase: 'dealing', busy: true, message: '发牌中…' })
 
-    // 重置手牌
     set(s => ({
-      seats: s.seats.map(seat => ({
-        ...seat,
-        cards: [],
-        status: seat.bet > 0 ? 'playing' : 'waiting',
-        result: null,
-        resultAmount: 0,
-      })),
+      seats: s.seats.map(seat => {
+        const bet = seatTotalBet(seat)
+        if (bet <= 0 && seat.hands.length === 0) {
+          return { ...seat, hands: [], activeHandIndex: 0 }
+        }
+        // 下注阶段 hands 可能已有一手带 bet
+        const baseBet = bet > 0 ? bet : 0
+        if (baseBet <= 0) return { ...seat, hands: [], activeHandIndex: 0 }
+        return {
+          ...seat,
+          hands: [
+            createHand({
+              bet: baseBet,
+              cards: [],
+              status: 'playing',
+              result: null,
+              resultAmount: 0,
+            }),
+          ],
+          activeHandIndex: 0,
+        }
+      }),
       dealer: emptyDealer(),
     }))
 
-    // 可能需要重新洗牌
     const state0 = get()
     const fullSize = DECK_COUNT * 52
     if (state0.shoe.length < fullSize * RESHUFFLE_RATIO) {
@@ -295,9 +442,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     const activeSeats = get()
       .seats.map((s, i) => ({ s, i }))
-      .filter(({ s }) => s.bet > 0)
+      .filter(({ s }) => seatTotalBet(s) > 0)
 
-    // 发牌顺序：两轮，每轮 闲家们 → 庄家
     type Step = { type: 'seat'; index: number } | { type: 'dealer' }
     const steps: Step[] = []
     for (let round = 0; round < 2; round++) {
@@ -315,7 +461,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       }
       const s = steps[step++]
       if (s.type === 'seat') {
-        dealToSeat(s.index)
+        dealToHand(s.index, 0)
       } else {
         dealToDealer()
       }
@@ -325,30 +471,26 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
   }
 
   const afterDeal = () => {
-    // 检查黑杰克
     const state = get()
     let log = state.log
     const seats = state.seats.map(seat => {
-      if (seat.bet <= 0) return seat
-      const hv = evaluateHand(seat.cards)
-      if (hv.isBlackjack) {
+      if (seat.hands.length === 0 || seatTotalBet(seat) <= 0) return seat
+      const hand = seat.hands[0]
+      const hv = evaluateHand(hand.cards)
+      if (hv.isBlackjack && !hand.fromSplit) {
         log = pushLog(log, `${seat.name} 黑杰克！`)
-        return { ...seat, status: 'blackjack' as const }
+        return updateHand(seat, 0, { status: 'blackjack' })
       }
-      return { ...seat, status: 'playing' as const }
+      return updateHand(seat, 0, { status: 'playing' })
     })
 
-    if (seats.some(s => s.status === 'blackjack')) {
+    if (seats.some(s => s.hands.some(h => h.status === 'blackjack'))) {
       emitBlackjackSfx('blackjack')
     }
 
-    // 庄家两张都已发，但暗牌未翻；仅在需要时检查
-    // 标准流程：若有玩家非 BJ，进入玩家回合；BJ 玩家跳过行动
     set({ seats, log, dealer: { ...state.dealer, status: 'playing' } })
 
-    // 若所有闲家都是 BJ，直接庄家翻牌结算
-    const needPlay = seats.some(s => s.status === 'playing')
-
+    const needPlay = seats.some(seatNeedsPlay)
     if (!needPlay) {
       set({
         phase: 'dealer_turn',
@@ -371,18 +513,20 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       return
     }
 
-    // 找第一个 playing 的座位
-    const first = seats.findIndex(s => s.status === 'playing')
+    const first = seats.findIndex(seatNeedsPlay)
+    const firstHand = seats[first].hands.findIndex(h => h.status === 'playing')
     set({
       phase: 'player_turns',
       activeSeatIndex: first,
+      seats: seats.map((s, i) =>
+        i === first ? { ...s, activeHandIndex: Math.max(0, firstHand) } : s
+      ),
       busy: false,
     })
 
-    const seat = seats[first]
+    const seat = get().seats[first]
     if (seat.isHuman) {
-      emitBlackjackSfx('turn')
-      set({ message: '轮到你行动：要牌 / 停牌 / 加倍' })
+      scheduleHumanTurn()
     } else {
       set({ busy: true, message: `${seat.name} 思考中…` })
       later(() => get().tickBots(), BOT_THINK_MS)
@@ -390,38 +534,46 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
   }
 
   const applyHit = (seatIndex: number) => {
-    dealToSeat(seatIndex)
     const seat = get().seats[seatIndex]
-    const hv = evaluateHand(seat.cards)
+    const handIndex = seat.activeHandIndex
+    dealToHand(seatIndex, handIndex)
+    const hand = get().seats[seatIndex].hands[handIndex]
+    const hv = evaluateHand(hand.cards)
+
     if (hv.isBust) {
       set({
         seats: get().seats.map((s, i) =>
-          i === seatIndex ? { ...s, status: 'bust' } : s
+          i === seatIndex ? updateHand(s, handIndex, { status: 'bust' }) : s
         ),
         message: `${seat.name} 爆牌（${hv.total}）`,
         log: pushLog(get().log, `${seat.name} 爆牌`),
         busy: true,
       })
       emitBlackjackSfx('bust')
-      later(() => afterPlayerDone(seatIndex), BOT_THINK_MS)
+      later(() => afterHandDone(seatIndex), BOT_THINK_MS)
       return
     }
-    if (hv.total === 21 || seat.status === 'doubled') {
+
+    if (hv.total === 21 || hand.status === 'doubled' || hand.isSplitAces) {
       set({
         seats: get().seats.map((s, i) =>
-          i === seatIndex ? { ...s, status: 'stand' } : s
+          i === seatIndex ? updateHand(s, handIndex, { status: 'stand' }) : s
         ),
         message: `${seat.name} 停牌（${hv.total}）`,
         busy: true,
       })
       emitBlackjackSfx('stand')
-      later(() => afterPlayerDone(seatIndex), BOT_THINK_MS)
+      later(() => afterHandDone(seatIndex), BOT_THINK_MS)
       return
     }
-    // 继续，若是机器人再思考
-    if (!seat.isHuman) {
-      set({ busy: true, message: `${seat.name} 思考中…` })
+
+    const cur = get().seats[seatIndex]
+    if (!cur.isHuman) {
+      set({ busy: true, message: `${cur.name} 思考中…` })
       later(() => get().tickBots(), BOT_THINK_MS)
+    } else if (get().autoPlay.enabled) {
+      set({ busy: true, message: `托管：${hv.total} 点，继续决策…` })
+      later(() => get().tickAutoPlay(), BOT_THINK_MS)
     } else {
       set({ busy: false, message: `你的点数 ${hv.total}，继续？` })
     }
@@ -429,44 +581,143 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
   const applyStand = (seatIndex: number) => {
     const seat = get().seats[seatIndex]
-    const hv = evaluateHand(seat.cards)
+    const handIndex = seat.activeHandIndex
+    const hand = seat.hands[handIndex]
+    const hv = evaluateHand(hand.cards)
     set({
       seats: get().seats.map((s, i) =>
-        i === seatIndex ? { ...s, status: 'stand' } : s
+        i === seatIndex ? updateHand(s, handIndex, { status: 'stand' }) : s
       ),
       message: `${seat.name} 停牌（${hv.total}）`,
       busy: true,
     })
     emitBlackjackSfx('stand')
-    later(() => afterPlayerDone(seatIndex), BOT_THINK_MS / 2)
+    later(() => afterHandDone(seatIndex), BOT_THINK_MS / 2)
   }
 
   const applyDouble = (seatIndex: number) => {
     const state = get()
     const seat = state.seats[seatIndex]
-    if (seat.cards.length !== 2 || seat.chips < seat.bet) {
-      // 无法加倍则当 hit
+    const handIndex = seat.activeHandIndex
+    const hand = seat.hands[handIndex]
+    if (hand.cards.length !== 2 || seat.chips < hand.bet || hand.isSplitAces) {
       applyHit(seatIndex)
       return
     }
-    const extra = seat.bet
+    const extra = hand.bet
     set({
-      seats: state.seats.map((s, i) =>
-        i === seatIndex
-          ? {
-              ...s,
-              chips: s.chips - extra,
-              bet: s.bet + extra,
-              status: 'doubled',
-            }
-          : s
-      ),
-      log: pushLog(state.log, `${seat.name} 加倍，赌注 ${seat.bet + extra}`),
+      seats: state.seats.map((s, i) => {
+        if (i !== seatIndex) return s
+        return {
+          ...updateHand(s, handIndex, {
+            bet: hand.bet + extra,
+            status: 'doubled',
+          }),
+          chips: s.chips - extra,
+        }
+      }),
+      log: pushLog(state.log, `${seat.name} 加倍，赌注 ${hand.bet + extra}`),
       message: `${seat.name} 加倍`,
       busy: true,
     })
     emitBlackjackSfx('double')
     later(() => applyHit(seatIndex), DEAL_CARD_MS)
+  }
+
+  const applySplit = (seatIndex: number) => {
+    const state = get()
+    const seat = state.seats[seatIndex]
+    if (!canSplitHand(seat)) {
+      set({ message: '当前无法分牌' })
+      return
+    }
+    const handIndex = seat.activeHandIndex
+    const hand = seat.hands[handIndex]
+    const [c0, c1] = hand.cards
+    const bet = hand.bet
+    const splitAces = isAcePair(hand.cards)
+
+    const hand0 = createHand({
+      bet,
+      cards: [c0],
+      status: 'playing',
+      fromSplit: true,
+      isSplitAces: splitAces,
+    })
+    const hand1 = createHand({
+      bet,
+      cards: [c1],
+      status: 'playing',
+      fromSplit: true,
+      isSplitAces: splitAces,
+    })
+
+    set({
+      seats: state.seats.map((s, i) => {
+        if (i !== seatIndex) return s
+        return {
+          ...s,
+          chips: s.chips - bet,
+          hands: [hand0, hand1],
+          activeHandIndex: 0,
+        }
+      }),
+      log: pushLog(state.log, `${seat.name} 分牌（各注 ${bet}）`),
+      message: `${seat.name} 分牌`,
+      busy: true,
+    })
+    emitBlackjackSfx('chip')
+
+    // 先给第一手补一张
+    later(() => {
+      dealToHand(seatIndex, 0)
+      const h0 = get().seats[seatIndex].hands[0]
+      if (splitAces) {
+        // 分 A：两手各补一张后都停
+        set({
+          seats: get().seats.map((s, i) =>
+            i === seatIndex ? updateHand(s, 0, { status: 'stand' }) : s
+          ),
+        })
+        later(() => {
+          dealToHand(seatIndex, 1)
+          set({
+            seats: get().seats.map((s, i) =>
+              i === seatIndex
+                ? { ...updateHand(s, 1, { status: 'stand' }), activeHandIndex: 1 }
+                : s
+            ),
+            message: `${seat.name} 分 A 完成`,
+          })
+          later(() => afterHandDone(seatIndex), BOT_THINK_MS)
+        }, DEAL_CARD_MS)
+        return
+      }
+
+      const hv = evaluateHand(h0.cards)
+      if (hv.total === 21) {
+        set({
+          seats: get().seats.map((s, i) =>
+            i === seatIndex ? updateHand(s, 0, { status: 'stand' }) : s
+          ),
+        })
+        later(() => afterHandDone(seatIndex), BOT_THINK_MS)
+        return
+      }
+
+      const cur = get().seats[seatIndex]
+      if (cur.isHuman) {
+        if (get().autoPlay.enabled) {
+          set({ busy: true, message: '托管：分牌后决策…' })
+          later(() => get().tickAutoPlay(), BOT_THINK_MS)
+        } else {
+          set({ busy: false, message: '分牌第 1 手：要牌 / 停牌 / 加倍' })
+        }
+      } else {
+        set({ busy: true, message: `${cur.name} 思考中…` })
+        later(() => get().tickBots(), BOT_THINK_MS)
+      }
+    }, DEAL_CARD_MS)
   }
 
   return {
@@ -481,6 +732,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     busy: false,
     log: [],
     humanBetDraft: 0,
+    autoPlay: { ...DEFAULT_AUTO_PLAY },
 
     setRole: role => set(s => ({ config: { ...s.config, role } })),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
@@ -488,8 +740,48 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     setBankChipsConfig: n => set(s => ({ config: { ...s.config, bankChips: n } })),
     setHumanBetDraft: n => set({ humanBetDraft: n }),
 
+    setAutoPlay: partial => {
+      set(s => ({ autoPlay: { ...s.autoPlay, ...partial } }))
+      const st = get()
+      if (!st.autoPlay.enabled) return
+      const seat = st.seats[st.activeSeatIndex]
+      const hand = seat ? getActiveHand(seat) : undefined
+      if (
+        st.phase === 'player_turns' &&
+        seat?.isHuman &&
+        hand?.status === 'playing' &&
+        !st.busy
+      ) {
+        set({ busy: true, message: '托管决策中…' })
+        later(() => get().tickAutoPlay(), 350)
+      } else if (st.phase === 'betting' && st.config.role === 'player' && !st.busy) {
+        scheduleAutoBetIfNeeded()
+      } else if (st.phase === 'round_end' && st.autoPlay.autoNextRound) {
+        later(() => {
+          if (get().phase === 'round_end' && get().autoPlay.enabled) get().nextRound()
+        }, 600)
+      }
+    },
+
+    toggleAutoPlay: () => {
+      const next = !get().autoPlay.enabled
+      get().setAutoPlay({ enabled: next })
+      set(s => ({
+        message: next
+          ? `已开启托管（硬≥${s.autoPlay.hardStandAt}停 · 软≥${s.autoPlay.softStandAt}停）`
+          : '已关闭托管',
+        log: pushLog(
+          s.log,
+          next
+            ? `开启托管：硬牌≥${s.autoPlay.hardStandAt}停，软牌≥${s.autoPlay.softStandAt}停`
+            : '关闭托管'
+        ),
+      }))
+    },
+
     startGame: () => {
       clearTimers()
+      resetHandSeq()
       const { config } = get()
       const seats = makeSeats(config)
       set({
@@ -500,37 +792,34 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         bankChips: config.bankChips,
         activeSeatIndex: 0,
         busy: false,
-        log: [`新牌桌：你选择${config.role === 'dealer' ? '坐庄' : '做闲家'}，${config.seatCount} 个闲家位`],
+        log: [
+          `新牌桌：你选择${config.role === 'dealer' ? '坐庄' : '做闲家'}，${config.seatCount} 个闲家位`,
+        ],
         message:
-          config.role === 'dealer'
-            ? '你是庄家。机器人正在下注…'
-            : '请下注',
+          config.role === 'dealer' ? '你是庄家。机器人正在下注…' : '请下注',
         humanBetDraft: 0,
       })
 
-      // 机器人自动下注
       later(() => {
         const st = get()
         let log = st.log
         const nextSeats = st.seats.map(seat => {
-          if (seat.isHuman) return { ...seat, status: 'betting' as const }
+          if (seat.isHuman) return seat
           const bet = decideBotBet(seat.chips)
           if (bet <= 0) {
             log = pushLog(log, `${seat.name} 筹码不足，本局观战`)
-            return { ...seat, bet: 0, status: 'broke' as const }
+            return seat
           }
           log = pushLog(log, `${seat.name} 下注 ${bet}`)
           return {
             ...seat,
-            bet,
             chips: seat.chips - bet,
-            status: 'betting' as const,
+            hands: [createHand({ bet, status: 'betting' })],
           }
         })
         set({ seats: nextSeats, log })
-        if (nextSeats.some(s => s.bet > 0)) emitBlackjackSfx('chip')
+        if (nextSeats.some(s => seatTotalBet(s) > 0)) emitBlackjackSfx('chip')
 
-        // 坐庄：无真人闲家，全部 bot 下完直接发牌
         if (st.config.role === 'dealer') {
           set({ message: '下注完成，开始发牌' })
           later(() => beginDealing(), BOT_THINK_MS)
@@ -540,13 +829,11 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
             set({
               message: '你的筹码不足，无法继续',
               phase: 'round_end',
-              seats: nextSeats.map(s =>
-                s.isHuman ? { ...s, status: 'broke' } : s
-              ),
             })
             return
           }
           set({ message: '请选择下注金额并确认' })
+          scheduleAutoBetIfNeeded()
         }
       }, BOT_THINK_MS)
     },
@@ -557,23 +844,33 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       const human = st.seats.find(s => s.isHuman)
       if (!human) return
 
-      let bet = st.humanBetDraft
+      let bet = st.autoPlay.enabled ? st.autoPlay.autoBet : st.humanBetDraft
       bet = Math.max(MIN_BET, Math.min(MAX_BET, bet, human.chips))
       bet = Math.floor(bet / 5) * 5
+      if (st.autoPlay.enabled && bet > human.chips) {
+        bet = Math.floor(human.chips / 5) * 5
+      }
       if (bet < MIN_BET || bet > human.chips) {
-        set({ message: '下注金额无效' })
+        set({ message: st.autoPlay.enabled ? '筹码不足，无法托管下注' : '下注金额无效' })
         return
       }
+      if (st.autoPlay.enabled) set({ humanBetDraft: bet })
 
       const seats = st.seats.map(s =>
         s.isHuman
-          ? { ...s, bet, chips: s.chips - bet, status: 'betting' as const }
+          ? {
+              ...s,
+              chips: s.chips - bet,
+              hands: [createHand({ bet, status: 'betting' })],
+            }
           : s
       )
       set({
         seats,
-        message: `你下注 ${bet}，开始发牌`,
-        log: pushLog(st.log, `你下注 ${bet}`),
+        message: st.autoPlay.enabled
+          ? `托管下注 ${bet}，开始发牌`
+          : `你下注 ${bet}，开始发牌`,
+        log: pushLog(st.log, `${st.autoPlay.enabled ? '托管' : '你'}下注 ${bet}`),
         busy: true,
       })
       emitBlackjackSfx('chip')
@@ -582,10 +879,9 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     hit: () => {
       if (!canAct()) return
-      const idx = get().activeSeatIndex
       set({ busy: true, message: '你要牌…' })
       emitBlackjackSfx('hit')
-      applyHit(idx)
+      applyHit(get().activeSeatIndex)
     },
 
     stand: () => {
@@ -596,24 +892,31 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     doubleDown: () => {
       if (!canAct()) return
       const seat = getActiveHuman()
-      if (!seat || seat.cards.length !== 2 || seat.chips < seat.bet) {
+      const hand = seat ? getActiveHand(seat) : undefined
+      if (!hand || hand.cards.length !== 2 || seat!.chips < hand.bet) {
         set({ message: '当前无法加倍' })
         return
       }
       applyDouble(get().activeSeatIndex)
     },
 
+    split: () => {
+      if (!canAct()) return
+      const seat = getActiveHuman()
+      if (!seat || !canSplitHand(seat)) {
+        set({ message: '当前无法分牌（需对子且有等额筹码）' })
+        return
+      }
+      applySplit(get().activeSeatIndex)
+    },
+
     nextRound: () => {
       clearTimers()
       const st = get()
-      // 清除破产座位或跳过
       const seats = st.seats.map(s => ({
         ...s,
-        bet: 0,
-        cards: [],
-        status: s.chips < MIN_BET ? ('broke' as const) : ('waiting' as const),
-        result: null,
-        resultAmount: 0,
+        hands: [],
+        activeHandIndex: 0,
       }))
 
       const human = seats.find(s => s.isHuman)
@@ -639,9 +942,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         return
       }
 
-      // 至少要有一个有筹码的闲家
-      const anyPlayer = seats.some(s => s.chips >= MIN_BET)
-      if (!anyPlayer) {
+      if (!seats.some(s => s.chips >= MIN_BET)) {
         set({
           seats,
           dealer: emptyDealer(),
@@ -665,28 +966,22 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         const cur = get()
         let log = cur.log
         const nextSeats = cur.seats.map(seat => {
-          if (seat.chips < MIN_BET) {
-            return { ...seat, bet: 0, status: 'broke' as const }
-          }
-          if (seat.isHuman) return { ...seat, status: 'betting' as const }
+          if (seat.chips < MIN_BET) return { ...seat, hands: [] }
+          if (seat.isHuman) return { ...seat, hands: [] }
           const bet = decideBotBet(seat.chips)
-          if (bet <= 0) {
-            return { ...seat, bet: 0, status: 'broke' as const }
-          }
+          if (bet <= 0) return { ...seat, hands: [] }
           log = pushLog(log, `${seat.name} 下注 ${bet}`)
           return {
             ...seat,
-            bet,
             chips: seat.chips - bet,
-            status: 'betting' as const,
+            hands: [createHand({ bet, status: 'betting' })],
           }
         })
         set({ seats: nextSeats, log })
-        if (nextSeats.some(s => s.bet > 0)) emitBlackjackSfx('chip')
+        if (nextSeats.some(s => seatTotalBet(s) > 0)) emitBlackjackSfx('chip')
 
         if (cur.config.role === 'dealer') {
-          const anyBet = nextSeats.some(s => s.bet > 0)
-          if (!anyBet) {
+          if (!nextSeats.some(s => seatTotalBet(s) > 0)) {
             set({ phase: 'round_end', message: '没有闲家能下注，游戏结束。', busy: false })
             return
           }
@@ -694,6 +989,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
           later(() => beginDealing(), BOT_THINK_MS)
         } else {
           set({ message: '请选择下注金额并确认', busy: false })
+          scheduleAutoBetIfNeeded()
         }
       }, BOT_THINK_MS)
     },
@@ -716,7 +1012,8 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       if (st.phase !== 'player_turns') return
       const idx = st.activeSeatIndex
       const seat = st.seats[idx]
-      if (!seat || seat.isHuman || seat.status !== 'playing') return
+      const hand = seat ? getActiveHand(seat) : undefined
+      if (!seat || seat.isHuman || hand?.status !== 'playing') return
 
       const dealerUp = st.dealer.cards[0]
       if (!dealerUp) {
@@ -724,8 +1021,21 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         return
       }
 
-      const canDouble = seat.cards.length === 2 && seat.chips >= seat.bet
-      const action = decideBotAction(seat.cards, dealerUp, seat.chips, seat.bet, canDouble)
+      if (canSplitHand(seat) && shouldBotSplit(hand.cards, dealerUp)) {
+        set({ message: `${seat.name} 分牌` })
+        applySplit(idx)
+        return
+      }
+
+      const canDouble =
+        hand.cards.length === 2 && seat.chips >= hand.bet && !hand.isSplitAces
+      const action = decideBotAction(
+        hand.cards,
+        dealerUp,
+        seat.chips,
+        hand.bet,
+        canDouble
+      )
 
       if (action === 'double') {
         applyDouble(idx)
@@ -736,8 +1046,59 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
         applyStand(idx)
       }
     },
+
+    tickAutoPlay: () => {
+      const st = get()
+      if (!st.autoPlay.enabled || st.phase !== 'player_turns') return
+      const idx = st.activeSeatIndex
+      const seat = st.seats[idx]
+      const hand = seat ? getActiveHand(seat) : undefined
+      if (!seat?.isHuman || hand?.status !== 'playing') return
+
+      const dealerUp = st.dealer.cards[0]
+      // 托管：A/8 对子自动分牌
+      if (
+        dealerUp &&
+        canSplitHand(seat) &&
+        (isAcePair(hand.cards) || hand.cards[0] && rankValueSafe(hand.cards) === 8)
+      ) {
+        set({ message: '托管：分牌' })
+        applySplit(idx)
+        return
+      }
+
+      const canDouble =
+        hand.cards.length === 2 && seat.chips >= hand.bet && !hand.isSplitAces
+      const action = decideAutoPlayAction(
+        hand.cards,
+        seat.chips,
+        hand.bet,
+        canDouble,
+        st.autoPlay
+      )
+
+      if (action === 'double') {
+        set({ message: '托管：加倍' })
+        applyDouble(idx)
+      } else if (action === 'hit') {
+        set({ message: '托管：要牌' })
+        emitBlackjackSfx('hit')
+        applyHit(idx)
+      } else {
+        set({ message: '托管：停牌' })
+        applyStand(idx)
+      }
+    },
   }
 })
+
+function rankValueSafe(cards: Card[]): number {
+  const r = cards[0]?.rank
+  if (!r) return 0
+  if (r === 'A') return 11
+  if (r === 'J' || r === 'Q' || r === 'K') return 10
+  return Number(r)
+}
 
 export function getHumanSeat(seats: Seat[]): Seat | undefined {
   return seats.find(s => s.isHuman)
@@ -745,5 +1106,19 @@ export function getHumanSeat(seats: Seat[]): Seat | undefined {
 
 export function canDoubleDown(seat: Seat | undefined): boolean {
   if (!seat) return false
-  return seat.cards.length === 2 && seat.chips >= seat.bet && seat.status === 'playing'
+  const hand = getActiveHand(seat)
+  if (!hand) return false
+  return (
+    hand.cards.length === 2 &&
+    seat.chips >= hand.bet &&
+    hand.status === 'playing' &&
+    !hand.isSplitAces
+  )
 }
+
+export function canSplit(seat: Seat | undefined): boolean {
+  if (!seat) return false
+  return canSplitHand(seat)
+}
+
+export { seatTotalBet, getActiveHand, seatNeedsPlay }

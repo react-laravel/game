@@ -31,17 +31,28 @@ export type Phase =
   | 'settlement'
   | 'round_end'
 
+/** 一副手牌（分牌后同一座位可有多副） */
+export interface PlayerHand {
+  id: string
+  cards: Card[]
+  bet: number
+  status: HandStatus
+  result: RoundResult
+  resultAmount: number
+  /** 由分牌产生（分牌后的 21 不按黑杰克 3:2 赔） */
+  fromSplit: boolean
+  /** 分 A：每手只补一张后强制停 */
+  isSplitAces: boolean
+}
+
 export interface Seat {
   id: string
   name: string
   isHuman: boolean
   chips: number
-  bet: number
-  cards: Card[]
-  status: HandStatus
-  result: RoundResult
-  /** 本局筹码变化（正为赢，负为输） */
-  resultAmount: number
+  hands: PlayerHand[]
+  /** 当前正在操作的手牌下标 */
+  activeHandIndex: number
 }
 
 export interface Dealer {

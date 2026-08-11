@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { BET_PRESETS, MAX_BET, MIN_BET } from '../constants'
-import { canDoubleDown, getHumanSeat, useBlackjackStore } from '../store'
+import { canDoubleDown, canSplit, getActiveHand, getHumanSeat, useBlackjackStore } from '../store'
 import { emitBlackjackSfx } from '../utils/sfx'
 import type { ChipDenom } from '../utils/chips'
 import { Chip, ChipStack } from './Chip'
@@ -21,20 +21,46 @@ export function ActionBar() {
   const hit = useBlackjackStore(s => s.hit)
   const stand = useBlackjackStore(s => s.stand)
   const doubleDown = useBlackjackStore(s => s.doubleDown)
+  const split = useBlackjackStore(s => s.split)
   const nextRound = useBlackjackStore(s => s.nextRound)
   const backToSetup = useBlackjackStore(s => s.backToSetup)
 
   const human = getHumanSeat(seats)
   const active = seats[activeSeatIndex]
+  const activeHand = active ? getActiveHand(active) : undefined
   const isHumanTurn =
-    phase === 'player_turns' && !!active?.isHuman && active.status === 'playing' && !busy
+    phase === 'player_turns' &&
+    !!active?.isHuman &&
+    activeHand?.status === 'playing' &&
+    !busy
 
   if (phase === 'setup') return null
 
   const shell =
     'shrink-0 border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80'
 
+  const autoPlay = useBlackjackStore(s => s.autoPlay)
+
   if (phase === 'betting' && config.role === 'player') {
+    if (autoPlay.enabled) {
+      return (
+        <div className={`${shell} flex items-center justify-center gap-2 text-xs`}>
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+          <span className="text-muted-foreground">
+            托管下注中（预设 {autoPlay.autoBet}）…
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-2 h-7"
+            onClick={() => useBlackjackStore.getState().setAutoPlay({ enabled: false })}
+          >
+            取消托管
+          </Button>
+        </div>
+      )
+    }
+
     const chipsLeft = human?.chips ?? 0
     const room = Math.max(0, Math.min(MAX_BET, chipsLeft) - humanBetDraft)
 
@@ -125,6 +151,25 @@ export function ActionBar() {
   }
 
   if (phase === 'player_turns' && config.role === 'player') {
+    if (autoPlay.enabled && (isHumanTurn || (busy && active?.isHuman))) {
+      return (
+        <div className={`${shell} flex items-center justify-center gap-2 text-xs`}>
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+          <span className="text-muted-foreground">
+            托管出牌中（硬≥{autoPlay.hardStandAt}停 · 软≥{autoPlay.softStandAt}停）
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-1 h-7"
+            onClick={() => useBlackjackStore.getState().setAutoPlay({ enabled: false })}
+          >
+            接管
+          </Button>
+        </div>
+      )
+    }
+
     return (
       <motion.div
         className={shell}
@@ -137,16 +182,16 @@ export function ActionBar() {
             等待中…
           </div>
         ) : (
-          <div className="flex justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <motion.div whileTap={{ scale: 0.94 }}>
-              <Button size="sm" className="min-w-20" onClick={hit} disabled={!isHumanTurn}>
+              <Button size="sm" className="min-w-16" onClick={hit} disabled={!isHumanTurn}>
                 要牌
               </Button>
             </motion.div>
             <motion.div whileTap={{ scale: 0.94 }}>
               <Button
                 size="sm"
-                className="min-w-20"
+                className="min-w-16"
                 variant="secondary"
                 onClick={stand}
                 disabled={!isHumanTurn}
@@ -157,12 +202,23 @@ export function ActionBar() {
             <motion.div whileTap={{ scale: 0.94 }}>
               <Button
                 size="sm"
-                className="min-w-20"
+                className="min-w-16"
                 variant="outline"
                 onClick={doubleDown}
                 disabled={!isHumanTurn || !canDoubleDown(human)}
               >
                 加倍
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.94 }}>
+              <Button
+                size="sm"
+                className="min-w-16"
+                variant="outline"
+                onClick={split}
+                disabled={!isHumanTurn || !canSplit(human)}
+              >
+                分牌
               </Button>
             </motion.div>
           </div>
@@ -178,12 +234,32 @@ export function ActionBar() {
         initial={{ y: 12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
-        <Button size="sm" className="min-w-24" onClick={nextRound}>
-          下一局
-        </Button>
-        <Button size="sm" variant="ghost" onClick={backToSetup}>
-          设置
-        </Button>
+        {autoPlay.enabled && autoPlay.autoNextRound ? (
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+            托管：即将下一局…
+            <Button size="sm" variant="outline" className="h-7" onClick={nextRound}>
+              立即开始
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7"
+              onClick={() => useBlackjackStore.getState().setAutoPlay({ enabled: false })}
+            >
+              停止托管
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Button size="sm" className="min-w-24" onClick={nextRound}>
+              下一局
+            </Button>
+            <Button size="sm" variant="ghost" onClick={backToSetup}>
+              设置
+            </Button>
+          </>
+        )}
       </motion.div>
     )
   }

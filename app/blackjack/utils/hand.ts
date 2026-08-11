@@ -42,12 +42,17 @@ export function dealerMustHit(cards: Card[]): boolean {
  * 可见点数文案：软牌显示「软 X / 硬 Y」可选，这里统一显示最优 total。
  * 未翻开暗牌时只算明牌。
  */
-export function displayTotal(cards: Card[], hideHole = false): string {
+export function displayTotal(
+  cards: Card[],
+  hideHole = false,
+  /** 分牌后的 21 不显示为黑杰克 */
+  fromSplit = false
+): string {
   const visible = hideHole && cards.length >= 2 ? [cards[0]] : cards
   if (visible.length === 0) return '—'
   const { total, soft, isBlackjack, isBust } = evaluateHand(visible)
   if (isBust) return `爆牌 ${total}`
-  if (isBlackjack) return '黑杰克'
+  if (isBlackjack && !fromSplit) return '黑杰克'
   if (soft && total <= 21) return `软 ${total}`
   return String(total)
 }

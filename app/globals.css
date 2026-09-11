@@ -133,3 +133,21 @@
     animation: none;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  [data-sonner-toaster],
+  [data-testid='game-quick-menu'] {
+    display: none !important;
+  }
+}

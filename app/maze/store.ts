@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { clampMazeSize, DEFAULT_MAZE_SIZE } from './constants'
 
 export interface MazeCell {
   top: boolean
@@ -37,10 +38,20 @@ export interface MazeStore {
   // 动作
   startGame: () => void
   resetGame: () => void
+  setMazeSize: (size: number) => void
   generateMaze: () => void
   moveBall: (direction: 'up' | 'down' | 'left' | 'right') => void
   moveToPosition: (targetX: number, targetY: number) => void
   interruptAutoMove: () => void
+}
+
+let gameTimer: ReturnType<typeof setInterval> | null = null
+
+function stopGameTimer() {
+  if (gameTimer !== null) {
+    clearInterval(gameTimer)
+    gameTimer = null
+  }
 }
 
 export const useMazeStore = create<MazeStore>((set, get) => ({
@@ -50,7 +61,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
   gameTime: 0,
   moves: 0,
 
-  mazeSize: 15,
+  mazeSize: DEFAULT_MAZE_SIZE,
   maze: [],
 
   ball: { x: 0, y: 0, z: 0 },
@@ -76,14 +87,14 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
         ball: { x: 0, y: 0, z: 0 }, // 确保小球在起点
       })
 
-      // 开始计时
+      stopGameTimer()
       const startTime = Date.now()
-      const timer = setInterval(() => {
+      gameTimer = setInterval(() => {
         const current = get()
         if (current.gameStarted && !current.gameCompleted) {
           set({ gameTime: Math.floor((Date.now() - startTime) / 1000) })
         } else {
-          clearInterval(timer)
+          stopGameTimer()
         }
       }, 1000)
 
@@ -92,6 +103,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
   },
 
   resetGame: () => {
+    stopGameTimer()
     set({
       gameStarted: false,
       gameCompleted: false,
@@ -104,6 +116,31 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
       autoMoveInterrupt: false,
       maze: [], // 清空迷宫
     })
+  },
+
+  setMazeSize: (size: number) => {
+    const nextSize = clampMazeSize(size)
+    const state = get()
+
+    if (nextSize === state.mazeSize && state.gameStarted && state.maze.length > 0) {
+      return
+    }
+
+    stopGameTimer()
+    set({
+      mazeSize: nextSize,
+      gameStarted: false,
+      gameCompleted: false,
+      gameTime: 0,
+      moves: 0,
+      ball: { x: 0, y: 0, z: 0 },
+      isMoving: false,
+      autoPath: [],
+      isAutoMoving: false,
+      autoMoveInterrupt: true,
+      maze: [],
+    })
+    get().startGame()
   },
 
   generateMaze: () => {

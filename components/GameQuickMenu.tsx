@@ -150,7 +150,7 @@ export function GameQuickMenu() {
 
   return (
     <div
-      className="fixed z-[999]"
+      className="fixed z-[999] print:hidden"
       style={wrapperStyle}
       data-testid="game-quick-menu"
       suppressHydrationWarning

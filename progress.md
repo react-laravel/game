@@ -16,7 +16,12 @@ Current prompt (2026-07-16): 修复 `/shooting-range` 开始训练后鼠标移�
 
 Current prompt (2026-07-31): 改进代码并进行真实组件化提取；在保持现有游戏行为和技术栈稳定的前提下，清理重复实现与不再需要的依赖。
 
+Current prompt (2026-09-12): 迷宫，之前有难度选择，现在界面上没看到了，你恢复，可以滑动调整大小，最主要加上打印机打印，我会用打印机打印出来玩的
+
 ## Current work
+
+- Restored maze difficulty as a 5–40 size slider, added a print-ready black-and-white maze sheet, and wired 「打印迷宫」 to the browser print dialog for paper play.
+
 
 - Refactored Shooting Range into a thin page/game orchestrator plus focused setup, Canvas, overlay, session-state, pointer-lock, and debug-bridge modules while preserving the route and gameplay contracts.
 - Removed the unused alternate ShootingGame, legacy Gun/Bullet implementations, obsolete `three-stdlib` declaration, and the no-longer-needed direct dependency; added focused coverage for the extracted session, pointer-lock, and setup boundaries.
@@ -73,3 +78,16 @@ Current prompt (2026-07-31): 改进代码并进行真实组件化提取；在保
 
 - Real central SSO ticket exchange depends on the `game` client being available in `next.dogeow.com` and `game-api`.
 - Monopoly was validated with its channel contract test and an empty-room mock API; live private-channel authorization and gameplay still need the deployed game API/Reverb stack.
+
+## Maze print notes (2026-09-12)
+
+- Maze difficulty is a slider from 5×5 to 40×40 (default 15×15). Changing size regenerates the maze.
+- 「打印迷宫」 calls `window.print()` and uses a print-only SVG: black walls, start circle + 起, end square + 终. No solution path is printed.
+- Browser checks: slider Home/End change 5×5 and 40×40, restart regenerates, print preview fills a white A4-like page, and the print button invokes `window.print()`.
+- Maze unit tests: 23 passing.
+
+## TODOs / suggestions for the next agent
+
+- Maze still auto-starts on mount and logs verbose console output from the original store; those logs are unrelated to print/size.
+- The on-screen canvas stays `h-96`; only the print sheet is sized for paper.
+- Physical printer output was verified via print-media emulation, not a real printer.

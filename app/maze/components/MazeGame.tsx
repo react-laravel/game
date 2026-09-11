@@ -1,8 +1,14 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
+import { Printer } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
+import { MAX_MAZE_SIZE, MIN_MAZE_SIZE } from '../constants'
+import { printCurrentMaze } from '../printMaze'
 import { useMazeStore } from '../store'
 import MazeCanvas from './MazeCanvas'
+import MazePrintSheet from './MazePrintSheet'
 
 export default function MazeGame() {
   const {
@@ -10,11 +16,13 @@ export default function MazeGame() {
     gameStarted,
     gameCompleted,
     isAutoMoving,
+    maze,
     mazeSize,
     moves,
     gameTime,
     startGame,
     resetGame,
+    setMazeSize,
   } = useMazeStore()
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -212,36 +220,84 @@ export default function MazeGame() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [gameStarted, gameCompleted, isAutoMoving])
 
+  const handlePrint = () => {
+    if (maze.length === 0) {
+      startGame()
+    }
+    window.requestAnimationFrame(() => {
+      printCurrentMaze()
+    })
+  }
+
   return (
     <div className="relative w-full">
-      {/* 游戏信息 */}
-      <div className="border-border/60 bg-card mb-4 flex items-center justify-between rounded-lg border p-4">
-        <div className="flex gap-6">
-          <div className="text-sm">
-            <span className="text-muted-foreground">移动次数:</span>
-            <span className="text-foreground ml-2 font-semibold">{moves}</span>
+      <div className="print:hidden">
+        <div className="border-border/60 bg-card mb-4 space-y-4 rounded-lg border p-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">迷宫难度</span>
+              <span className="rounded border px-2 py-1 font-mono text-xs">
+                {mazeSize}×{mazeSize}
+              </span>
+            </div>
+            <Slider
+              value={[mazeSize]}
+              onValueChange={value => setMazeSize(value[0] ?? mazeSize)}
+              min={MIN_MAZE_SIZE}
+              max={MAX_MAZE_SIZE}
+              step={1}
+              aria-label="迷宫大小"
+              data-testid="maze-size-slider"
+              className="w-full"
+            />
+            <div className="text-muted-foreground flex justify-between text-xs">
+              <span>
+                简单 ({MIN_MAZE_SIZE}×{MIN_MAZE_SIZE})
+              </span>
+              <span>中等 (15×15)</span>
+              <span>
+                困难 ({MAX_MAZE_SIZE}×{MAX_MAZE_SIZE})
+              </span>
+            </div>
           </div>
-          <div className="text-sm">
-            <span className="text-muted-foreground">用时:</span>
-            <span className="text-foreground ml-2 font-semibold">{gameTime}秒</span>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-6">
+              <div className="text-sm">
+                <span className="text-muted-foreground">移动次数:</span>
+                <span className="text-foreground ml-2 font-semibold">{moves}</span>
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">用时:</span>
+                <span className="text-foreground ml-2 font-semibold">{gameTime}秒</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                data-testid="print-maze-button"
+              >
+                <Printer className="h-4 w-4" />
+                打印迷宫
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={resetGame}>
+                重新开始
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={resetGame}
-            className="bg-muted text-foreground hover:bg-muted/80 rounded-lg px-4 py-2 text-sm transition-colors"
-          >
-            重新开始
-          </button>
-        </div>
+        <MazeCanvas ref={canvasRef} />
       </div>
 
-      {/* 游戏画布 */}
-      <MazeCanvas ref={canvasRef} />
+      <MazePrintSheet maze={maze} mazeSize={mazeSize} />
 
       {gameCompleted && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:hidden">
           <div className="border-border/60 bg-card text-foreground rounded-lg border p-8 text-center shadow-xl">
             <h3 className="mb-4 text-3xl font-bold text-emerald-500">🎉 恭喜通关！</h3>
             <div className="text-muted-foreground mb-6 space-y-2">

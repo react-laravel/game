@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act } from '@testing-library/react'
 import { useMazeStore, type MazeCell } from '../store'
 
 describe('maze game store', () => {
   beforeEach(() => {
+    useMazeStore.getState().resetGame()
+  })
+
+  afterEach(() => {
     useMazeStore.getState().resetGame()
   })
 
@@ -206,6 +210,36 @@ describe('maze game store', () => {
 
       // Should not regenerate maze
       expect(useMazeStore.getState().maze).toBe(initialMaze)
+    })
+  })
+
+  describe('setMazeSize', () => {
+    it('changes maze size and generates a matching maze', () => {
+      act(() => {
+        useMazeStore.getState().setMazeSize(21)
+      })
+
+      const { maze, mazeSize, gameStarted, ball, moves } = useMazeStore.getState()
+      expect(mazeSize).toBe(21)
+      expect(gameStarted).toBe(true)
+      expect(maze).toHaveLength(21)
+      expect(maze[0]).toHaveLength(21)
+      expect(ball).toEqual({ x: 0, y: 0, z: 0 })
+      expect(moves).toBe(0)
+    })
+
+    it('clamps oversized values and skips regenerating the same size', () => {
+      act(() => {
+        useMazeStore.getState().setMazeSize(40)
+      })
+      const maze = useMazeStore.getState().maze
+
+      act(() => {
+        useMazeStore.getState().setMazeSize(99)
+      })
+
+      expect(useMazeStore.getState().mazeSize).toBe(40)
+      expect(useMazeStore.getState().maze).toBe(maze)
     })
   })
 })

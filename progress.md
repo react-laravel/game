@@ -159,6 +159,27 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 9 (2026-09-13)
+
+Follow-up after merging cycle 16 (#16): gun sight lacked reticle, targets washed on bright sky, outdoor trees/sky flat, warehouse back wall read flat.
+
+### Gun / sight readability
+- Holo optic lens darkened; added Aimlabs-style red ring + center dot and cyan inner rim for contrast on all maps.
+
+### Target contrast
+- Extra outer black ring, brighter white plate, deeper inner ring, warmer center bullseye.
+
+### Outdoor tree / sky
+- Sky turbidity/rayleigh tuned; horizon gradient wash plane; softer sun halos.
+- Darker saturated foliage + ground shadow discs on trees; cooler outdoor fog/background in `mapConfigs`; exposure 1.02.
+
+### Warehouse depth
+- Backstop shelf warm wash + upper wall glow; transverse aisle shadow bands for lane perspective.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests green.
+
 ## Shooting Range visual polish cycle 16 (2026-09-13)
 
 Follow-up after cycle 15 screenshot review: outdoor sky still washed out, indoor backstop dim, warehouse aisle muddy, HUD FPS read 0–6 in headless captures.

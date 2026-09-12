@@ -23,11 +23,11 @@ const plateIdleColor = new THREE.Color('#e8f0f7')
 const plateHitColor = new THREE.Color('#ff3b3b')
 const plateIdleEmissive = new THREE.Color('#07131d')
 const plateHitEmissive = new THREE.Color('#7f1010')
-const ringIdleColor = new THREE.Color('#1d9bf0')
+const ringIdleColor = new THREE.Color('#2ab0ff')
 const ringHitColor = new THREE.Color('#ffb020')
-const innerIdleColor = new THREE.Color('#102a3c')
+const innerIdleColor = new THREE.Color('#0a1a28')
 const innerHitColor = new THREE.Color('#fff1c2')
-const centerIdleColor = new THREE.Color('#ff9f1c')
+const centerIdleColor = new THREE.Color('#ffb830')
 const centerHitColor = new THREE.Color('#ffffff')
 
 function applyTargetLook(
@@ -176,6 +176,11 @@ function TargetComponent({
           <meshStandardMaterial color="#142738" metalness={0.8} roughness={0.28} />
         </mesh>
 
+        <mesh position={[0, 0, 0.092]}>
+          <ringGeometry args={[0.96, 1.02, 32]} />
+          <meshBasicMaterial color="#050a10" toneMapped={false} />
+        </mesh>
+
         <mesh position={[0, 0, 0.095]}>
           <ringGeometry args={[0.88, 0.98, 32]} />
           <meshBasicMaterial color="#0a1520" toneMapped={false} />
@@ -185,26 +190,26 @@ function TargetComponent({
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial
             ref={plateMaterialRef}
-            color="#e8f0f7"
-            emissive="#07131d"
-            emissiveIntensity={0.35}
-            roughness={0.5}
+            color="#f0f6fc"
+            emissive="#0a1824"
+            emissiveIntensity={0.42}
+            roughness={0.48}
           />
         </mesh>
 
         <mesh position={[0, 0, 0.115]}>
           <ringGeometry args={[0.55, 0.73, 32]} />
-          <meshBasicMaterial ref={ringMaterialRef} color="#1d9bf0" toneMapped={false} />
+          <meshBasicMaterial ref={ringMaterialRef} color="#2ab0ff" toneMapped={false} />
         </mesh>
 
         <mesh position={[0, 0, 0.125]}>
           <circleGeometry args={[0.33, 32]} />
-          <meshBasicMaterial ref={innerMaterialRef} color="#102a3c" toneMapped={false} />
+          <meshBasicMaterial ref={innerMaterialRef} color="#0a1a28" toneMapped={false} />
         </mesh>
 
         <mesh position={[0, 0, 0.135]}>
           <circleGeometry args={[0.13, 24]} />
-          <meshBasicMaterial ref={centerMaterialRef} color="#ff9f1c" toneMapped={false} />
+          <meshBasicMaterial ref={centerMaterialRef} color="#ffb830" toneMapped={false} />
         </mesh>
 
         <mesh position={[-1.18, 0, 0]}>

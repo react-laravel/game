@@ -22,7 +22,7 @@ export const mapConfigs: Record<ShootingMapId, MapConfig> = {
     id: 'indoor',
     name: '室内靶场',
     description: '明亮均匀的室内射击道，适合基础瞄准',
-    background: '#7a9aae',
+    background: '#8aa8ba',
     fog: { color: '#8aaaba', near: 48, far: 92 },
     hemisphere: { sky: '#f8fcff', ground: '#5a7282', intensity: 2.35 },
     directional: { color: '#ffffff', intensity: 3.1, position: [5, 16, 6] },

@@ -185,7 +185,7 @@ describe('MinesweeperGame', () => {
       render(<MinesweeperGame />)
 
       const cell = screen.getByLabelText('扫雷格子 1-1')
-      const remainingMines = screen.getByText('地雷').parentElement?.nextElementSibling
+      const remainingMines = screen.getByText('地雷').nextElementSibling
 
       fireEvent.contextMenu(cell)
       expect(cell).toHaveTextContent('🚩')

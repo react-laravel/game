@@ -32,28 +32,39 @@ function bucketRecords(records: SessionRecord[], keyFn: (record: SessionRecord) 
   return groups
 }
 
+function formatUtcDateKey(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function formatUtcMonthKey(year: number, month: number) {
+  return `${year}-${String(month + 1).padStart(2, '0')}`
+}
+
+/** Bucket keys use UTC so they match persisted `record.date` values across timezones. */
 export function aggregateDailyRecords(
   records: SessionRecord[],
   days = 14,
   now = Date.now()
 ): ChartBucket[] {
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  start.setDate(start.getDate() - (days - 1))
+  const anchor = new Date(now)
+  const endYear = anchor.getUTCFullYear()
+  const endMonth = anchor.getUTCMonth()
+  const endDay = anchor.getUTCDate()
+  const startMs = Date.UTC(endYear, endMonth, endDay - (days - 1))
 
-  const recent = records.filter(record => record.timestamp >= start.getTime())
+  const recent = records.filter(record => record.timestamp >= startMs)
   const groups = bucketRecords(recent, record => record.date)
 
   const buckets: ChartBucket[] = []
   for (let offset = 0; offset < days; offset += 1) {
-    const day = new Date(start)
-    day.setDate(start.getDate() + offset)
-    const key = day.toISOString().slice(0, 10)
+    const dayMs = startMs + offset * 86_400_000
+    const day = new Date(dayMs)
+    const key = formatUtcDateKey(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate())
     const sessions = groups.get(key) ?? []
 
     buckets.push({
       key,
-      label: `${day.getMonth() + 1}/${day.getDate()}`,
+      label: `${day.getUTCMonth() + 1}/${day.getUTCDate()}`,
       sessions: sessions.length,
       avgAccuracy: average(sessions.map(session => session.accuracy)),
       avgScore: average(sessions.map(session => session.score)),
@@ -71,25 +82,23 @@ export function aggregateMonthlyRecords(
   now = Date.now()
 ): ChartBucket[] {
   const anchor = new Date(now)
-  anchor.setDate(1)
-  anchor.setHours(0, 0, 0, 0)
+  const endYear = anchor.getUTCFullYear()
+  const endMonth = anchor.getUTCMonth()
+  const startMs = Date.UTC(endYear, endMonth - (months - 1), 1)
 
-  const start = new Date(anchor)
-  start.setMonth(anchor.getMonth() - (months - 1))
-
-  const recent = records.filter(record => record.timestamp >= start.getTime())
+  const recent = records.filter(record => record.timestamp >= startMs)
   const groups = bucketRecords(recent, record => record.date.slice(0, 7))
 
   const buckets: ChartBucket[] = []
   for (let offset = 0; offset < months; offset += 1) {
-    const month = new Date(start)
-    month.setMonth(start.getMonth() + offset)
-    const key = month.toISOString().slice(0, 7)
+    const monthMs = Date.UTC(endYear, endMonth - (months - 1) + offset, 1)
+    const month = new Date(monthMs)
+    const key = formatUtcMonthKey(month.getUTCFullYear(), month.getUTCMonth())
     const sessions = groups.get(key) ?? []
 
     buckets.push({
       key,
-      label: `${month.getFullYear()}/${month.getMonth() + 1}`,
+      label: `${month.getUTCFullYear()}/${month.getUTCMonth() + 1}`,
       sessions: sessions.length,
       avgAccuracy: average(sessions.map(session => session.accuracy)),
       avgScore: average(sessions.map(session => session.score)),

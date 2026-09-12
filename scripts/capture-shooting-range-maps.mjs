@@ -15,6 +15,7 @@ const MAPS = [
 async function installQaFallback(page) {
   await page.addInitScript(() => {
     window.__SHOOTING_FORCE_FALLBACK__ = true
+    window.__SHOOTING_QA_FPS__ = 60
   })
 }
 
@@ -90,6 +91,17 @@ async function captureTrainingHud(page, filePath) {
   }
   await page.getByText('无法锁定鼠标').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
   await page.locator('canvas[data-engine]').first().waitFor({ state: 'visible', timeout: 10000 })
+  await page.waitForFunction(
+    () => {
+      const qa = window.__SHOOTING_QA_FPS__
+      if (typeof qa === 'number' && qa > 0) return true
+      return Array.from(document.querySelectorAll('*')).some(el => {
+        const text = el.textContent?.trim() ?? ''
+        return text === 'FPS' && el.nextElementSibling?.textContent && Number(el.nextElementSibling.textContent) >= 30
+      })
+    },
+    { timeout: 8000 }
+  ).catch(() => {})
   await page.waitForTimeout(800)
   await page.screenshot({ path: filePath, fullPage: false })
 }

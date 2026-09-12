@@ -3,7 +3,8 @@
 import { useRef, useEffect, useCallback } from 'react'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-import { PHYSICS_CONFIG, CAMERA_CONFIG, PIN_POSITIONS } from '../config/constants'
+import { PHYSICS_CONFIG, CAMERA_CONFIG } from '../config/constants'
+import { ballRestPosition, pinRestPosition } from '../utils/layout'
 import type { SceneRef } from '../types/scene'
 import { createPhysicsMaterials } from '../utils/physics'
 import { createAlleyInterior } from '../utils/alley'
@@ -65,7 +66,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     world.broadphase = new CANNON.NaiveBroadphase()
     world.allowSleep = false
     world.defaultContactMaterial.friction = 0.1
-    world.defaultContactMaterial.restitution = 0.3
+    world.defaultContactMaterial.restitution = 0.02
 
     // 创建场景元素
     const materials = createPhysicsMaterials(world)
@@ -97,7 +98,8 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     if (!sceneRef.current?.ball) return
 
     const { ball } = sceneRef.current
-    ball.body.position.set(0, 1, 10)
+    const [ballX, ballY, ballZ] = ballRestPosition()
+    ball.body.position.set(ballX, ballY, ballZ)
     ball.body.velocity.set(0, 0, 0)
     ball.body.angularVelocity.set(0, 0, 0)
     ball.body.quaternion.set(0, 0, 0, 1)
@@ -108,8 +110,8 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     if (!sceneRef.current?.pins) return
 
     sceneRef.current.pins.forEach((pin, index) => {
-      const initialPos = PIN_POSITIONS[index]
-      pin.body.position.set(initialPos[0], initialPos[1], initialPos[2])
+      const [x, y, z] = pinRestPosition(index)
+      pin.body.position.set(x, y, z)
       pin.body.velocity.set(0, 0, 0)
       pin.body.angularVelocity.set(0, 0, 0)
       pin.body.quaternion.set(0, 0, 0, 1)

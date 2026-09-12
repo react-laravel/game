@@ -67,7 +67,7 @@ export function useBowlingAnimation({
       if (!sceneRef.current) return
 
       // 更新物理世界
-      world.step(PHYSICS_CONFIG.PHYSICS_STEP, PHYSICS_CONFIG.PHYSICS_STEP, 3)
+      world.step(PHYSICS_CONFIG.PHYSICS_STEP, PHYSICS_CONFIG.PHYSICS_STEP, 8)
 
       // 同步球的位置
       if (sceneRef.current.ball) {

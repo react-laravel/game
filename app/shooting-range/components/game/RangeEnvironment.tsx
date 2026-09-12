@@ -840,6 +840,31 @@ function OutdoorRange() {
     }
   }, [grassTexture, gravelTexture, earthTexture])
 
+  /** Flat ground-color patches — rotation locked to horizontal, no tilted slabs. */
+  const grassPatches = useMemo(
+    () => [
+      { x: -18, z: -14, w: 14, d: 10, color: '#3f6e3c', opacity: 0.35 },
+      { x: 16, z: -18, w: 12, d: 11, color: '#528a4e', opacity: 0.28 },
+      { x: -10, z: -32, w: 10, d: 14, color: '#3a6838', opacity: 0.32 },
+      { x: 14, z: -36, w: 11, d: 12, color: '#467a44', opacity: 0.3 },
+      { x: -22, z: -48, w: 16, d: 10, color: '#3d7040', opacity: 0.25 },
+      { x: 8, z: -52, w: 13, d: 9, color: '#4a8248', opacity: 0.28 },
+      { x: -6, z: -8, w: 8, d: 6, color: '#5a8a52', opacity: 0.22 },
+      { x: 20, z: -10, w: 9, d: 7, color: '#3e7240', opacity: 0.26 },
+    ],
+    []
+  )
+
+  const dirtPatches = useMemo(
+    () => [
+      { x: -9, z: -20, w: 5, d: 4, color: '#6a5840' },
+      { x: 10, z: -28, w: 4.5, d: 3.5, color: '#5a4838' },
+      { x: -7, z: -38, w: 4, d: 3, color: '#625040' },
+      { x: 8, z: -16, w: 3.5, d: 3, color: '#584838' },
+    ],
+    []
+  )
+
   const treeLine = useMemo(
     () => [
       { pos: [-22, -22] as [number, number], type: 'evergreen' as const, scale: 1.15 },
@@ -891,13 +916,69 @@ function OutdoorRange() {
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, -8]}>
-        <planeGeometry args={[16, 4]} />
+      {grassPatches.map((patch, i) => (
+        <mesh
+          key={`grass-patch-${i}`}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[patch.x, -1.985, patch.z]}
+        >
+          <planeGeometry args={[patch.w, patch.d]} />
+          <meshStandardMaterial
+            color={patch.color}
+            roughness={0.95}
+            transparent
+            opacity={patch.opacity}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
+      {dirtPatches.map((patch, i) => (
+        <mesh
+          key={`dirt-patch-${i}`}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[patch.x, -1.984, patch.z]}
+        >
+          <planeGeometry args={[patch.w, patch.d]} />
+          <meshStandardMaterial map={earthTexture} color={patch.color} roughness={0.94} transparent opacity={0.55} />
+        </mesh>
+      ))}
+
+      {/* Main gravel shooting lane — firing line to berm */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, -24]} receiveShadow>
+        <planeGeometry args={[12, 50]} />
         <meshStandardMaterial map={gravelTexture} color="#8a7a62" roughness={0.9} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.967, -5]}>
-        <planeGeometry args={[4, 12]} />
+      {/* Inner packed-dirt center strip */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.967, -24]}>
+        <planeGeometry args={[5.5, 48]} />
+        <meshStandardMaterial map={earthTexture} color="#6a5840" roughness={0.92} />
+      </mesh>
+
+      {/* Lane edge borders */}
+      {[-6.2, 6.2].map(x => (
+        <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.966, -24]}>
+          <planeGeometry args={[0.35, 50]} />
+          <meshStandardMaterial color="#5a5048" roughness={0.88} />
+        </mesh>
+      ))}
+
+      {/* Firing line and distance markers */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, -2.5]}>
+        <planeGeometry args={[12.5, 0.45]} />
+        <meshStandardMaterial color="#e8d848" emissive="#c8b028" emissiveIntensity={0.12} roughness={0.75} />
+      </mesh>
+      {[-8, -16, -24, -32, -40].map(z => (
+        <mesh key={`marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, z]}>
+          <planeGeometry args={[12.5, 0.12]} />
+          <meshStandardMaterial color="#7a7068" roughness={0.85} transparent opacity={0.65} />
+        </mesh>
+      ))}
+
+      {/* Berm approach gravel pad */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.966, -42]}>
+        <planeGeometry args={[14, 6]} />
         <meshStandardMaterial map={gravelTexture} color="#7a6a52" roughness={0.88} />
       </mesh>
 
@@ -1142,6 +1223,18 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <planeGeometry args={[10, 46]} />
         <meshStandardMaterial color="#6a6058" metalness={0.15} roughness={0.75} />
       </mesh>
+
+      {/* Center shooting lane stripe */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.963, -21]}>
+        <planeGeometry args={[1.8, 44]} />
+        <meshStandardMaterial color="#8a8078" metalness={0.22} roughness={0.68} />
+      </mesh>
+      {[-6, -18, -30, -42].map(z => (
+        <mesh key={`wh-marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.962, z]}>
+          <planeGeometry args={[10.5, 0.18]} />
+          <meshStandardMaterial color="#c8a020" emissive="#a88018" emissiveIntensity={0.1} roughness={0.8} />
+        </mesh>
+      ))}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-11, -1.963, -30]}>
         <planeGeometry args={[4, 18]} />

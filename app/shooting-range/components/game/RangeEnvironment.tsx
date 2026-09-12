@@ -111,7 +111,7 @@ function CeilingTroffer({
         <meshStandardMaterial
           color="#f6fcff"
           emissive={accent}
-          emissiveIntensity={1.35}
+          emissiveIntensity={1.55}
           roughness={0.28}
           toneMapped={false}
         />
@@ -121,7 +121,7 @@ function CeilingTroffer({
         <meshStandardMaterial
           color="#ffffff"
           emissive="#e8f8ff"
-          emissiveIntensity={0.95}
+          emissiveIntensity={1.1}
           roughness={0.2}
           toneMapped={false}
         />
@@ -149,7 +149,7 @@ function IndoorCeilingVault({ accent }: { accent: string }) {
 
       <mesh position={[0, 5.5, -22]}>
         <sphereGeometry args={[34, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.48]} />
-        <meshBasicMaterial color="#d8eaf4" side={THREE.DoubleSide} toneMapped={false} fog={false} />
+        <meshBasicMaterial color="#e4f2fa" side={THREE.DoubleSide} toneMapped={false} fog={false} />
       </mesh>
       <mesh position={[0, 5.5, -22]}>
         <sphereGeometry args={[33.2, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.38]} />
@@ -158,7 +158,7 @@ function IndoorCeilingVault({ accent }: { accent: string }) {
           side={THREE.DoubleSide}
           toneMapped={false}
           transparent
-          opacity={0.55}
+          opacity={0.62}
           fog={false}
         />
       </mesh>
@@ -171,7 +171,7 @@ function IndoorCeilingVault({ accent }: { accent: string }) {
           </mesh>
           <mesh position={[0, 0, 0.02]}>
             <planeGeometry args={[26, 1.1]} />
-            <meshBasicMaterial color={accent} toneMapped={false} transparent opacity={0.88} fog={false} />
+            <meshBasicMaterial color={accent} toneMapped={false} transparent opacity={0.94} fog={false} />
           </mesh>
         </group>
       ))}
@@ -206,7 +206,7 @@ function CeilingSoffitRow({
         <meshStandardMaterial
           color="#f8fcff"
           emissive={accent}
-          emissiveIntensity={1.65}
+          emissiveIntensity={1.85}
           toneMapped={false}
         />
       </mesh>
@@ -215,7 +215,7 @@ function CeilingSoffitRow({
         <meshStandardMaterial
           color="#ffffff"
           emissive="#e8f8ff"
-          emissiveIntensity={1.2}
+          emissiveIntensity={1.35}
           toneMapped={false}
         />
       </mesh>
@@ -244,7 +244,7 @@ function IndoorCeilingGrid({ accent }: { accent: string }) {
         <meshStandardMaterial
           color="#f0f8fc"
           emissive="#d0e8f8"
-          emissiveIntensity={1.05}
+          emissiveIntensity={1.35}
           roughness={0.68}
           side={THREE.DoubleSide}
           toneMapped={false}
@@ -257,7 +257,7 @@ function IndoorCeilingGrid({ accent }: { accent: string }) {
           <meshStandardMaterial
             color="#c8dce8"
             emissive={accent}
-            emissiveIntensity={0.85}
+            emissiveIntensity={1.05}
             toneMapped={false}
           />
         </mesh>
@@ -299,7 +299,7 @@ function CeilingLightStrip({
         <meshStandardMaterial
           color="#e8f4fc"
           emissive={accent}
-          emissiveIntensity={0.95}
+          emissiveIntensity={1.12}
           roughness={0.32}
           toneMapped={false}
         />
@@ -461,10 +461,6 @@ function OutdoorSky() {
         rayleigh={1.8}
         turbidity={4.5}
       />
-      <mesh position={[0, -1.5, -55]}>
-        <sphereGeometry args={[95, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.28]} />
-        <meshBasicMaterial color="#d8e8f4" side={THREE.BackSide} transparent opacity={0.42} toneMapped={false} />
-      </mesh>
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[5.5, 12, 12]} />
         <meshBasicMaterial color="#ffe8c8" transparent opacity={0.18} toneMapped={false} depthWrite={false} />
@@ -560,10 +556,10 @@ function IndoorRange({ config }: { config: MapConfig }) {
       ))}
 
       {lightZs.map(z => (
-        <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={1.85} />
+        <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={1.95} />
       ))}
 
-      <ambientLight intensity={0.42} color="#e0f0ff" />
+      <ambientLight intensity={0.45} color="#e0f0ff" />
 
       <mesh position={[-18, 6, -24]}>
         <boxGeometry args={[0.55, 12.2, 56]} />
@@ -764,7 +760,7 @@ function OutdoorRange() {
             roughness={0.98}
             metalness={0.01}
             transparent
-            opacity={0.72 - index * 0.05}
+            opacity={0.58 - index * 0.04}
             flatShading
           />
         </mesh>

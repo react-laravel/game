@@ -555,6 +555,11 @@ function IndoorRange({ config }: { config: MapConfig }) {
       <IndoorCeilingGrid accent={config.accent} />
       <IndoorCeilingVault accent={config.accent} />
 
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.88, -22]}>
+        <planeGeometry args={[40, 60]} />
+        <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+      </mesh>
+
       {[-14, 0, 14].map(x => (
         <mesh key={`duct-${x}`} position={[x, 10.85, -24]} rotation={[0, 0, Math.PI / 2]}>
           <boxGeometry args={[54, 0.5, 0.5]} />
@@ -566,7 +571,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={1.95} />
       ))}
 
-      <ambientLight intensity={0.45} color="#e0f0ff" />
+      <ambientLight intensity={0.52} color="#e8f4ff" />
 
       <mesh position={[-18, 6, -24]}>
         <boxGeometry args={[0.55, 12.2, 56]} />

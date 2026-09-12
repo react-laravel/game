@@ -40,7 +40,7 @@ function ShootingGameCanvasComponent({
       ref={canvasRef}
       dpr={[1, 1.5]}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: 90 }}
+      camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 130 : 90 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(mapBackground)
         gl.toneMappingExposure = mapId === 'indoor' ? 1.26 : mapId === 'outdoor' ? 1.14 : 1.12

@@ -1,4 +1,4 @@
-import type { TrainingModeId } from '../types'
+import type { SpawnPattern, TrainingModeId } from '../types'
 import { difficultySettings } from './gameUtils'
 
 export type TargetMovement = 'static' | 'linear' | 'orbit'
@@ -20,13 +20,17 @@ export interface TrainingModeConfig {
   faceCamera: boolean
   orbitRadius?: number
   orbitSpeed?: number
+  spawnPattern?: SpawnPattern
+  /** Short skill tag for HUD / results */
+  focus: string
 }
 
 export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   static: {
     id: 'static',
-    name: '固定靶',
-    description: '全场多靶同时静止，不跟枪旋转，练稳瞄',
+    name: '静态精准',
+    description: '全场多靶同时静止，练稳定瞄准与准度',
+    focus: 'Precision',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 1,
@@ -38,8 +42,9 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   },
   moving: {
     id: 'moving',
-    name: '移动靶',
-    description: '多靶高速反弹乱窜，需持续追踪预判',
+    name: '动态追踪',
+    description: '多靶高速反弹乱窜，练预判与持续跟枪',
+    focus: 'Strafe',
     durationSeconds: 60,
     baseSpeed: 0.055,
     targetCountMultiplier: 1,
@@ -51,8 +56,9 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   },
   flick: {
     id: 'flick',
-    name: '快速反应',
-    description: '仅 1 个靶，命中后 0.35 秒换点闪现',
+    name: '甩枪反应',
+    description: '单靶闪现换点，练第一眼定位与反应',
+    focus: 'Flick',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 1,
@@ -65,8 +71,9 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   },
   tracking: {
     id: 'tracking',
-    name: '追踪训练',
-    description: '少量靶沿圆形轨迹匀速环绕，练跟枪',
+    name: '环绕跟枪',
+    description: '少量靶沿圆形轨迹匀速环绕，练平滑追踪',
+    focus: 'Tracking',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 0.55,
@@ -80,8 +87,9 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   },
   timed: {
     id: 'timed',
-    name: '限时挑战',
+    name: '速射挑战',
     description: '45 秒高密度移动靶，射速与精度并重',
+    focus: 'Speed',
     durationSeconds: 45,
     baseSpeed: 0.065,
     targetCountMultiplier: 1.15,
@@ -90,6 +98,22 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     scorePerHit: 10,
     jitterChance: 0.45,
     faceCamera: true,
+  },
+  precision: {
+    id: 'precision',
+    name: '网格速点',
+    description: '单靶按网格顺序闪现，练准度与手速',
+    durationSeconds: 60,
+    baseSpeed: 0,
+    targetCountMultiplier: 1,
+    maxActiveTargets: 1,
+    movement: 'static',
+    respawnDelayMs: 280,
+    scorePerHit: 12,
+    jitterChance: 0,
+    faceCamera: false,
+    spawnPattern: 'grid',
+    focus: 'Grid',
   },
 }
 
@@ -125,5 +149,6 @@ export function resolveTrainingSettings(
     orbitRadius: mode.orbitRadius ?? 0,
     orbitSpeed: mode.orbitSpeed ?? 0,
     maxActiveTargets: mode.maxActiveTargets,
+    spawnPattern: mode.spawnPattern ?? 'random',
   }
 }

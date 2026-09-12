@@ -1,6 +1,27 @@
+import type { SpawnPattern } from '../types'
+
 /**
  * 游戏工具函数
  */
+
+const GRID_POSITIONS: Array<[number, number, number]> = [
+  [-7, 4.5, -16], [0, 5.5, -18], [7, 4.5, -16],
+  [-5, 7.5, -22], [5, 7.5, -22],
+  [-8, 3.2, -24], [8, 3.2, -24],
+  [0, 8.5, -26], [-4, 6, -20], [4, 6, -20],
+]
+
+let gridSpawnIndex = 0
+
+export function nextGridPosition(): [number, number, number] {
+  const position = GRID_POSITIONS[gridSpawnIndex % GRID_POSITIONS.length]
+  gridSpawnIndex += 1
+  return position
+}
+
+export function resetGridSpawnIndex() {
+  gridSpawnIndex = 0
+}
 
 /**
  * 检查游戏是否结束
@@ -60,8 +81,13 @@ export function applyTargetHit(target: TargetRuntime) {
   target.userData.hit = true
 }
 
-export function respawnTarget(target: TargetRuntime, gameAreaSize: number) {
-  const [x, y, z] = generateRandomPosition(gameAreaSize)
+export function respawnTarget(
+  target: TargetRuntime,
+  gameAreaSize: number,
+  spawnPattern: SpawnPattern = 'random'
+) {
+  const [x, y, z] =
+    spawnPattern === 'grid' ? nextGridPosition() : generateRandomPosition(gameAreaSize)
   target.position.set(x, y, z)
   target.userData.orbitAnchor?.set(x, y, z)
   target.userData.hit = false

@@ -6,6 +6,7 @@ describe('trainingModes', () => {
     expect(Object.keys(trainingModes).sort()).toEqual([
       'flick',
       'moving',
+      'precision',
       'static',
       'timed',
       'tracking',
@@ -38,5 +39,10 @@ describe('trainingModes', () => {
     const timedSettings = resolveTrainingSettings('medium', 'timed')
     expect(timedSettings.durationSeconds).toBe(45)
     expect(timedSettings.targetSpeed).toBeGreaterThan(movingSettings.targetSpeed)
+
+    const precisionSettings = resolveTrainingSettings('medium', 'precision')
+    expect(precisionSettings.spawnPattern).toBe('grid')
+    expect(precisionSettings.targetCount).toBe(1)
+    expect(precisionSettings.respawnDelayMs).toBeLessThanOrEqual(300)
   })
 })

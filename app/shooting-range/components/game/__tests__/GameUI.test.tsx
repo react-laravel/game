@@ -12,21 +12,28 @@ const baseStats = {
   avgReactionMs: null,
 }
 
+const baseProps = {
+  stats: baseStats,
+  timeLeft: 60,
+  durationSeconds: 60,
+  displayFps: 60,
+  gameOver: false,
+  modeId: 'moving' as const,
+  drillLabel: '动态追踪',
+  grade: null,
+  comparison: null,
+  onRestart: () => {},
+}
+
 describe('GameUI', () => {
   it('should render without crashing', () => {
-    const result = GameUI({
-      stats: baseStats,
-      timeLeft: 60,
-      durationSeconds: 60,
-      displayFps: 60,
-      gameOver: false,
-      onRestart: () => {},
-    })
+    const result = GameUI(baseProps)
     expect(result).toBeDefined()
   })
 
   it('should display score, fps, and richer stats', () => {
     const result = GameUI({
+      ...baseProps,
       stats: {
         ...baseStats,
         score: 150,
@@ -39,17 +46,16 @@ describe('GameUI', () => {
         avgReactionMs: 280,
       },
       timeLeft: 45.5,
-      durationSeconds: 60,
       displayFps: 118,
-      gameOver: false,
-      onRestart: () => {},
+      modeId: 'flick',
     })
     expect(result).toBeDefined()
   })
 
-  it('should show game over summary', () => {
+  it('should show game over summary with grade and comparison', () => {
     const onRestart = vi.fn()
     const result = GameUI({
+      ...baseProps,
       stats: {
         ...baseStats,
         score: 999,
@@ -62,9 +68,15 @@ describe('GameUI', () => {
         avgReactionMs: 240,
       },
       timeLeft: 0,
-      durationSeconds: 60,
-      displayFps: 60,
       gameOver: true,
+      grade: 'A',
+      comparison: {
+        previous: null,
+        isNewBest: true,
+        scoreDelta: null,
+        accuracyDelta: null,
+        reactionDelta: null,
+      },
       onRestart,
     })
     expect(result).toBeDefined()

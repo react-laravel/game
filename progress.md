@@ -159,6 +159,29 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range Aimlabs-style UX upgrade (2026-09-13)
+
+Inspired by Aimlabs (scenarios, quick start, post-run results) without copying assets.
+
+### Quick start & less friction
+- `drillPresets.ts`: 6 one-click drills (Flick / Grid / Track / Strafe / Speed / Aim) with map + difficulty baked in.
+- `ShootingSetup` redesigned: quick-start card grid, collapsible custom settings, 「再来一局」 for last drill, 「按当前设置开始」 for manual config.
+- `lastConfigStorage.ts` persists last config + drill id in `localStorage`.
+
+### Training modes
+- New `precision` mode: single-target grid spawn (`spawnPattern: 'grid'`) for speed/accuracy drills.
+- Mode names/focus tags updated (Flick, Grid, Tracking, Strafe, Speed, Precision).
+- `gameUtils.nextGridPosition()` + `resetGridSpawnIndex()` drive ordered grid respawns.
+
+### Post-run results & progress
+- `sessionInsights.ts`: S/A/B/C/D grades, personal-best comparison, per-mode summaries.
+- `GameUI`: drill label in HUD, reaction time for flick/precision, grade badge + new-record banner on game over, 「换训练项」 / 「查看进步」 actions.
+- `ShootingHistory`: per-mode best scores, filterable recent-10 session table, existing daily/monthly charts retained.
+
+### Verification
+- Focused shooting-range tests: **89/89** passing (added `drillPresets`, `sessionInsights`, updated setup/GameUI/trainingModes tests).
+- Playwright screenshots: `/opt/cursor/artifacts/shooting-range-aimlabs-ux/` — setup quick-start, indoor/outdoor/warehouse maps, flick + precision drills.
+
 ## Shooting Range map visual polish (2026-09-12)
 
 Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots after each major change.
@@ -168,7 +191,11 @@ Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots af
 - Outdoor: flat sky/ground, sharp horizon, no props.
 - Warehouse: muddy-dark, minimal industrial identity.
 
-### Final state (cycle 8)
+### Cycles 9–10
+- Fixed outdoor berm floating at y=1.1 (caused orange horizontal artifact); dirt path now on ground.
+- Indoor acoustic wall panels, warehouse center concrete strip, `toneMappingExposure` 1.12 for overall brightness.
+
+### Final state (cycle 10)
 - **Indoor:** emissive ceiling plane, ducting, 5 recessed light strips, wainscoting, corrugated rubber backstop, lane markers, booth number signs, wall sconces, wash lights.
 - **Outdoor:** layered gradient sky hemispheres, sun disc + clouds, distant fogged hills, grass patches, fence posts, shooting bench, range flag, trees; horizon haze plane removed after it caused a dark band (cycle 7 regression fixed in cycle 8).
 - **Warehouse:** steel truss ceiling, 4 hanging fluorescents, yellow lane lines, safety stripes on racks, loading-dock door, 7 crate stacks, wall sconces, brighter fill.

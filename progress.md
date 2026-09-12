@@ -159,6 +159,15 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range map visual polish (2026-09-12)
+
+- Refactored `RangeEnvironment` into dedicated indoor/outdoor/warehouse builders with map-specific props instead of one shared dark corridor.
+- **Indoor:** emissive ceiling plane (fixes black void above lanes), recessed light strips, lane rails, wall panels, and brighter fog/hemisphere fill.
+- **Outdoor:** sky hemisphere + layered hills/trees/berm backstop; fog color matched to sky background to remove the pale horizon stripe artifact.
+- **Warehouse:** steel truss ceiling, hanging fluorescents, pallet racks, offset crate stacks (no z-fighting with lane markers), and warmer industrial fill/rim lights.
+- `mapConfigs` tuned per map (background/fog/fill/rim) for readable targets and consistent art direction.
+- Playwright canvas screenshots (auth-mocked) compared before/after for all three maps; focused shooting-range tests: 82/82 passing.
+
 ## Shooting Range training upgrade (2026-09-12)
 
 - Added `mapConfigs`, `trainingModes`, `statsStorage`, `chartAggregation`, `useFpsMeter`, `RangeEnvironment`, and `ShootingHistory`.

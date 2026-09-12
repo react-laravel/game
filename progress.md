@@ -30,10 +30,15 @@ Current prompt (2026-09-13): 贪吃蛇，奇怪，而且没有跟随角度
 
 Current prompt (2026-09-13): shooting-range 射击到球时，会掉帧
 
+Current prompt (2026-09-12): Improve Shooting Range — FPS HUD, richer stats, map/mode variety, local history charts, hit smoothness.
+
 Current prompt (2026-09-13): 射击音效不好，重新设计
 
 ## Current work
 
+- Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
+- In-game HUD shows live FPS (250ms throttled), hits/misses, accuracy, shots/min, streak, and reaction time; sessions persist to `localStorage` and surface in the end-of-run summary.
+- Hit path keeps pooled ImpactFX, cached raycast object lists, ref-stable callbacks, and in-place respawns to avoid render-loop allocations and light churn.
 - Shooting Range gun and hit sounds are now synthesized with Web Audio (crack/thump vs metallic ping) instead of pitching the same `shot.mp3`.
 - Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
 - Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.
@@ -137,6 +142,12 @@ Current prompt (2026-09-13): 射击音效不好，重新设计
 - Hitting a target used to `setTargets` (snapping the drone back to its spawn prop), mount an `Explosion` plus a `pointLight`, and remount muzzle-flash lights. Three.js recompiled shaders on the light-count change, which dropped frames.
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
+
+## Shooting Range training upgrade (2026-09-12)
+
+- Added `mapConfigs`, `trainingModes`, `statsStorage`, `chartAggregation`, `useFpsMeter`, `RangeEnvironment`, and `ShootingHistory`.
+- `useShootingSession` now tracks hits/misses/streak/reaction time, saves completed runs locally, and respects per-mode duration and scoring.
+- Focused shooting-range tests: 78 passing.
 
 ## Snake follow-angle notes (2026-09-13)
 

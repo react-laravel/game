@@ -4,14 +4,18 @@ import * as THREE from 'three'
 import { Target } from './Target'
 import { FPSWeapon } from './FPSWeapon'
 import { ImpactFX, type ImpactFXHandle } from './ImpactFX'
+import { RangeEnvironment } from './RangeEnvironment'
 import {
   applyTargetHit,
-  difficultySettings,
   generateRandomDirection,
   generateRandomPosition,
+  markTargetSpawned,
   respawnTarget,
 } from '../../utils/gameUtils'
+import { mapConfigs } from '../../utils/mapConfigs'
+import { resolveTrainingSettings } from '../../utils/trainingModes'
 import { playHitSound, playShotSound } from '../../utils/audioUtils'
+import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../../types'
 
 interface TargetData {
   id: number
@@ -26,7 +30,7 @@ export interface ShootingSceneSnapshot {
   targets: Array<{ id: number; x: number; y: number; z: number; hit: boolean }>
 }
 
-function createTargets(settings: (typeof difficultySettings)[keyof typeof difficultySettings]) {
+function createTargets(settings: ReturnType<typeof resolveTrainingSettings>) {
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position: generateRandomPosition(settings.gameAreaSize),
@@ -37,46 +41,68 @@ function createTargets(settings: (typeof difficultySettings)[keyof typeof diffic
 }
 
 interface GameSceneProps {
-  difficulty: 'easy' | 'medium' | 'hard'
-  onScore: () => void
-  onShot?: () => void
+  difficulty: ShootingDifficulty
+  mapId: ShootingMapId
+  modeId: TrainingModeId
+  onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback?: () => void
   gameStarted: boolean
   setGameStarted: (started: boolean) => void
   useFallbackControls?: boolean
   sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
+  onFpsReport?: (fps: number) => void
 }
 
 /** Hits, muzzle flashes, and respawns mutate Three.js objects instead of React state. */
 export function GameScene({
   difficulty,
-  onScore,
-  onShot,
+  mapId,
+  modeId,
+  onShotResult,
   onHitFeedback,
   gameStarted,
   setGameStarted,
   useFallbackControls = false,
   sceneStateRef,
+  onFpsReport,
 }: GameSceneProps) {
   const { camera, gl } = useThree()
-  const settings = difficultySettings[difficulty]
+  const settings = resolveTrainingSettings(difficulty, modeId)
+  const mapConfig = mapConfigs[mapId]
   const [targets] = useState<TargetData[]>(() => createTargets(settings))
   const targetObjects = useRef(new Map<number, THREE.Group>())
   const hitTargetIds = useRef(new Set<number>())
   const respawnTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
   const raycaster = useRef(new THREE.Raycaster())
+  const raycastObjects = useRef<THREE.Object3D[]>([])
   const screenCenter = useRef(new THREE.Vector2(0, 0))
   const nextShotAt = useRef(0)
   const muzzleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotElapsed = useRef(0)
+  const fpsElapsed = useRef(0)
+  const fpsFrames = useRef(0)
   const lookRotation = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const muzzleFlashRef = useRef(false)
   const impactFXRef = useRef<ImpactFXHandle>(null)
   const hitWorldPosition = useRef(new THREE.Vector3())
+  const onShotResultRef = useRef(onShotResult)
+  const onHitFeedbackRef = useRef(onHitFeedback)
+  const onFpsReportRef = useRef(onFpsReport)
+
+  useEffect(() => {
+    onShotResultRef.current = onShotResult
+    onHitFeedbackRef.current = onHitFeedback
+    onFpsReportRef.current = onFpsReport
+  }, [onHitFeedback, onFpsReport, onShotResult])
 
   const registerTarget = useCallback((id: number, target: THREE.Group | null) => {
-    if (target) targetObjects.current.set(id, target)
-    else targetObjects.current.delete(id)
+    if (target) {
+      markTargetSpawned(target)
+      targetObjects.current.set(id, target)
+    } else {
+      targetObjects.current.delete(id)
+    }
+    raycastObjects.current = Array.from(targetObjects.current.values())
   }, [])
 
   const handleTargetHit = useCallback(
@@ -85,16 +111,21 @@ export function GameScene({
       hitTargetIds.current.add(id)
 
       const targetObject = targetObjects.current.get(id)
+      let reactionMs: number | undefined
       if (targetObject) {
         applyTargetHit(targetObject)
         targetObject.getWorldPosition(hitWorldPosition.current)
         impactFXRef.current?.trigger(hitWorldPosition.current)
+        const spawnedAt = targetObject.userData.spawnedAt
+        if (typeof spawnedAt === 'number') {
+          reactionMs = performance.now() - spawnedAt
+        }
       }
 
       playHitSound()
-      onScore()
-      onHitFeedback?.()
-      requestAnimationFrame(() => navigator.vibrate?.(28))
+      onShotResultRef.current(true, reactionMs)
+      onHitFeedbackRef.current?.()
+      navigator.vibrate?.(28)
 
       const previousTimer = respawnTimers.current.get(id)
       if (previousTimer) clearTimeout(previousTimer)
@@ -104,11 +135,11 @@ export function GameScene({
         if (current) respawnTarget(current, settings.gameAreaSize)
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
-      }, 900)
+      }, settings.respawnDelayMs)
 
       respawnTimers.current.set(id, timer)
     },
-    [onHitFeedback, onScore, settings.gameAreaSize]
+    [settings.gameAreaSize, settings.respawnDelayMs]
   )
 
   const showMuzzleFlash = useCallback(() => {
@@ -128,12 +159,14 @@ export function GameScene({
 
     showMuzzleFlash()
     playShotSound()
-    onShot?.()
 
     raycaster.current.setFromCamera(screenCenter.current, camera)
-    const objects = Array.from(targetObjects.current.values())
-    const intersections = raycaster.current.intersectObjects(objects, true)
+    const objects = raycastObjects.current
+    const intersections = objects.length > 0
+      ? raycaster.current.intersectObjects(objects, true)
+      : []
 
+    let didHit = false
     for (const intersection of intersections) {
       let object: THREE.Object3D | null = intersection.object
       while (object && object.userData?.targetId === undefined) object = object.parent
@@ -141,23 +174,33 @@ export function GameScene({
       const targetId = object?.userData?.targetId
       if (typeof targetId === 'number' && !hitTargetIds.current.has(targetId)) {
         handleTargetHit(targetId)
+        didHit = true
         break
       }
     }
-  }, [camera, gameStarted, handleTargetHit, onShot, showMuzzleFlash])
+
+    if (!didHit) onShotResultRef.current(false)
+  }, [camera, gameStarted, handleTargetHit, showMuzzleFlash])
 
   const handleFallbackTargetClick = useCallback(
     (id: number) => {
       if (!gameStarted || !useFallbackControls || hitTargetIds.current.has(id)) return
       showMuzzleFlash()
       playShotSound()
-      onShot?.()
       handleTargetHit(id)
     },
-    [gameStarted, handleTargetHit, onShot, showMuzzleFlash, useFallbackControls]
+    [gameStarted, handleTargetHit, showMuzzleFlash, useFallbackControls]
   )
 
   useFrame((_, delta) => {
+    fpsFrames.current += 1
+    fpsElapsed.current += delta
+    if (fpsElapsed.current >= 0.5) {
+      onFpsReportRef.current?.(fpsFrames.current / fpsElapsed.current)
+      fpsFrames.current = 0
+      fpsElapsed.current = 0
+    }
+
     if (!sceneStateRef) return
     snapshotElapsed.current += delta
     if (snapshotElapsed.current < 0.1) return
@@ -252,59 +295,7 @@ export function GameScene({
 
   return (
     <>
-      <color attach="background" args={['#07141e']} />
-      <fog attach="fog" args={['#07141e', 20, 58]} />
-
-      <hemisphereLight args={['#b9e7ff', '#10202a', 1.15]} />
-      <directionalLight
-        position={[6, 12, 2]}
-        intensity={2.2}
-        color="#d9f3ff"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-far={65}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-5}
-      />
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -20]} receiveShadow>
-        <planeGeometry args={[44, 80]} />
-        <meshStandardMaterial color="#16232c" metalness={0.15} roughness={0.82} />
-      </mesh>
-      <gridHelper position={[0, -1.97, -20]} args={[80, 40, '#2b7688', '#24404b']} />
-
-      <mesh position={[-18, 6, -24]}>
-        <boxGeometry args={[0.4, 16, 56]} />
-        <meshStandardMaterial color="#10232d" metalness={0.25} roughness={0.75} />
-      </mesh>
-      <mesh position={[18, 6, -24]}>
-        <boxGeometry args={[0.4, 16, 56]} />
-        <meshStandardMaterial color="#10232d" metalness={0.25} roughness={0.75} />
-      </mesh>
-      <mesh position={[0, 6, -48]}>
-        <boxGeometry args={[36, 16, 0.5]} />
-        <meshStandardMaterial color="#0b1b24" metalness={0.35} roughness={0.66} />
-      </mesh>
-
-      {[-11, -22, -33, -44].map(z => (
-        <group key={z} position={[0, 10, z]}>
-          <mesh>
-            <boxGeometry args={[18, 0.12, 0.14]} />
-            <meshBasicMaterial color="#7ce8ff" toneMapped={false} />
-          </mesh>
-          <pointLight intensity={1.25} distance={11} color="#7ce8ff" />
-        </group>
-      ))}
-
-      {[-6, 6].map(x => (
-        <mesh key={x} position={[x, -1.2, -21]}>
-          <boxGeometry args={[0.12, 1.6, 48]} />
-          <meshStandardMaterial color="#233744" metalness={0.55} roughness={0.42} />
-        </mesh>
-      ))}
+      <RangeEnvironment config={mapConfig} />
 
       {targets.map(target => (
         <Target
@@ -315,6 +306,8 @@ export function GameScene({
           speed={target.speed}
           gameAreaSize={settings.gameAreaSize}
           scale={target.scale}
+          movement={settings.movement}
+          jitterChance={settings.jitterChance}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />

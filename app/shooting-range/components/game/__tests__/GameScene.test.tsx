@@ -44,14 +44,37 @@ vi.mock('../ImpactFX', () => ({
   ImpactFX: vi.fn(() => <div data-testid="impact-fx">ImpactFX</div>),
 }))
 
+vi.mock('../RangeEnvironment', () => ({
+  RangeEnvironment: vi.fn(() => <div data-testid="range-environment">RangeEnvironment</div>),
+}))
+
 vi.mock('../../../utils/gameUtils', () => ({
-  difficultySettings: {
-    easy: { targetCount: 5, targetSpeed: 0.01, gameAreaSize: 50 },
-    medium: { targetCount: 8, targetSpeed: 0.015, gameAreaSize: 60 },
-    hard: { targetCount: 12, targetSpeed: 0.02, gameAreaSize: 70 },
-  },
+  applyTargetHit: vi.fn(),
+  markTargetSpawned: vi.fn(),
+  respawnTarget: vi.fn(),
   generateRandomPosition: vi.fn(() => [0, 5, 0]),
   generateRandomDirection: vi.fn(() => [1, 0, 0]),
+}))
+
+vi.mock('../../../utils/trainingModes', () => ({
+  resolveTrainingSettings: vi.fn(() => ({
+    targetCount: 5,
+    targetSpeed: 0.01,
+    gameAreaSize: 50,
+    movement: 'linear',
+    respawnDelayMs: 900,
+    scorePerHit: 10,
+    jitterChance: 0.3,
+    durationSeconds: 60,
+  })),
+}))
+
+vi.mock('../../../utils/mapConfigs', () => ({
+  mapConfigs: {
+    indoor: { id: 'indoor', background: '#07141e' },
+    outdoor: { id: 'outdoor', background: '#5a8fb8' },
+    warehouse: { id: 'warehouse', background: '#1a1410' },
+  },
 }))
 
 vi.mock('../../../utils/audioUtils', () => ({
@@ -68,7 +91,9 @@ Object.defineProperty(navigator, 'vibrate', {
 describe('GameScene', () => {
   const defaultProps = {
     difficulty: 'easy' as const,
-    onScore: vi.fn(),
+    mapId: 'indoor' as const,
+    modeId: 'moving' as const,
+    onShotResult: vi.fn(),
     gameStarted: false,
     setGameStarted: vi.fn(),
     useFallbackControls: false,

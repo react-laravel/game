@@ -77,11 +77,50 @@ async function captureQuickStartTraining(page, drillName, filePath) {
   await captureTrainingHud(page, filePath)
 }
 
+async function scoreFallbackHits(page, attempts = 8) {
+  const canvas = page.locator('canvas').first()
+  const box = await canvas.boundingBox()
+  if (!box) return
+
+  const grid = [
+    [0.5, 0.42],
+    [0.46, 0.38],
+    [0.54, 0.38],
+    [0.5, 0.36],
+    [0.44, 0.44],
+    [0.56, 0.44],
+    [0.48, 0.4],
+    [0.52, 0.4],
+  ]
+
+  for (let i = 0; i < Math.min(attempts, grid.length); i += 1) {
+    const [rx, ry] = grid[i]
+    await canvas.click({ position: { x: box.width * rx, y: box.height * ry }, force: true })
+    await page.waitForTimeout(220)
+  }
+}
+
+async function injectQaSessionStats(page) {
+  await page.evaluate(() => {
+    window.debugShootingSession?.({
+      score: 40,
+      hits: 4,
+      misses: 1,
+      shots: 5,
+      bestStreak: 3,
+      avgReactionMs: 285,
+    })
+  })
+}
+
 async function captureResultsScreen(page, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
   await page.getByRole('button', { name: /甩枪反应/ }).first().click()
   await enterFallbackPlay(page)
+  await scoreFallbackHits(page, 6)
+  await injectQaSessionStats(page)
+  await page.waitForTimeout(200)
   await page.evaluate(() => window.endShootingSession?.())
   await page.waitForSelector('text=训练完成', { timeout: 10000 })
   await page.waitForTimeout(500)

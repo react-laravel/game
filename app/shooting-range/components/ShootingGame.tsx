@@ -72,6 +72,7 @@ export default function ShootingGame({
     restartTraining,
     returnToSettings,
     endSessionEarly,
+    injectSessionStats,
   } = useShootingSession(config, setGameStarted)
   const {
     browserSupport,
@@ -100,6 +101,7 @@ export default function ShootingGame({
     stats: sessionStats,
     timeLeft,
     onEndSession: endSessionEarly,
+    onInjectStats: injectSessionStats,
   })
 
   const startGame = useCallback(() => {

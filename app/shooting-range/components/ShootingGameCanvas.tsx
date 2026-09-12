@@ -43,7 +43,7 @@ function ShootingGameCanvasComponent({
       camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: 90 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(mapBackground)
-        gl.toneMappingExposure = 1.12
+        gl.toneMappingExposure = mapId === 'indoor' ? 1.18 : 1.12
         camera.rotation.set(0, 0, 0)
       }}
       style={{ touchAction: 'none' }}

@@ -46,17 +46,17 @@ export function GameUI({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
-      <div className="absolute top-4 left-4 hidden rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md sm:block">
+      <div className="absolute top-[4.75rem] left-5 hidden max-w-[11rem] rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md sm:block">
         <div className="text-[10px] font-semibold tracking-[0.16em] text-cyan-200/70 uppercase">
           {mode.focus}
         </div>
-        <div className="mt-0.5 text-sm font-semibold">{drillLabel}</div>
+        <div className="mt-0.5 text-sm leading-snug font-semibold">{drillLabel}</div>
       </div>
 
       <div className="absolute top-4 right-4 flex flex-wrap justify-end gap-2 sm:top-5 sm:right-5">
         <HudStat label="FPS" value={`${displayFps}`} accent="emerald" />
         <HudStat label="命中 / 射击" value={`${hits} / ${shots}`} />
-        <HudStat label="精准度" value={`${accuracy}%`} />
+        <HudStat label="精准度" value={shots > 0 ? `${accuracy}%` : '—'} />
         <HudStat label="射速" value={`${shotsPerMinute}/分`} accent="amber" className="hidden sm:flex" />
         {showReaction && avgReactionMs !== null && (
           <HudStat label="反应" value={`${avgReactionMs}ms`} accent="rose" className="hidden md:flex" />
@@ -117,7 +117,9 @@ export function GameUI({
                   训练完成
                 </div>
                 <h2 className="mt-1 text-xl font-bold">{drillLabel}</h2>
-                <p className="mt-0.5 text-sm text-white/55">{mode.name}</p>
+                {drillLabel !== mode.name && (
+                  <p className="mt-0.5 text-sm text-white/55">{mode.name}</p>
+                )}
                 <p className="mt-1 text-xs text-white/40">用时 {elapsedSeconds}s</p>
               </div>
               <div className="flex flex-col items-center gap-1">
@@ -175,7 +177,7 @@ export function GameUI({
             <div className="mt-5 grid grid-cols-2 gap-2 text-left text-sm sm:grid-cols-3">
               <SummaryItem label="命中" value={`${hits}`} />
               <SummaryItem label="未命中" value={`${misses}`} />
-              <SummaryItem label="精准度" value={`${accuracy}%`} />
+              <SummaryItem label="精准度" value={shots > 0 ? `${accuracy}%` : '—'} />
               <SummaryItem label="射速" value={`${shotsPerMinute}/分`} />
               <SummaryItem label="最高连击" value={`${bestStreak}`} />
               <SummaryItem

@@ -53,6 +53,10 @@ describe('sessionInsights', () => {
 
     const movingHighlights = buildPerformanceHighlights(baseStats, 'moving')
     expect(movingHighlights[1]?.label).toBe('射速')
+
+    const emptyHighlights = buildPerformanceHighlights({ ...baseStats, shots: 0, hits: 0 }, 'flick')
+    expect(emptyHighlights[0]?.value).toBe('—')
+    expect(emptyHighlights[1]?.value).toBe('—')
   })
 
   it('finds personal best per mode', () => {

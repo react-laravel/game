@@ -32,14 +32,14 @@ export function GameRulesDialog({ title, rules, className = '' }: GameRulesDialo
           <HelpCircle className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(85dvh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-md flex-col gap-3 overflow-hidden">
+        <DialogHeader className="shrink-0 pr-6">
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="text-primary h-5 w-5" />
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <ul className="space-y-2">
             {rules.map((rule, index) => (
               <li key={index} className="flex items-start gap-2 text-sm">

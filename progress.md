@@ -22,8 +22,25 @@ Current prompt (2026-09-12): 迷宫，怎么一条路可以走到底？应该偶
 
 Current prompt (2026-09-12): 可以切换为正方形和适合A4纸的长方形尺寸
 
+Current prompt (2026-09-13): /bowling，地板和背景都是空的
+
+Current prompt (2026-09-13): 月饼，骰子背景没透明
+
+Current prompt (2026-09-13): 贪吃蛇，奇怪，而且没有跟随角度
+
+Current prompt (2026-09-13): shooting-range 射击到球时，会掉帧
+
+Current prompt (2026-09-13): 射击音效不好，重新设计
+
 ## Current work
 
+- Shooting Range gun and hit sounds are now synthesized with Web Audio (crack/thump vs metallic ping) instead of pitching the same `shot.mp3`.
+- Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
+- Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.
+
+- Moon-dice dice no longer sit on opaque white cards: removed the `bg-white`/border wrapper and use `mix-blend-multiply` so the JPG padding blends into the green felt.
+
+- Bowling alley now has a patterned carpet floor, side walls, ceiling lights, seating, and a pinsetter behind the pins so the follow-cam no longer looks into a black void.
 - Maze size can switch between a square and an A4-portrait rectangle (slider width × taller paper height, e.g. 15×21) so on-screen play and print both match the paper.
 - Replaced maze generation so it grows from a random cell with mixed branching: more dead ends and shorter unique solutions, instead of one DFS river from the start corner.
 - Restyled remaining games (except maze/bowling) onto a shared fullscreen `GameStage` HUD: arcade cabinets, felt tables, puzzle overlays, Monopoly lobby glass cards, and shooting-range true-fullscreen canvas.
@@ -62,6 +79,8 @@ Current prompt (2026-09-12): 可以切换为正方形和适合A4纸的长方形�
 
 ## Validation
 
+- Shooting Range audio redesign: focused suite 10/10 files and 72/72 tests. Playwright fallback clicks scored 30 with 3 recorded shots, `hit: true` on three targets, and no page/console errors while the new Web Audio voices ran.
+- Shooting Range hit-hitch fix: focused suite 10/10 files and 75/75 tests. Playwright fallback grid-clicks scored 20 with 2/2 shots (100% accuracy) at 58s remaining, scene screenshot intact, no page/console errors. Headless Chromium still cannot pointer-lock.
 - The September game-wide redesign batch passes lint, TypeScript, 70/70 test files with 569/569 tests, and the production build for all 18 generated routes including `/blackjack`.
 - Shooting Range componentization validation passes 9/9 focused files and 69/69 tests. Browser flows confirm hard difficulty creates 16 moving targets, Canvas pointer lock rotates camera/weapon, one shot increments the counter, ending training returns to setup, and pointer-lock failure cleanly enters click-target fallback with no page errors.
 - Shooting Range pointer-control validation uses a Canvas-locked browser simulation through the real start flow: a 180/90 movement delta changes camera yaw/pitch from 0/0 to -0.354/-0.192, the weapon view rotates with it, target coordinates continue changing, and no console/page errors occur; the standard web-game client also returns a healthy ready state and full-scene screenshot.
@@ -95,6 +114,11 @@ Current prompt (2026-09-12): 可以切换为正方形和适合A4纸的长方形�
 - Browser checks: slider Home/End change 5×5 and 40×40, restart regenerates, print preview fills a white A4-like page, and the print button invokes `window.print()`.
 - Maze unit tests: 23 passing.
 
+## Bowling alley scenery (2026-09-13)
+
+- The follow-cam used to look into a black void because the carpet was nearly black, fog started at 26m, and there was no ceiling/pinsetter.
+- `createAlleyInterior` now adds a patterned carpet, side walls, ceiling lights, seating, and a pinsetter behind the pins. Fog starts farther back.
+
 ## Bowling redesign notes (2026-09-12)
 
 - `/bowling` is now a fullscreen dark alley: wood lane, gutters, pin spotlight, ten-frame scoresheet, and a hold-to-throw control.
@@ -102,8 +126,28 @@ Current prompt (2026-09-12): 可以切换为正方形和适合A4纸的长方形�
 - Browser: first throw recorded 9 pins, leftover pins stayed for the spare attempt, frame 2 reset a full rack, `render_game_to_text` reported aiming / frame 2 / total 9.
 - Bowling tests: 13 passing.
 
+## Shooting Range audio redesign (2026-09-13)
+
+- Shot and hit previously reused `/sounds/shot.mp3` at 0.8x and 1.35x, so every cue sounded like the same clip.
+- `audioUtils` now synthesizes an indoor carbine (noise crack, body, low thump, room slap) and a hollow metal drone ping. Noise buffers are prewarmed on start.
+- Focused shooting-range tests: 72 passing.
+
+## Shooting Range hit hitch (2026-09-13)
+
+- Hitting a target used to `setTargets` (snapping the drone back to its spawn prop), mount an `Explosion` plus a `pointLight`, and remount muzzle-flash lights. Three.js recompiled shaders on the light-count change, which dropped frames.
+- Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
+- Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
+
+## Snake follow-angle notes (2026-09-13)
+
+- `/snake` no longer fills grid cells as disconnected squares. The actor is a polyline through cell centers with `stroke-linejoin: round`, plus a head rotated by movement heading.
+- The old head-direction helper treated “body on the right” as facing right; heading now uses `head - behind`.
+- Browser: start pose is a 3-segment capsule facing right; after ArrowDown the path `11.5,11.5 11.5,10.5 10.5,10.5` shows a rounded L and `data-heading=90`.
+- Focused snake tests: 22 passing.
+
 ## TODOs / suggestions for the next agent
 
+- Shooting Range pointer-lock aiming hitch should still be felt in a real browser; headless Chromium cannot lock the pointer, so hit smoothness was verified via click-target fallback.
 - Bowling still logs some scene-reset console messages from the original physics loop.
 - The throw button sits over the ball; a dedicated run-up animation or side throw pad could free the view.
 - Physical printer output was verified via print-media emulation, not a real printer.

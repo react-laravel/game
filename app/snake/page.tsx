@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { GameHud, GameResultOverlay, GameStage, GameStat } from '@/components/game'
+import { SnakeBoard } from './components/SnakeBoard'
 import { useSnakeGameStore } from './store'
+import type { Direction, Position } from './utils/snakePath'
 
 const SNAKE_RULES = [
   '控制蛇移动吃食物',
@@ -15,11 +17,12 @@ const SNAKE_RULES = [
   '游戏结束后可以重新开始',
 ]
 
-type Position = { x: number; y: number }
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
-
 const BOARD_SIZE = 20
-const INITIAL_SNAKE = [{ x: 10, y: 10 }]
+const INITIAL_SNAKE: Position[] = [
+  { x: 10, y: 10 },
+  { x: 9, y: 10 },
+  { x: 8, y: 10 },
+]
 const INITIAL_FOOD = { x: 15, y: 15 }
 const GAME_SPEED = 150
 const MIN_SWIPE_DISTANCE = 30
@@ -298,90 +301,6 @@ export default function SnakeGame() {
     }
   }, [gameOver, resetGame])
 
-  // 获取蛇头方向 (0=右, 1=下, 2=左, 3=上)
-  const getSnakeHeadDirection = useCallback(() => {
-    if (snake.length < 2) return 0 // 默认面向右侧
-    const head = snake[0]
-    const nextSegment = snake[1]
-
-    if (nextSegment.x > head.x) return 0 // 身体在右边，头朝右
-    if (nextSegment.y > head.y) return 1 // 身体在下边，头朝下
-    if (nextSegment.x < head.x) return 2 // 身体在左边，头朝左
-    if (nextSegment.y < head.y) return 3 // 身体在上边，头朝上
-
-    return 0
-  }, [snake])
-
-  // 渲染游戏格子
-  const renderGameCell = useCallback(
-    (index: number) => {
-      const x = index % BOARD_SIZE
-      const y = Math.floor(index / BOARD_SIZE)
-
-      const isSnakeHead = snake[0]?.x === x && snake[0]?.y === y
-      const isSnakeBody = snake.slice(1).some(segment => segment.x === x && segment.y === y)
-      const isFood = food.x === x && food.y === y
-
-      let cellClass = 'aspect-square transition-all duration-100 bg-zinc-800/70 '
-
-      if (isSnakeHead) {
-        cellClass += 'relative'
-      } else if (isSnakeBody) {
-        cellClass += 'rounded-[3px] bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
-      } else if (isFood) {
-        cellClass += 'relative'
-      }
-
-      return (
-        <div key={index} className={cellClass}>
-          {isFood && (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="block size-[62%] rounded-full bg-rose-400 shadow-[0_0_12px_rgba(251,113,133,0.7)]" />
-            </div>
-          )}
-          {isSnakeHead && (
-            <div className="flex h-full w-full items-center justify-center">
-              <div className="relative h-5 w-5">
-                {/* 蛇头主体 */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
-                {/* 眼睛 - 根据方向显示 */}
-                {getSnakeHeadDirection() === 0 && (
-                  // 朝右
-                  <>
-                    <div className="absolute right-0 top-1/2 h-2 w-1 -translate-y-1/2 rounded-sm bg-white" />
-                    <div className="absolute right-0.5 top-1/2 h-1 w-0.5 -translate-y-1/2 rounded-full bg-black" />
-                  </>
-                )}
-                {getSnakeHeadDirection() === 1 && (
-                  // 朝下
-                  <>
-                    <div className="absolute bottom-0 left-1/2 h-1 w-2 -translate-x-1/2 rounded-sm bg-white" />
-                    <div className="absolute bottom-0.5 left-1/2 h-0.5 w-1 -translate-x-1/2 rounded-full bg-black" />
-                  </>
-                )}
-                {getSnakeHeadDirection() === 2 && (
-                  // 朝左
-                  <>
-                    <div className="absolute left-0 top-1/2 h-2 w-1 -translate-y-1/2 rounded-sm bg-white" />
-                    <div className="absolute left-0.5 top-1/2 h-1 w-0.5 -translate-y-1/2 rounded-full bg-black" />
-                  </>
-                )}
-                {getSnakeHeadDirection() === 3 && (
-                  // 朝上
-                  <>
-                    <div className="absolute top-0 left-1/2 h-1 w-2 -translate-x-1/2 rounded-sm bg-white" />
-                    <div className="absolute top-0.5 left-1/2 h-0.5 w-1 -translate-x-1/2 rounded-full bg-black" />
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    },
-    [snake, food, getSnakeHeadDirection]
-  )
-
   const renderControlButton = useCallback(
     (direction: Direction, symbol: string, className?: string) => (
       <Button
@@ -429,17 +348,11 @@ export default function SnakeGame() {
         </GameHud>
 
         <div className="relative mx-auto flex min-h-0 w-full max-w-[min(100%,calc(100dvh-15rem))] flex-1 items-center">
-          <div className="w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-            <div
-              className="grid gap-px rounded-2xl bg-zinc-950"
-              style={{
-                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-                aspectRatio: '1',
-                touchAction: 'none',
-              }}
-            >
-              {Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, index) => renderGameCell(index))}
-            </div>
+          <div
+            className="w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+            style={{ touchAction: 'none' }}
+          >
+            <SnakeBoard snake={snake} food={food} direction={direction} boardSize={BOARD_SIZE} />
           </div>
           <GameResultOverlay open={gameOver} title="游戏结束">
             <p className="mt-3 text-sm text-white/55">本局分数 {score}</p>

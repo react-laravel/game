@@ -6,6 +6,7 @@ import * as CANNON from 'cannon-es'
 import { PHYSICS_CONFIG, CAMERA_CONFIG, PIN_POSITIONS } from '../config/constants'
 import type { SceneRef } from '../types/scene'
 import { createPhysicsMaterials } from '../utils/physics'
+import { createAlleyInterior } from '../utils/alley'
 import {
   createSceneElements,
   createBall,
@@ -25,9 +26,9 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
 
     const canvas = canvasRef.current
     const scene = new THREE.Scene()
-    const bgColor = new THREE.Color(0x07070d)
+    const bgColor = new THREE.Color(0x2a1f28)
     scene.background = bgColor
-    scene.fog = new THREE.Fog(bgColor, 26, 72)
+    scene.fog = new THREE.Fog(bgColor, 48, 110)
 
     // 相机设置
     const camera = new THREE.PerspectiveCamera(
@@ -56,7 +57,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.05
+    renderer.toneMappingExposure = 1.18
 
     // 物理世界
     const world = new CANNON.World()
@@ -68,6 +69,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
 
     // 创建场景元素
     const materials = createPhysicsMaterials(world)
+    createAlleyInterior(scene)
     const { laneMesh, laneBody } = createSceneElements(scene, world, materials)
     const ball = createBall(scene, world, materials.ballMaterial)
     const pins = createPins(scene, world, materials.pinMaterial)

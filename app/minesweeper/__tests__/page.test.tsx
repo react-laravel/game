@@ -180,6 +180,43 @@ describe('MinesweeperGame', () => {
         // Flag should be set
       })
     })
+
+    it('cycles right-click marks from flag to question then unmarked', () => {
+      render(<MinesweeperGame />)
+
+      const cell = screen.getByLabelText('扫雷格子 1-1')
+      const remainingMines = screen.getByText('地雷').parentElement?.nextElementSibling
+
+      fireEvent.contextMenu(cell)
+      expect(cell).toHaveTextContent('🚩')
+      expect(cell).toHaveAccessibleName('扫雷格子 1-1，已插旗')
+      expect(remainingMines).toHaveTextContent('9')
+
+      fireEvent.contextMenu(cell)
+      expect(cell).toHaveTextContent('?')
+      expect(cell).toHaveAccessibleName('扫雷格子 1-1，问号')
+      expect(remainingMines).toHaveTextContent('10')
+
+      fireEvent.contextMenu(cell)
+      expect(cell).toHaveTextContent('')
+      expect(cell).toHaveAccessibleName('扫雷格子 1-1')
+      expect(remainingMines).toHaveTextContent('10')
+    })
+
+    it('reveals a questioned cell on left click, but keeps flags closed', () => {
+      render(<MinesweeperGame />)
+
+      const flagged = screen.getByLabelText('扫雷格子 1-1')
+      fireEvent.contextMenu(flagged)
+      fireEvent.click(flagged)
+      expect(flagged).toHaveTextContent('🚩')
+
+      const questioned = screen.getByLabelText('扫雷格子 1-2')
+      fireEvent.contextMenu(questioned)
+      fireEvent.contextMenu(questioned)
+      fireEvent.click(questioned)
+      expect(questioned).not.toHaveAccessibleName('扫雷格子 1-2，问号')
+    })
   })
 
   describe('Reset Game', () => {

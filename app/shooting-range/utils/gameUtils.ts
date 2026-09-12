@@ -35,6 +35,35 @@ export const generateRandomDirection = (): [number, number, number] => {
   return [direction[0] / length, direction[1] / length, direction[2] / length]
 }
 
+interface MutableVec3 {
+  x: number
+  y: number
+  z: number
+  set: (x: number, y: number, z: number) => unknown
+}
+
+export interface TargetRuntime {
+  userData: {
+    hit?: boolean
+    direction?: MutableVec3
+  }
+  position: MutableVec3
+}
+
+export function applyTargetHit(target: TargetRuntime) {
+  target.userData.hit = true
+}
+
+export function respawnTarget(target: TargetRuntime, gameAreaSize: number) {
+  const [x, y, z] = generateRandomPosition(gameAreaSize)
+  target.position.set(x, y, z)
+  target.userData.hit = false
+  const direction = target.userData.direction
+  if (!direction) return
+  const [dx, dy, dz] = generateRandomDirection()
+  direction.set(dx, dy, dz)
+}
+
 /**
  * 难度设置配置
  */

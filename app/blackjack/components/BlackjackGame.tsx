@@ -12,7 +12,9 @@ import { getHumanSeat } from '../store'
 import { useBlackjackKeyboard } from '../hooks/useBlackjackKeyboard'
 import { useBlackjackSounds } from '../hooks/useBlackjackSounds'
 import { useBlackjackStore } from '../store'
+import type { Phase, Seat } from '../types'
 import { displayTotal } from '../utils/hand'
+import { layoutSeatsAroundHuman } from '../utils/seats'
 
 import { ActionBar } from './ActionBar'
 import { AutoPlayPanel } from './AutoPlayPanel'
@@ -102,7 +104,7 @@ export default function BlackjackGame() {
                 {accountChips.toLocaleString()}
               </span>
               {' · '}
-              坐庄 / 闲家 · 托管
+              {config.role === 'dealer' ? '坐庄 · 软17停' : '坐庄 / 闲家 · 托管'}
             </span>
           ) : (
             <>
@@ -148,7 +150,7 @@ export default function BlackjackGame() {
               <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
                 {phaseLabel(phase)}
               </Badge>
-              {autoPlay.enabled && (
+              {config.role === 'player' && autoPlay.enabled && (
                 <Badge className="h-5 bg-violet-600 px-1.5 text-[10px] text-white hover:bg-violet-600">
                   托管 硬≥{autoPlay.hardStandAt}
                 </Badge>
@@ -235,12 +237,7 @@ export default function BlackjackGame() {
               </AnimatePresence>
 
               <div className="relative flex min-h-0 flex-1 flex-col py-3 sm:py-4">
-                <motion.div
-                  layout
-                  className="flex shrink-0 flex-col items-center gap-1 pt-1 sm:pt-2"
-                  animate={dealerBust ? { x: [0, -5, 5, -3, 3, 0] } : { x: 0 }}
-                  transition={dealerBust ? { duration: 0.45 } : undefined}
-                >
+                <div className="flex shrink-0 flex-col items-center gap-1 pt-1 sm:pt-2">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-emerald-50/80">
                     <Crown className="h-3.5 w-3.5 text-amber-300" />
                     庄家
@@ -269,7 +266,7 @@ export default function BlackjackGame() {
                       )}
                     </AnimatePresence>
                   </div>
-                  <div className="flex min-h-14 items-end justify-center">
+                  <div className="flex min-h-16 items-end justify-center">
                     {dealer.cards.length === 0 ? (
                       <span className="text-xs text-emerald-100/40">等待发牌</span>
                     ) : (
@@ -316,16 +313,16 @@ export default function BlackjackGame() {
                         </motion.div>
                       )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
 
                 <div className="mx-auto flex min-h-12 max-w-[90%] flex-1 items-center justify-center py-4 sm:py-6">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={message}
-                      initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                       className="truncate rounded-full bg-black/25 px-3 py-1 text-center text-[11px] text-emerald-50/95"
                     >
                       {message}
@@ -333,32 +330,64 @@ export default function BlackjackGame() {
                   </AnimatePresence>
                 </div>
 
-                <div className="flex shrink-0 items-end justify-around gap-0.5 px-1 pb-1 sm:px-3 sm:pb-2">
-                  {seats.map((seat, i) => (
-                    <PlayerSeat
-                      key={seat.id}
-                      seat={seat}
-                      isActive={phase === 'player_turns' && activeSeatIndex === i}
-                    />
-                  ))}
-                </div>
+                <TableSeats
+                  seats={seats}
+                  phase={phase}
+                  activeSeatIndex={activeSeatIndex}
+                />
               </div>
 
-              {latestLog && (
-                <motion.div
-                  key={latestLog}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="relative shrink-0 truncate border-t border-white/5 px-3 py-1 text-center text-[10px] text-emerald-100/45"
-                >
-                  {latestLog}
-                </motion.div>
-              )}
+              <div className="relative h-6 shrink-0 truncate border-t border-white/5 px-3 py-1 text-center text-[10px] leading-4 text-emerald-100/45">
+                {latestLog || '\u00a0'}
+              </div>
             </div>
 
             <ActionBar />
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+function TableSeats({
+  seats,
+  phase,
+  activeSeatIndex,
+}: {
+  seats: Seat[]
+  phase: Phase
+  activeSeatIndex: number
+}) {
+  const { left, human, right } = layoutSeatsAroundHuman(seats)
+  const isTurn = phase === 'player_turns'
+
+  if (!human) {
+    return (
+      <div className="flex shrink-0 items-end justify-center gap-2 px-2 pb-1 sm:gap-4 sm:px-4 sm:pb-2">
+        {left.map(({ seat, index }) => (
+          <PlayerSeat key={seat.id} seat={seat} isActive={isTurn && activeSeatIndex === index} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-1 px-2 pb-1 sm:gap-2 sm:px-4 sm:pb-2">
+      <div className="flex items-end justify-end gap-2 sm:gap-4">
+        {left.map(({ seat, index }) => (
+          <PlayerSeat key={seat.id} seat={seat} isActive={isTurn && activeSeatIndex === index} />
+        ))}
+      </div>
+      <PlayerSeat
+        seat={human.seat}
+        isActive={isTurn && activeSeatIndex === human.index}
+        featured
+      />
+      <div className="flex items-end justify-start gap-2 sm:gap-4">
+        {right.map(({ seat, index }) => (
+          <PlayerSeat key={seat.id} seat={seat} isActive={isTurn && activeSeatIndex === index} />
+        ))}
       </div>
     </div>
   )

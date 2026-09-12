@@ -1,11 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { GameHud } from '@/components/game'
-import { asset } from '@/lib/helpers/assets'
 import { cn } from '@/lib/helpers'
+import { MoonDiceDie } from './MoonDiceDie'
 import {
   compareMoonDiceRank,
   getMoonDiceRankMeta,
@@ -27,8 +26,6 @@ interface PlayerState {
   rounds: RoundResult[]
   score: number
 }
-
-const CDN_PREFIX = `${asset('/mooncake')}/`
 
 const DICE_COUNT = 6
 
@@ -170,33 +167,6 @@ export default function MoonDiceGame(_props: MoonDiceGameProps) {
     setMessage('已重置，点击 “摇骰子” 开始新一局')
   }
 
-  const renderDieImage = (value: number | undefined, index: number) => {
-    let fileName = '1.jpg'
-
-    if (rolling) {
-      if (value) {
-        fileName = `${value}.gif`
-      } else {
-        fileName = '1.jpg'
-      }
-    } else if (value) {
-      fileName = `${value}.jpg`
-    }
-
-    const src = `${CDN_PREFIX}${fileName}`
-
-    return (
-      <Image
-        key={index}
-        src={src}
-        alt={value ? `骰子 ${value}` : '骰子'}
-        width={64}
-        height={64}
-        className="h-16 w-16 rounded-xl border-2 border-amber-200/30 bg-white object-contain shadow-md"
-      />
-    )
-  }
-
   const leadingPlayer =
     playerA.score === 0 && playerB.score === 0
       ? null
@@ -243,9 +213,9 @@ export default function MoonDiceGame(_props: MoonDiceGameProps) {
           </p>
 
           <div className="flex flex-wrap justify-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-6">
-            {Array.from({ length: DICE_COUNT }).map((_, index) =>
-              renderDieImage(dice[index], index)
-            )}
+            {Array.from({ length: DICE_COUNT }).map((_, index) => (
+              <MoonDiceDie key={index} value={dice[index]} rolling={rolling} />
+            ))}
           </div>
 
           <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-2">

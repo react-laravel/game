@@ -1,89 +1,253 @@
 /**
- * Small reusable audio pools keep hit feedback off the render-critical path.
- * Creating a new HTMLAudioElement for every impact can trigger decoding and GC
- * exactly when the frame is busiest.
+ * Indoor-range gun and target hits are synthesized with Web Audio.
+ * Reusing one MP3 at different playback rates made every shot and impact sound
+ * like the same clip, and allocating HTMLAudioElements on hit caused extra work.
  */
 
-const POOL_SIZE = 4
-const audioPools = new Map<string, HTMLAudioElement[]>()
-const poolIndexes = new Map<string, number>()
-const stopTimers = new WeakMap<HTMLAudioElement, ReturnType<typeof setTimeout>>()
+type AudioContextWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext
+  }
 
-function poolKey(soundPath: string, playbackRate: number) {
-  return `${soundPath}@${playbackRate}`
+interface NoiseBurst {
+  start: number
+  duration: number
+  volume: number
+  highpass?: number
+  lowpass?: number
+  bandpass?: number
+  q?: number
 }
 
-function createPool(soundPath: string, playbackRate: number) {
-  const pool = Array.from({ length: POOL_SIZE }, () => {
-    const audio = new Audio(soundPath)
-    audio.preload = 'auto'
-    audio.playbackRate = playbackRate
-    return audio
-  })
-
-  audioPools.set(poolKey(soundPath, playbackRate), pool)
-  return pool
+interface ToneBurst {
+  type: OscillatorType
+  frequency: number
+  frequencyEnd?: number
+  duration: number
+  volume: number
+  start: number
 }
 
-function getAudio(soundPath: string, playbackRate: number) {
-  const key = poolKey(soundPath, playbackRate)
-  const pool = audioPools.get(key) ?? createPool(soundPath, playbackRate)
-  const available = pool.find(audio => audio.paused || audio.ended)
+let audioContext: AudioContext | null = null
+let noiseBuffer: AudioBuffer | null = null
+let output: AudioNode | null = null
 
-  if (available) return available
-
-  const nextIndex = (poolIndexes.get(key) ?? 0) % pool.length
-  poolIndexes.set(key, nextIndex + 1)
-  return pool[nextIndex]
+function getAudioContextConstructor() {
+  if (typeof window === 'undefined') return undefined
+  const audioWindow = window as AudioContextWindow
+  return audioWindow.AudioContext ?? audioWindow.webkitAudioContext
 }
 
-export const primeShootingAudio = () => {
-  if (typeof Audio === 'undefined') return
-  if (!audioPools.has(poolKey('/sounds/shot.mp3', 0.8))) createPool('/sounds/shot.mp3', 0.8)
-  if (!audioPools.has(poolKey('/sounds/shot.mp3', 1.35))) createPool('/sounds/shot.mp3', 1.35)
+function ensureContext() {
+  const AudioContextConstructor = getAudioContextConstructor()
+  if (!AudioContextConstructor) return null
+  if (audioContext && audioContext.state !== 'closed') return audioContext
+
+  audioContext = new AudioContextConstructor()
+  output = createOutput(audioContext)
+  noiseBuffer = null
+  return audioContext
 }
 
-export const playSound = (
-  soundPath: string,
-  volume: number = 0.2,
-  playbackRate: number = 1,
-  maxDuration?: number
-) => {
+function createOutput(context: AudioContext) {
+  const master = context.createGain()
+  master.gain.value = 0.85
+
+  if (typeof context.createDynamicsCompressor !== 'function') {
+    master.connect(context.destination)
+    return master
+  }
+
+  const compressor = context.createDynamicsCompressor()
+  compressor.threshold.setValueAtTime(-14, context.currentTime)
+  compressor.knee.setValueAtTime(10, context.currentTime)
+  compressor.ratio.setValueAtTime(5, context.currentTime)
+  compressor.attack.setValueAtTime(0.003, context.currentTime)
+  compressor.release.setValueAtTime(0.09, context.currentTime)
+  master.connect(compressor)
+  compressor.connect(context.destination)
+  return master
+}
+
+function ensureNoiseBuffer(context: AudioContext) {
+  if (noiseBuffer && noiseBuffer.sampleRate === context.sampleRate) return noiseBuffer
+
+  const duration = 0.2
+  const length = Math.max(1, Math.floor(context.sampleRate * duration))
+  const buffer = context.createBuffer(1, length, context.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let index = 0; index < length; index += 1) {
+    data[index] = Math.random() * 2 - 1
+  }
+  noiseBuffer = buffer
+  return buffer
+}
+
+function jitter(value: number, amount = 0.1) {
+  return value * (1 + (Math.random() - 0.5) * amount)
+}
+
+function playNoiseBurst(context: AudioContext, destination: AudioNode, burst: NoiseBurst) {
+  const source = context.createBufferSource()
+  source.buffer = ensureNoiseBuffer(context)
+
+  const gain = context.createGain()
+  const end = burst.start + burst.duration
+  gain.gain.setValueAtTime(0.0001, burst.start)
+  gain.gain.exponentialRampToValueAtTime(burst.volume, burst.start + 0.004)
+  gain.gain.exponentialRampToValueAtTime(0.0001, end)
+
+  let node: AudioNode = source
+  const connectFilter = (type: BiquadFilterType, frequency: number, q?: number) => {
+    const filter = context.createBiquadFilter()
+    filter.type = type
+    filter.frequency.setValueAtTime(frequency, burst.start)
+    if (q !== undefined) filter.Q.setValueAtTime(q, burst.start)
+    node.connect(filter)
+    node = filter
+  }
+
+  if (burst.highpass) connectFilter('highpass', burst.highpass)
+  if (burst.bandpass) connectFilter('bandpass', burst.bandpass, burst.q ?? 1)
+  if (burst.lowpass) connectFilter('lowpass', burst.lowpass)
+
+  node.connect(gain)
+  gain.connect(destination)
+  source.start(burst.start)
+  source.stop(end + 0.02)
+}
+
+function playTone(context: AudioContext, destination: AudioNode, tone: ToneBurst) {
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  const end = tone.start + tone.duration
+
+  oscillator.type = tone.type
+  oscillator.frequency.setValueAtTime(tone.frequency, tone.start)
+  if (tone.frequencyEnd) {
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, tone.frequencyEnd), end)
+  }
+
+  gain.gain.setValueAtTime(0.0001, tone.start)
+  gain.gain.exponentialRampToValueAtTime(tone.volume, tone.start + 0.003)
+  gain.gain.exponentialRampToValueAtTime(0.0001, end)
+
+  oscillator.connect(gain)
+  gain.connect(destination)
+  oscillator.start(tone.start)
+  oscillator.stop(end + 0.02)
+}
+
+function withAudio(play: (context: AudioContext, destination: AudioNode) => void) {
   try {
-    const audio = getAudio(soundPath, playbackRate)
-    const previousTimer = stopTimers.get(audio)
-    if (previousTimer) clearTimeout(previousTimer)
-
-    audio.pause()
-    audio.currentTime = 0
-    audio.volume = volume
-    audio.playbackRate = playbackRate
-
-    if (maxDuration) {
-      const timer = setTimeout(() => {
-        audio.pause()
-        audio.currentTime = 0
-        stopTimers.delete(audio)
-      }, maxDuration)
-      stopTimers.set(audio, timer)
-    }
-
-    void audio.play().catch(() => {
-      // Browsers may reject audio before the first user gesture. Gameplay can continue silently.
-    })
+    const context = ensureContext()
+    if (!context || !output) return
+    if (context.state === 'suspended') void context.resume().catch(() => undefined)
+    play(context, output)
   } catch {
     // Audio is optional feedback and must never interrupt the render loop.
   }
 }
 
+export const resetShootingAudio = () => {
+  const context = audioContext
+  audioContext = null
+  noiseBuffer = null
+  output = null
+  if (context && context.state !== 'closed') void context.close().catch(() => undefined)
+}
+
+export const primeShootingAudio = () => {
+  const context = ensureContext()
+  if (!context) return
+  ensureNoiseBuffer(context)
+  if (context.state === 'suspended') void context.resume().catch(() => undefined)
+}
+
+/** Compact indoor carbine: noise crack, body, low thump, and a short room slap. */
 export const playShotSound = () => {
-  playSound('/sounds/shot.mp3', 0.14, 0.8, 380)
+  withAudio((context, destination) => {
+    const start = context.currentTime
+    const pitch = jitter(1, 0.08)
+
+    playNoiseBurst(context, destination, {
+      start,
+      duration: 0.036,
+      volume: 0.2,
+      highpass: 1100 * pitch,
+      lowpass: 5400,
+    })
+    playNoiseBurst(context, destination, {
+      start,
+      duration: 0.08,
+      volume: 0.11,
+      bandpass: 380 * pitch,
+      q: 0.85,
+      lowpass: 1400,
+    })
+    playTone(context, destination, {
+      type: 'sine',
+      frequency: 108 * pitch,
+      frequencyEnd: 46,
+      duration: 0.12,
+      volume: 0.16,
+      start,
+    })
+    playTone(context, destination, {
+      type: 'square',
+      frequency: 1750 * pitch,
+      duration: 0.011,
+      volume: 0.03,
+      start,
+    })
+    playNoiseBurst(context, destination, {
+      start: start + 0.03,
+      duration: 0.11,
+      volume: 0.04,
+      highpass: 160,
+      lowpass: 620,
+    })
+  })
 }
 
-export const playExplosionSound = () => {
-  playSound('/sounds/shot.mp3', 0.3, 1.45, 180)
-}
-
+/** Hollow metal drone impact: inharmonic pings plus a short spark. */
 export const playHitSound = () => {
-  playSound('/sounds/shot.mp3', 0.3, 1.35, 180)
+  withAudio((context, destination) => {
+    const start = context.currentTime
+    const pitch = jitter(1, 0.12)
+
+    playNoiseBurst(context, destination, {
+      start,
+      duration: 0.028,
+      volume: 0.07,
+      highpass: 2200,
+      lowpass: 7600,
+    })
+    playTone(context, destination, {
+      type: 'triangle',
+      frequency: 1960 * pitch,
+      frequencyEnd: 1320 * pitch,
+      duration: 0.1,
+      volume: 0.09,
+      start,
+    })
+    playTone(context, destination, {
+      type: 'triangle',
+      frequency: 2940 * pitch,
+      frequencyEnd: 1680 * pitch,
+      duration: 0.075,
+      volume: 0.055,
+      start: start + 0.006,
+    })
+    playTone(context, destination, {
+      type: 'sine',
+      frequency: 340 * pitch,
+      frequencyEnd: 170,
+      duration: 0.09,
+      volume: 0.07,
+      start,
+    })
+  })
 }
+
+export const playExplosionSound = playHitSound

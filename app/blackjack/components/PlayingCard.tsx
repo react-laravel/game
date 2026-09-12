@@ -108,7 +108,7 @@ export function PlayingCard({
       <motion.div
         initial={{ opacity: 0, y: -36, scale: 0.75, rotate: -8 }}
         animate={{ opacity: 1, y: 0, scale: 1, rotate: restRotate }}
-        transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         className={cn(
           s.box,
           'shrink-0 overflow-hidden rounded-md border border-emerald-950/50',
@@ -126,7 +126,7 @@ export function PlayingCard({
     <motion.div
       initial={{ opacity: 0, y: -48, scale: 0.7, rotate: -14 }}
       animate={{ opacity: 1, y: 0, scale: 1, rotate: restRotate }}
-      transition={{ type: 'spring', stiffness: 300, damping: 18, mass: 0.8 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }}
       className={cn(s.box, 'relative shrink-0 [perspective:800px]', className)}
       style={{ zIndex: fanIndex + 1 }}
     >

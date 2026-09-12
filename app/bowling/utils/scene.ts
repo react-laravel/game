@@ -126,22 +126,6 @@ export function createSceneElements(
   const { groundMaterial } = materials
   const woodTexture = createWoodTexture()
 
-  const carpet = new THREE.Mesh(
-    new THREE.PlaneGeometry(80, 90),
-    new THREE.MeshStandardMaterial({ color: 0x140e18, roughness: 0.95 })
-  )
-  carpet.rotation.x = -Math.PI / 2
-  carpet.position.y = -0.2
-  carpet.receiveShadow = true
-  scene.add(carpet)
-
-  const pit = new THREE.Mesh(
-    new THREE.BoxGeometry(12, 2.4, 8),
-    new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9 })
-  )
-  pit.position.set(0, -1.3, -24)
-  scene.add(pit)
-
   const laneLength = 32
   const laneWidth = PHYSICS_CONFIG.LANE_WIDTH
   const laneMaterial = new THREE.MeshStandardMaterial({
@@ -151,6 +135,7 @@ export function createSceneElements(
     metalness: 0.04,
   })
   const laneMesh = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), laneMaterial)
+  laneMesh.name = 'bowling-lane'
   laneMesh.rotation.x = -Math.PI / 2
   laneMesh.position.set(0, 0.02, -6)
   laneMesh.receiveShadow = true
@@ -162,20 +147,24 @@ export function createSceneElements(
   laneBody.position.set(0, -0.1, -6)
   world.addBody(laneBody)
 
-  const approach = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, 5), laneMaterial)
+  const approach = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, 8), laneMaterial)
+  approach.name = 'bowling-approach'
   approach.rotation.x = -Math.PI / 2
-  approach.position.set(0, 0.02, 12.5)
+  approach.position.set(0, 0.02, 13.8)
   approach.receiveShadow = true
   scene.add(approach)
 
   const neighborMaterial = new THREE.MeshStandardMaterial({
-    color: 0x6b4423,
-    roughness: 0.7,
+    map: woodTexture,
+    color: woodTexture ? 0xd4a574 : 0x8a5a32,
+    roughness: 0.55,
+    metalness: 0.03,
   })
-  ;[-1, 1].forEach(side => {
+  ;[-2, -1, 1, 2].forEach((side, index) => {
     const neighbor = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), neighborMaterial)
+    neighbor.name = `bowling-neighbor-lane-${index}`
     neighbor.rotation.x = -Math.PI / 2
-    neighbor.position.set(side * (laneWidth + 1.6), -0.04, -6)
+    neighbor.position.set(side * (laneWidth + 1.7), -0.03, -6)
     neighbor.receiveShadow = true
     scene.add(neighbor)
   })
@@ -340,58 +329,46 @@ export function createWalls(scene: THREE.Scene, world: CANNON.World) {
   const leftGutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
   leftGutter.position.set(-gutterCenterX, gutterY, wallPositionZ)
   scene.add(leftGutter)
-
-  const backWall = new THREE.Mesh(
-    new THREE.BoxGeometry(18, 8, 0.6),
-    new THREE.MeshStandardMaterial({ color: 0x0b0b12, roughness: 0.9 })
-  )
-  backWall.position.set(0, 3, -28)
-  scene.add(backWall)
-
-  const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(8, 1.2),
-    new THREE.MeshStandardMaterial({
-      color: 0xfbbf24,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 1.6,
-    })
-  )
-  sign.position.set(0, 5.2, -27.6)
-  scene.add(sign)
 }
 
 export function createLighting(scene: THREE.Scene) {
-  scene.add(new THREE.HemisphereLight(0xffe4c8, 0x0b1020, 0.55))
+  scene.add(new THREE.AmbientLight(0xfff1de, 0.42))
+  scene.add(new THREE.HemisphereLight(0xffe8c8, 0x3b2a38, 0.85))
 
-  const mainLight = new THREE.DirectionalLight(0xfff4e5, 0.85)
-  mainLight.position.set(4, 16, 8)
-  mainLight.target.position.set(0, 0, -14)
+  const mainLight = new THREE.DirectionalLight(0xfff4e5, 0.95)
+  mainLight.position.set(3, 14, 10)
+  mainLight.target.position.set(0, 0, -12)
   mainLight.castShadow = true
   mainLight.shadow.mapSize.set(2048, 2048)
   mainLight.shadow.camera.near = 0.1
-  mainLight.shadow.camera.far = 60
-  mainLight.shadow.camera.left = -16
-  mainLight.shadow.camera.right = 16
-  mainLight.shadow.camera.top = 16
-  mainLight.shadow.camera.bottom = -16
+  mainLight.shadow.camera.far = 70
+  mainLight.shadow.camera.left = -22
+  mainLight.shadow.camera.right = 22
+  mainLight.shadow.camera.top = 20
+  mainLight.shadow.camera.bottom = -20
+  mainLight.shadow.bias = -0.0004
   scene.add(mainLight)
   scene.add(mainLight.target)
 
-  const laneSpot = new THREE.SpotLight(0xfff7ed, 1.4, 36, Math.PI / 7, 0.45, 1.4)
-  laneSpot.position.set(0, 11, 4)
+  const laneSpot = new THREE.SpotLight(0xfff7ed, 1.25, 42, Math.PI / 6, 0.5, 1.1)
+  laneSpot.position.set(0, 10, 6)
   laneSpot.target.position.set(0, 0, -8)
   laneSpot.castShadow = true
   scene.add(laneSpot)
   scene.add(laneSpot.target)
 
-  const pinSpot = new THREE.SpotLight(0xffffff, 2.1, 24, Math.PI / 9, 0.25, 1.2)
-  pinSpot.position.set(0, 9, -12)
+  const pinSpot = new THREE.SpotLight(0xffffff, 1.8, 28, Math.PI / 8, 0.28, 1.1)
+  pinSpot.position.set(0, 8.4, -10)
   pinSpot.target.position.set(0, 0.8, -20)
   pinSpot.castShadow = true
   scene.add(pinSpot)
   scene.add(pinSpot.target)
 
-  const fill = new THREE.PointLight(0x38bdf8, 0.35, 28)
-  fill.position.set(0, 4, -6)
-  scene.add(fill)
+  const roomFill = new THREE.PointLight(0xffd7a8, 0.55, 48)
+  roomFill.position.set(0, 5.5, 2)
+  scene.add(roomFill)
+
+  const rearFill = new THREE.PointLight(0xffc98a, 0.45, 22)
+  rearFill.position.set(0, 4.8, -22)
+  scene.add(rearFill)
 }

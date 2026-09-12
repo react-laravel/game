@@ -40,8 +40,8 @@ vi.mock('../FPSWeapon', () => ({
   FPSWeapon: vi.fn(() => <div data-testid="fps-weapon">FPSWeapon</div>),
 }))
 
-vi.mock('../Explosion', () => ({
-  Explosion: vi.fn(() => <div data-testid="explosion">Explosion</div>),
+vi.mock('../ImpactFX', () => ({
+  ImpactFX: vi.fn(() => <div data-testid="impact-fx">ImpactFX</div>),
 }))
 
 vi.mock('../../../utils/gameUtils', () => ({
@@ -167,9 +167,9 @@ describe('GameScene', () => {
   })
 
   describe('Explosions', () => {
-    it('should render Explosion components', () => {
+    it('should render pooled ImpactFX instead of per-hit explosions', () => {
       render(<GameScene {...defaultProps} gameStarted={true} />)
-      // Explosion effects should be rendered
+      expect(screen.getByTestId('impact-fx')).toBeTruthy()
     })
   })
 

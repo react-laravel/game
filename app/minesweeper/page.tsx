@@ -9,7 +9,7 @@ import { MINESWEEPER_RULES, MinesweeperHeader } from './components/MinesweeperHe
 import { MinesweeperStats } from './components/MinesweeperStats'
 import { useMinesweeperStore } from './store'
 import type { Cell, Difficulty, DifficultyConfig, MinesweeperGameState } from './types'
-import { createEmptyBoard } from './utils/board'
+import { canRevealCell, createEmptyBoard, cycleCellMark, remainingMinesDelta } from './utils/board'
 
 export default function MinesweeperGame() {
   const { stats, updateStats } = useMinesweeperStore()
@@ -120,19 +120,17 @@ export default function MinesweeperGame() {
 
   const checkWinCondition = useCallback(
     (nextBoard: Cell[][]) => {
-      let hiddenCount = 0
-      let flaggedCount = 0
+      let unrevealedCount = 0
 
       for (let row = 0; row < config.rows; row++) {
         for (let col = 0; col < config.cols; col++) {
           const cell = nextBoard[row]?.[col]
           if (!cell) continue
-          if (cell.state === 'hidden') hiddenCount++
-          if (cell.state === 'flagged') flaggedCount++
+          if (cell.state !== 'revealed') unrevealedCount++
         }
       }
 
-      return hiddenCount + flaggedCount === config.mines
+      return unrevealedCount === config.mines
     },
     [config]
   )
@@ -179,14 +177,13 @@ export default function MinesweeperGame() {
 
       setBoard(currentBoard => {
         const newBoard = currentBoard.map(row => row.map(cell => ({ ...cell })))
+        const currentState = newBoard[row][col].state
+        const nextState = cycleCellMark(currentState)
 
-        if (newBoard[row][col].state === 'hidden') {
-          newBoard[row][col].state = 'flagged'
-          setMineCount(prev => prev - 1)
-        } else if (newBoard[row][col].state === 'flagged') {
-          newBoard[row][col].state = 'hidden'
-          setMineCount(prev => prev + 1)
-        }
+        if (nextState === currentState) return currentBoard
+
+        newBoard[row][col].state = nextState
+        setMineCount(prev => prev + remainingMinesDelta(currentState, nextState))
 
         if (checkWinCondition(newBoard)) {
           setGameState('won')
@@ -206,7 +203,11 @@ export default function MinesweeperGame() {
       setBoard(currentBoard => {
         let newBoard = currentBoard.map(row => row.map(cell => ({ ...cell })))
 
-        if (newBoard[row][col].state !== 'hidden') return currentBoard
+        if (!canRevealCell(newBoard[row][col].state)) return currentBoard
+
+        if (newBoard[row][col].state === 'questioned') {
+          newBoard[row][col].state = 'hidden'
+        }
 
         // 第一次点击
         if (firstClick) {

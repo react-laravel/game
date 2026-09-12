@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { generateRandomPosition, generateRandomDirection, difficultySettings } from '../gameUtils'
+import {
+  applyTargetHit,
+  generateRandomPosition,
+  generateRandomDirection,
+  difficultySettings,
+  respawnTarget,
+} from '../gameUtils'
 
 describe('shooting-range gameUtils', () => {
   describe('generateRandomPosition', () => {
@@ -54,6 +60,61 @@ describe('shooting-range gameUtils', () => {
       expect(typeof dir[0]).toBe('number')
       expect(typeof dir[1]).toBe('number')
       expect(typeof dir[2]).toBe('number')
+    })
+  })
+
+  describe('target runtime', () => {
+    it('marks a target as hit without replacing it', () => {
+      const target = {
+        userData: { hit: false },
+        position: {
+          x: 1,
+          y: 2,
+          z: 3,
+          set(x: number, y: number, z: number) {
+            this.x = x
+            this.y = y
+            this.z = z
+          },
+        },
+      }
+
+      applyTargetHit(target)
+
+      expect(target.userData.hit).toBe(true)
+      expect(target.position).toEqual(expect.objectContaining({ x: 1, y: 2, z: 3 }))
+    })
+
+    it('respawns a target at a new position and clears the hit flag', () => {
+      const direction = {
+        x: 1,
+        y: 0,
+        z: 0,
+        set(x: number, y: number, z: number) {
+          this.x = x
+          this.y = y
+          this.z = z
+        },
+      }
+      const target = {
+        userData: { hit: true, direction },
+        position: {
+          x: 1,
+          y: 2,
+          z: 3,
+          set(x: number, y: number, z: number) {
+            this.x = x
+            this.y = y
+            this.z = z
+          },
+        },
+      }
+
+      respawnTarget(target, 20)
+
+      expect(target.userData.hit).toBe(false)
+      expect(target.position.z).toBeLessThan(0)
+      expect(Math.hypot(direction.x, direction.y, direction.z)).toBeCloseTo(1, 5)
     })
   })
 

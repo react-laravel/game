@@ -13,7 +13,7 @@ import {
  * 桌面端快捷键：
  * H 要牌 · S 停牌 · D 加倍 · P 分牌
  * Enter 确认下注 / 下一局
- * A 切换托管 · M 静音由外层处理
+ * A 切换托管（仅闲家） · M 静音由外层处理
  */
 export function useBlackjackKeyboard(options?: { onToggleMute?: () => void }) {
   useEffect(() => {
@@ -43,6 +43,7 @@ export function useBlackjackKeyboard(options?: { onToggleMute?: () => void }) {
       }
 
       if (key === 'a' && !e.metaKey && !e.ctrlKey) {
+        if (config.role !== 'player') return
         e.preventDefault()
         st.toggleAutoPlay()
         return

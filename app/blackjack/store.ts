@@ -14,8 +14,10 @@ import {
 } from './constants'
 import type { Card, Dealer, GameConfig, Phase, Role, Seat } from './types'
 import {
+  canEnableAutoPlay,
   decideAutoPlayAction,
   loadAutoPlayConfig,
+  normalizeAutoPlayForRole,
   saveAutoPlayConfig,
   type AutoPlayConfig,
 } from './utils/autoPlay'
@@ -861,7 +863,12 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     accountChips: ACCOUNT_INITIAL_CHIPS,
     walletOwnerId: 'guest',
 
-    setRole: role => set(s => ({ config: { ...s.config, role } })),
+    setRole: role =>
+      set(s => {
+        const autoPlay = normalizeAutoPlayForRole(s.autoPlay, role)
+        if (autoPlay !== s.autoPlay) saveAutoPlayConfig(autoPlay)
+        return { config: { ...s.config, role }, autoPlay }
+      }),
     setSeatCount: n => set(s => ({ config: { ...s.config, seatCount: n } })),
     setHumanBetDraft: n => set({ humanBetDraft: n, betChipStack: n > 0 ? [n] : [] }),
     addBetChip: value => {
@@ -922,7 +929,10 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     setAutoPlay: partial => {
       set(s => {
-        const autoPlay = { ...s.autoPlay, ...partial }
+        const autoPlay = normalizeAutoPlayForRole(
+          { ...s.autoPlay, ...partial },
+          s.config.role
+        )
         saveAutoPlayConfig(autoPlay)
         return { autoPlay }
       })
@@ -948,6 +958,7 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
     },
 
     toggleAutoPlay: () => {
+      if (!canEnableAutoPlay(get().config.role)) return
       const next = !get().autoPlay.enabled
       get().setAutoPlay({ enabled: next })
       set(s => {
@@ -989,12 +1000,15 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
       }
 
       const seats = makeSeats(config, accountChips)
+      const autoPlay = normalizeAutoPlayForRole(st0.autoPlay, config.role)
+      if (autoPlay !== st0.autoPlay) saveAutoPlayConfig(autoPlay)
       set({
         phase: 'betting',
         config,
         seats,
         shoe: createShoe(),
         dealer: emptyDealer(),
+        autoPlay,
         // 坐庄：庄家资金=账号钱包；做闲家：系统庄家用独立池，不花账号钱
         // 做闲家时系统庄家使用大额筹码池，与账号无关
         bankChips: config.role === 'dealer' ? accountChips : Math.max(1_000_000, accountChips * 50),
@@ -1271,7 +1285,13 @@ export const useBlackjackStore = create<BlackjackState>((set, get) => {
 
     tickAutoPlay: () => {
       const st = get()
-      if (!st.autoPlay.enabled || st.phase !== 'player_turns') return
+      if (
+        !canEnableAutoPlay(st.config.role) ||
+        !st.autoPlay.enabled ||
+        st.phase !== 'player_turns'
+      ) {
+        return
+      }
       const idx = st.activeSeatIndex
       const seat = st.seats[idx]
       const hand = seat ? getActiveHand(seat) : undefined

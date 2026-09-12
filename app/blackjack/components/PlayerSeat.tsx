@@ -1,6 +1,5 @@
 'use client'
 
-import { AnimatePresence, motion } from 'framer-motion'
 import { Bot, User } from 'lucide-react'
 import type { PlayerHand, Seat } from '../types'
 import { displayTotal } from '../utils/hand'
@@ -12,6 +11,8 @@ import { cn } from '@/lib/helpers'
 interface PlayerSeatProps {
   seat: Seat
   isActive?: boolean
+  /** 真人座位：牌桌正中，略突出 */
+  featured?: boolean
 }
 
 const resultLabel: Record<string, string> = {
@@ -56,14 +57,14 @@ function HandBlock({
       {hand.bet > 0 && (
         <ChipStack amount={hand.bet} size="xs" maxVisible={4} />
       )}
-      <div className="flex min-h-11 items-end justify-center">
+      <div className="flex h-11 items-end justify-center">
         {showCards ? (
           <CardFan cards={hand.cards} size="xs" />
         ) : (
           <span className="text-[10px] text-emerald-100/40">…</span>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-0.5">
+      <div className="flex h-5 flex-wrap items-center justify-center gap-0.5">
         <span
           className={cn(
             'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
@@ -98,38 +99,25 @@ function HandBlock({
   )
 }
 
-export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
+export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
   const multi = seat.hands.length > 1
   const totalBet = seatTotalBet(seat)
-  const anyBust = seat.hands.every(h => h.status === 'bust') && seat.hands.length > 0
   // 未发牌时 hands 可能只有 betting 空牌
   const waiting =
     seat.hands.length === 0 ||
     (seat.hands.length === 1 && seat.hands[0].cards.length === 0)
+  const spectating = seat.chips < 5 && waiting && totalBet === 0
 
   return (
-    <motion.div
-      layout
-      animate={
-        anyBust
-          ? { x: [0, -4, 4, -3, 3, 0], opacity: 0.8 }
-          : isActive
-            ? { scale: [1, 1.03, 1] }
-            : { scale: 1, opacity: seat.chips < 5 && waiting ? 0.4 : 1 }
-      }
-      transition={
-        anyBust
-          ? { duration: 0.4 }
-          : isActive
-            ? { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }
-            : { duration: 0.2 }
-      }
+    <div
       className={cn(
-        'flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 transition-colors',
-        isActive && 'bg-white/10 ring-1 ring-amber-300/70 shadow-[0_0_16px_rgba(251,191,36,0.2)]'
+        'flex w-[4.75rem] shrink-0 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 sm:w-24',
+        featured && 'w-[5.5rem] sm:w-28',
+        isActive && 'bg-white/10 ring-1 ring-amber-300/70 shadow-[0_0_16px_rgba(251,191,36,0.25)]',
+        spectating && 'opacity-40'
       )}
     >
-      <div className="flex max-w-full items-center gap-0.5 text-[11px] leading-tight text-emerald-50/90">
+      <div className="flex h-4 max-w-full items-center gap-0.5 text-[11px] leading-tight text-emerald-50/90">
         {seat.isHuman ? (
           <User className="h-3 w-3 shrink-0 text-amber-300" />
         ) : (
@@ -140,32 +128,23 @@ export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
           <span className="rounded bg-white/10 px-1 text-[9px] text-emerald-100/70">分</span>
         )}
       </div>
-      <div className="text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
+      <div className="h-4 text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
 
       {waiting ? (
-        <>
+        <div className="flex h-[4.75rem] flex-col items-center justify-end gap-0.5">
           <div className="flex min-h-8 items-end justify-center">
-            <AnimatePresence mode="popLayout">
-              {totalBet > 0 && (
-                <motion.div
-                  key={`bet-${totalBet}`}
-                  initial={{ scale: 0, y: 8 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                >
-                  <ChipStack amount={totalBet} size="xs" maxVisible={5} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {totalBet > 0 ? (
+              <ChipStack amount={totalBet} size="xs" maxVisible={5} />
+            ) : null}
           </div>
-          <span className="text-[10px] text-emerald-100/40">
-            {seat.chips < 5 && totalBet === 0 ? '观战' : '…'}
+          <span className="h-4 text-[10px] text-emerald-100/40">
+            {spectating ? '观战' : '…'}
           </span>
-        </>
+        </div>
       ) : (
         <div
           className={cn(
-            'flex w-full items-start justify-center gap-1',
+            'flex min-h-[4.75rem] w-full items-end justify-center gap-1',
             multi && 'gap-1.5'
           )}
         >
@@ -179,6 +158,6 @@ export function PlayerSeat({ seat, isActive }: PlayerSeatProps) {
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }

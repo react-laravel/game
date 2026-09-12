@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Card, Rank, Suit } from '../../types'
-import { decideAutoPlayAction, DEFAULT_AUTO_PLAY } from '../autoPlay'
+import {
+  canEnableAutoPlay,
+  decideAutoPlayAction,
+  DEFAULT_AUTO_PLAY,
+  normalizeAutoPlayForRole,
+} from '../autoPlay'
 
 function c(rank: Rank, suit: Suit = 'spades'): Card {
   return { rank, suit, id: rank + suit }
@@ -64,5 +69,29 @@ describe('decideAutoPlayAction', () => {
     expect(
       decideAutoPlayAction([c('5'), c('7')], 500, 20, false, base)
     ).toBe('hit')
+  })
+})
+
+describe('坐庄不能托管', () => {
+  it('仅闲家可开启托管', () => {
+    expect(canEnableAutoPlay('player')).toBe(true)
+    expect(canEnableAutoPlay('dealer')).toBe(false)
+  })
+
+  it('坐庄时关掉托管，保留自动下一局', () => {
+    const next = normalizeAutoPlayForRole(
+      { ...DEFAULT_AUTO_PLAY, enabled: true, autoNextRound: true },
+      'dealer'
+    )
+    expect(next.enabled).toBe(false)
+    expect(next.autoNextRound).toBe(true)
+  })
+
+  it('闲家保持托管开启', () => {
+    const next = normalizeAutoPlayForRole(
+      { ...DEFAULT_AUTO_PLAY, enabled: true },
+      'player'
+    )
+    expect(next.enabled).toBe(true)
   })
 })

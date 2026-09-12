@@ -1,7 +1,7 @@
 /**
  * 射击游戏组件导出
  */
-export { Explosion } from './Explosion'
+export { ImpactFX } from './ImpactFX'
 export { Target } from './Target'
 export { GunModel } from './GunModel'
 export { Crosshair } from './Crosshair'

@@ -20,9 +20,12 @@ const POINT_OPTIONS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21] as const
 
 export function AutoPlayPanel({ compact }: { compact?: boolean }) {
   const autoPlay = useBlackjackStore(s => s.autoPlay)
+  const role = useBlackjackStore(s => s.config.role)
   const setAutoPlay = useBlackjackStore(s => s.setAutoPlay)
   const toggleAutoPlay = useBlackjackStore(s => s.toggleAutoPlay)
   const [open, setOpen] = useState(false)
+
+  if (role !== 'player') return null
 
   const patch = (partial: Partial<AutoPlayConfig>) => {
     emitBlackjackSfx('click')

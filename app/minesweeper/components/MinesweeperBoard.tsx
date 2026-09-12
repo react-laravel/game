@@ -24,9 +24,22 @@ const NUMBER_COLORS = [
 
 function getCellContent(cell: Cell): string {
   if (cell.state === 'flagged') return '🚩'
+  if (cell.state === 'questioned') return '?'
   if (cell.state === 'hidden') return ''
   if (cell.isMine) return '💣'
   return cell.neighborCount === 0 ? '' : cell.neighborCount.toString()
+}
+
+function getCellAriaLabel(cell: Cell, rowIndex: number, colIndex: number): string {
+  const position = `扫雷格子 ${rowIndex + 1}-${colIndex + 1}`
+  if (cell.state === 'flagged') return `${position}，已插旗`
+  if (cell.state === 'questioned') return `${position}，问号`
+  if (cell.state === 'revealed') {
+    if (cell.isMine) return `${position}，地雷`
+    if (cell.neighborCount === 0) return `${position}，已翻开`
+    return `${position}，周围 ${cell.neighborCount} 颗雷`
+  }
+  return position
 }
 
 function getCellStyle(cell: Cell): string {
@@ -38,6 +51,9 @@ function getCellStyle(cell: Cell): string {
   }
   if (cell.state === 'flagged') {
     return `${baseStyle} bg-amber-200 dark:bg-amber-700`
+  }
+  if (cell.state === 'questioned') {
+    return `${baseStyle} bg-muted text-sky-700 dark:text-sky-300`
   }
   if (cell.isMine) {
     return `${baseStyle} bg-red-500 text-white`
@@ -62,7 +78,7 @@ const MinesweeperCell = memo(function MinesweeperCell({
   return (
     <button
       type="button"
-      aria-label={`扫雷格子 ${rowIndex + 1}-${colIndex + 1}`}
+      aria-label={getCellAriaLabel(cell, rowIndex, colIndex)}
       className={getCellStyle(cell)}
       onClick={() => onCellClick(rowIndex, colIndex)}
       onContextMenu={event => onCellRightClick(event, rowIndex, colIndex)}

@@ -1,4 +1,4 @@
-export type CellState = 'hidden' | 'revealed' | 'flagged'
+export type CellState = 'hidden' | 'revealed' | 'flagged' | 'questioned'
 
 export interface Cell {
   isMine: boolean

@@ -1,4 +1,4 @@
-import type { Card } from '../types'
+import type { Card, Role } from '../types'
 import { evaluateHand } from './hand'
 
 export type AutoPlayAction = 'hit' | 'stand' | 'double' | 'split'
@@ -64,6 +64,20 @@ export function loadAutoPlayConfig(): AutoPlayConfig {
   } catch {
     return { ...DEFAULT_AUTO_PLAY }
   }
+}
+
+/** 闲家才需要托管；庄家按固定规则出牌，不能开启托管。 */
+export function canEnableAutoPlay(role: Role): boolean {
+  return role === 'player'
+}
+
+/** 坐庄时强制关闭托管，保留自动下一局等其它偏好。 */
+export function normalizeAutoPlayForRole(
+  config: AutoPlayConfig,
+  role: Role
+): AutoPlayConfig {
+  if (canEnableAutoPlay(role) || !config.enabled) return config
+  return { ...config, enabled: false }
 }
 
 export function saveAutoPlayConfig(config: AutoPlayConfig) {

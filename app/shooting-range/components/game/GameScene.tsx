@@ -3,17 +3,19 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Target } from './Target'
 import { FPSWeapon } from './FPSWeapon'
+import { ImpactFX, type ImpactFXHandle } from './ImpactFX'
 import {
+  applyTargetHit,
   difficultySettings,
   generateRandomDirection,
   generateRandomPosition,
+  respawnTarget,
 } from '../../utils/gameUtils'
 import { playHitSound, playShotSound } from '../../utils/audioUtils'
 
 interface TargetData {
   id: number
   position: [number, number, number]
-  hit: boolean
   scale: number
   speed: number
   direction: [number, number, number]
@@ -28,7 +30,6 @@ function createTargets(settings: (typeof difficultySettings)[keyof typeof diffic
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position: generateRandomPosition(settings.gameAreaSize),
-    hit: false,
     scale: Math.random() * 0.18 + 0.55,
     speed: Math.random() * 0.008 + settings.targetSpeed,
     direction: generateRandomDirection(),
@@ -46,7 +47,7 @@ interface GameSceneProps {
   sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
 }
 
-/** The render loop only mutates Three.js objects; React state changes on discrete game events. */
+/** Hits, muzzle flashes, and respawns mutate Three.js objects instead of React state. */
 export function GameScene({
   difficulty,
   onScore,
@@ -59,7 +60,7 @@ export function GameScene({
 }: GameSceneProps) {
   const { camera, gl } = useThree()
   const settings = difficultySettings[difficulty]
-  const [targets, setTargets] = useState<TargetData[]>(() => createTargets(settings))
+  const [targets] = useState<TargetData[]>(() => createTargets(settings))
   const targetObjects = useRef(new Map<number, THREE.Group>())
   const hitTargetIds = useRef(new Set<number>())
   const respawnTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
@@ -69,7 +70,9 @@ export function GameScene({
   const muzzleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotElapsed = useRef(0)
   const lookRotation = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
-  const [muzzleFlash, setMuzzleFlash] = useState(false)
+  const muzzleFlashRef = useRef(false)
+  const impactFXRef = useRef<ImpactFXHandle>(null)
+  const hitWorldPosition = useRef(new THREE.Vector3())
 
   const registerTarget = useCallback((id: number, target: THREE.Group | null) => {
     if (target) targetObjects.current.set(id, target)
@@ -81,30 +84,24 @@ export function GameScene({
       if (hitTargetIds.current.has(id)) return
       hitTargetIds.current.add(id)
 
-      setTargets(previous =>
-        previous.map(target => (target.id === id ? { ...target, hit: true } : target))
-      )
+      const targetObject = targetObjects.current.get(id)
+      if (targetObject) {
+        applyTargetHit(targetObject)
+        targetObject.getWorldPosition(hitWorldPosition.current)
+        impactFXRef.current?.trigger(hitWorldPosition.current)
+      }
+
       playHitSound()
-      navigator.vibrate?.(28)
       onScore()
       onHitFeedback?.()
+      requestAnimationFrame(() => navigator.vibrate?.(28))
 
       const previousTimer = respawnTimers.current.get(id)
       if (previousTimer) clearTimeout(previousTimer)
 
       const timer = setTimeout(() => {
-        setTargets(previous =>
-          previous.map(target =>
-            target.id === id
-              ? {
-                  ...target,
-                  position: generateRandomPosition(settings.gameAreaSize),
-                  direction: generateRandomDirection(),
-                  hit: false,
-                }
-              : target
-          )
-        )
+        const current = targetObjects.current.get(id)
+        if (current) respawnTarget(current, settings.gameAreaSize)
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
       }, 900)
@@ -116,8 +113,10 @@ export function GameScene({
 
   const showMuzzleFlash = useCallback(() => {
     if (muzzleTimer.current) clearTimeout(muzzleTimer.current)
-    setMuzzleFlash(true)
-    muzzleTimer.current = setTimeout(() => setMuzzleFlash(false), 55)
+    muzzleFlashRef.current = true
+    muzzleTimer.current = setTimeout(() => {
+      muzzleFlashRef.current = false
+    }, 55)
   }, [])
 
   const handleShoot = useCallback(() => {
@@ -168,16 +167,13 @@ export function GameScene({
       yaw: Number(camera.rotation.y.toFixed(3)),
       pitch: Number(camera.rotation.x.toFixed(3)),
     }
-    sceneStateRef.current.targets = targets.map(target => {
-      const position = targetObjects.current.get(target.id)?.position
-      return {
-        id: target.id,
-        x: Number((position?.x ?? target.position[0]).toFixed(2)),
-        y: Number((position?.y ?? target.position[1]).toFixed(2)),
-        z: Number((position?.z ?? target.position[2]).toFixed(2)),
-        hit: target.hit,
-      }
-    })
+    sceneStateRef.current.targets = Array.from(targetObjects.current, ([id, object]) => ({
+      id,
+      x: Number(object.position.x.toFixed(2)),
+      y: Number(object.position.y.toFixed(2)),
+      z: Number(object.position.z.toFixed(2)),
+      hit: Boolean(object.userData.hit),
+    }))
   })
 
   useEffect(() => {
@@ -318,14 +314,14 @@ export function GameScene({
           direction={target.direction}
           speed={target.speed}
           gameAreaSize={settings.gameAreaSize}
-          hit={target.hit}
           scale={target.scale}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />
       ))}
 
-      <FPSWeapon muzzleFlash={muzzleFlash} />
+      <ImpactFX ref={impactFXRef} />
+      <FPSWeapon muzzleFlashRef={muzzleFlashRef} />
     </>
   )
 }

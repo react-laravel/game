@@ -1,18 +1,43 @@
 import { memo, useEffect, useRef } from 'react'
 import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Explosion } from './Explosion'
 
 interface TargetProps {
   position: [number, number, number]
   direction: [number, number, number]
   speed: number
   gameAreaSize: number
-  hit: boolean
   scale: number
   onClick: (id: number) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
+}
+
+const plateIdleColor = new THREE.Color('#e8f0f7')
+const plateHitColor = new THREE.Color('#ff3b3b')
+const plateIdleEmissive = new THREE.Color('#07131d')
+const plateHitEmissive = new THREE.Color('#7f1010')
+const ringIdleColor = new THREE.Color('#1d9bf0')
+const ringHitColor = new THREE.Color('#ffb020')
+const innerIdleColor = new THREE.Color('#102a3c')
+const innerHitColor = new THREE.Color('#fff1c2')
+const centerIdleColor = new THREE.Color('#ff9f1c')
+const centerHitColor = new THREE.Color('#ffffff')
+
+function applyTargetLook(
+  hit: boolean,
+  plate: THREE.MeshStandardMaterial | null,
+  ring: THREE.MeshBasicMaterial | null,
+  inner: THREE.MeshBasicMaterial | null,
+  center: THREE.MeshBasicMaterial | null
+) {
+  if (!plate || !ring || !inner || !center) return
+  plate.color.copy(hit ? plateHitColor : plateIdleColor)
+  plate.emissive.copy(hit ? plateHitEmissive : plateIdleEmissive)
+  plate.emissiveIntensity = hit ? 2.5 : 0.35
+  ring.color.copy(hit ? ringHitColor : ringIdleColor)
+  inner.color.copy(hit ? innerHitColor : innerIdleColor)
+  center.color.copy(hit ? centerHitColor : centerIdleColor)
 }
 
 /** A moving range drone. Movement is applied directly to Three.js objects. */
@@ -21,7 +46,6 @@ function TargetComponent({
   direction,
   speed,
   gameAreaSize,
-  hit,
   scale,
   onClick,
   onReady,
@@ -29,15 +53,23 @@ function TargetComponent({
 }: TargetProps) {
   const rootRef = useRef<THREE.Group>(null)
   const visualRef = useRef<THREE.Group>(null)
+  const plateMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const ringMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const innerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const centerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
+  const jitterRef = useRef(new THREE.Vector3())
   const hitElapsed = useRef(0)
-  const previousHit = useRef(hit)
+  const previousHit = useRef(false)
 
   useEffect(() => {
-    if (!rootRef.current) return
-    rootRef.current.userData.targetId = id
-    rootRef.current.userData.isTarget = true
-    onReady?.(id, rootRef.current)
+    const root = rootRef.current
+    if (!root) return
+    root.userData.targetId = id
+    root.userData.isTarget = true
+    root.userData.hit = false
+    root.userData.direction = directionRef.current
+    onReady?.(id, root)
     return () => onReady?.(id, null)
   }, [id, onReady])
 
@@ -46,10 +78,18 @@ function TargetComponent({
     const visual = visualRef.current
     if (!root || !visual) return
 
+    const hit = root.userData.hit === true
     if (previousHit.current !== hit) {
       previousHit.current = hit
       hitElapsed.current = 0
       visual.visible = true
+      applyTargetLook(
+        hit,
+        plateMaterialRef.current,
+        ringMaterialRef.current,
+        innerMaterialRef.current,
+        centerMaterialRef.current
+      )
     }
 
     if (!hit) {
@@ -71,9 +111,8 @@ function TargetComponent({
       root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
 
       if (Math.random() < delta * 0.3) {
-        directionVector
-          .add(new THREE.Vector3((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.2, 0))
-          .normalize()
+        jitterRef.current.set((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.2, 0)
+        directionVector.add(jitterRef.current).normalize()
       }
 
       const pulse = 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
@@ -90,7 +129,7 @@ function TargetComponent({
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
-    if (!hit) onClick(id)
+    if (!rootRef.current?.userData.hit) onClick(id)
   }
 
   return (
@@ -99,7 +138,6 @@ function TargetComponent({
       position={position}
       scale={scale}
       onClick={handleClick}
-      userData={{ targetId: id, isTarget: true, hit }}
     >
       <group ref={visualRef}>
         <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
@@ -110,26 +148,27 @@ function TargetComponent({
         <mesh position={[0, 0, 0.1]}>
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial
-            color={hit ? '#ff3b3b' : '#e8f0f7'}
-            emissive={hit ? '#7f1010' : '#07131d'}
-            emissiveIntensity={hit ? 2.5 : 0.35}
+            ref={plateMaterialRef}
+            color="#e8f0f7"
+            emissive="#07131d"
+            emissiveIntensity={0.35}
             roughness={0.5}
           />
         </mesh>
 
         <mesh position={[0, 0, 0.115]}>
           <ringGeometry args={[0.55, 0.73, 32]} />
-          <meshBasicMaterial color={hit ? '#ffb020' : '#1d9bf0'} toneMapped={false} />
+          <meshBasicMaterial ref={ringMaterialRef} color="#1d9bf0" toneMapped={false} />
         </mesh>
 
         <mesh position={[0, 0, 0.125]}>
           <circleGeometry args={[0.33, 32]} />
-          <meshBasicMaterial color={hit ? '#fff1c2' : '#102a3c'} toneMapped={false} />
+          <meshBasicMaterial ref={innerMaterialRef} color="#102a3c" toneMapped={false} />
         </mesh>
 
         <mesh position={[0, 0, 0.135]}>
           <circleGeometry args={[0.13, 24]} />
-          <meshBasicMaterial color={hit ? '#ffffff' : '#ff9f1c'} toneMapped={false} />
+          <meshBasicMaterial ref={centerMaterialRef} color="#ff9f1c" toneMapped={false} />
         </mesh>
 
         <mesh position={[-1.18, 0, 0]}>
@@ -141,13 +180,6 @@ function TargetComponent({
           <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
         </mesh>
       </group>
-
-      {hit && (
-        <>
-          <Explosion position={[0, 0, 0.3]} color="#ffb020" />
-          <pointLight position={[0, 0, 0.5]} intensity={2.5} distance={4} color="#ff8a00" />
-        </>
-      )}
     </group>
   )
 }

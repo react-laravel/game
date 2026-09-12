@@ -8,6 +8,7 @@ import { usePointerLock } from '../hooks/usePointerLock'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
 import { useShootingSession } from '../hooks/useShootingSession'
 import type { ShootingDifficulty } from '../types'
+import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
 import type { ShootingSceneSnapshot } from './game/GameScene'
 import { ShootingGameCanvas } from './ShootingGameCanvas'
@@ -103,13 +104,14 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
         difficulty={difficulty}
         gameStarted={gameStarted}
         gameOver={gameOver}
-        hitMarker={hitMarker}
         useFallbackControls={browserSupport.useFallback}
         onScore={addScore}
         onShot={recordShot}
         onHitFeedback={showHitFeedback}
         onGameStartedChange={setSessionStarted}
       />
+
+      {gameStarted && !gameOver && <Crosshair hit={hitMarker} />}
 
       {gameStarted && (
         <Button

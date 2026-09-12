@@ -48,6 +48,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Bowling clipping fix: added shared `layout.ts` + `colliders.ts`, approach/gutter/back-wall physics, ball/pin rest heights on the lane surface, taller side walls, and lower default restitution.
 - Snake idle/game-over screens now start a run on WASD or arrow keys (same as Start, plus first direction when valid). Key repeats are ignored before play; opposite first moves still follow existing snake rules.
 - Blackjack `PlayerSeat` 布局调整：筹码堆（`ChipStack`）移至座位列最顶部，名字与余额在其下方；牌面与点数不变，分牌时仍用 `seatTotalBet` 汇总显示。
+- Blackjack 当前玩家高亮：移除 `HandBlock` 内层黄色 `ring`，仅保留座位外层单一高亮框，避免双层黄边。
 - Shooting Range gun and hit sounds are now synthesized with Web Audio (crack/thump vs metallic ping) instead of pitching the same `shot.mp3`.
 - Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
 - Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.

@@ -25,11 +25,9 @@ const resultLabel: Record<string, string> = {
 function HandBlock({
   hand,
   label,
-  isActiveHand,
 }: {
   hand: PlayerHand
   label?: string
-  isActiveHand?: boolean
 }) {
   const showCards = hand.cards.length > 0
   const totalText = showCards
@@ -40,12 +38,7 @@ function HandBlock({
   const doubled = hand.status === 'doubled'
 
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center gap-0.5 rounded-lg px-0.5',
-        isActiveHand && 'ring-1 ring-amber-300/60 rounded-xl'
-      )}
-    >
+    <div className="flex flex-col items-center gap-0.5 rounded-lg px-0.5">
       {label && (
         <span className="text-[9px] text-emerald-100/50">{label}</span>
       )}
@@ -150,7 +143,6 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
               key={hand.id}
               hand={hand}
               label={multi ? `#${i + 1}` : undefined}
-              isActiveHand={isActive && seat.activeHandIndex === i}
             />
           ))}
         </div>

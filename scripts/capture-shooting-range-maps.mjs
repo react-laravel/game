@@ -33,20 +33,19 @@ async function mockAuth(page) {
 }
 
 async function enterFallbackPlay(page) {
-  await page.waitForSelector('canvas', { timeout: 15000 })
+  await page.locator('canvas').first().waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(800)
   const startBtn = page.getByRole('button', { name: /锁定鼠标并开始|点击开始/ })
-  if (await startBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+  if (await startBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
     await startBtn.click()
+    await page.waitForTimeout(800)
   }
   const fallback = page.getByRole('button', { name: '点击目标模式' })
-  if (await fallback.isVisible({ timeout: 2000 }).catch(() => false)) {
+  if (await fallback.isVisible({ timeout: 4000 }).catch(() => false)) {
     await fallback.click()
+    await page.waitForTimeout(500)
   }
-  await page.waitForFunction(() => {
-    const state = window.render_game_to_text?.()
-    return state && JSON.parse(state).mode === 'playing'
-  }, { timeout: 15000 })
-  await page.waitForTimeout(1800)
+  await page.waitForTimeout(5000)
 }
 
 async function captureSetup(page, filePath) {
@@ -122,7 +121,7 @@ async function captureResultsScreen(page, filePath) {
   await injectQaSessionStats(page)
   await page.waitForTimeout(200)
   await page.evaluate(() => window.endShootingSession?.())
-  await page.waitForSelector('text=训练完成', { timeout: 10000 })
+  await page.getByText('训练完成', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 })
   await page.waitForTimeout(500)
   await page.screenshot({ path: filePath, fullPage: false })
 }

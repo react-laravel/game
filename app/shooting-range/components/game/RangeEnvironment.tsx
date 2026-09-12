@@ -131,6 +131,99 @@ function CeilingTroffer({
   )
 }
 
+function IndoorCeilingVault({ accent }: { accent: string }) {
+  const lightRows = useMemo(
+    () => [-6, -14, -22, -30, -38, -46],
+    []
+  )
+  const canopyZs = useMemo(() => [-8, -16, -24, -32, -40], [])
+
+  return (
+    <>
+      {canopyZs.map(z => (
+        <mesh key={`canopy-${z}`} position={[0, 9.8, z]} rotation={[-0.48, 0, 0]}>
+          <planeGeometry args={[33, 3.2]} />
+          <meshBasicMaterial color="#edf6fc" fog={false} side={THREE.DoubleSide} toneMapped={false} />
+        </mesh>
+      ))}
+
+      <mesh position={[0, 5.5, -22]}>
+        <sphereGeometry args={[34, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.48]} />
+        <meshBasicMaterial color="#d8eaf4" side={THREE.DoubleSide} toneMapped={false} fog={false} />
+      </mesh>
+      <mesh position={[0, 5.5, -22]}>
+        <sphereGeometry args={[33.2, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.38]} />
+        <meshBasicMaterial
+          color="#eef8ff"
+          side={THREE.DoubleSide}
+          toneMapped={false}
+          transparent
+          opacity={0.55}
+          fog={false}
+        />
+      </mesh>
+
+      {lightRows.map(z => (
+        <group key={z} position={[0, 10.6, z]} rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh>
+            <planeGeometry args={[30, 1.6]} />
+            <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} />
+          </mesh>
+          <mesh position={[0, 0, 0.02]}>
+            <planeGeometry args={[26, 1.1]} />
+            <meshBasicMaterial color={accent} toneMapped={false} transparent opacity={0.88} fog={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {[-17.2, 17.2].map(x => (
+        <mesh key={x} position={[x, 10.8, -22]}>
+          <boxGeometry args={[0.5, 1.4, 50]} />
+          <meshBasicMaterial color="#c8dce8" toneMapped={false} fog={false} />
+        </mesh>
+      ))}
+    </>
+  )
+}
+
+function CeilingSoffitRow({
+  z,
+  accent,
+  width = 32,
+}: {
+  z: number
+  accent: string
+  width?: number
+}) {
+  return (
+    <group position={[0, 10.85, z]}>
+      <mesh>
+        <boxGeometry args={[width, 0.32, 1.4]} />
+        <meshStandardMaterial color="#8a9aaa" metalness={0.4} roughness={0.42} />
+      </mesh>
+      <mesh position={[0, -0.1, 0]}>
+        <boxGeometry args={[width - 1.5, 0.12, 1.1]} />
+        <meshStandardMaterial
+          color="#f8fcff"
+          emissive={accent}
+          emissiveIntensity={1.65}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh position={[0, -0.16, 0]}>
+        <boxGeometry args={[width - 3, 0.06, 0.85]} />
+        <meshStandardMaterial
+          color="#ffffff"
+          emissive="#e8f8ff"
+          emissiveIntensity={1.2}
+          toneMapped={false}
+        />
+      </mesh>
+      <pointLight intensity={1.1} distance={16} color="#eef8ff" decay={2} position={[0, -0.3, 0]} />
+    </group>
+  )
+}
+
 function IndoorCeilingGrid({ accent }: { accent: string }) {
   const troffers = useMemo(() => {
     const slots: Array<{ x: number; z: number }> = []
@@ -142,24 +235,43 @@ function IndoorCeilingGrid({ accent }: { accent: string }) {
     return slots
   }, [])
 
+  const soffitZs = useMemo(() => Array.from({ length: 11 }, (_, i) => -3 - i * 4.5), [])
+
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.84, -22]}>
-        <planeGeometry args={[36, 56]} />
+        <planeGeometry args={[38, 58]} />
         <meshStandardMaterial
-          color="#e8f2f8"
-          emissive="#c8e0f0"
-          emissiveIntensity={0.62}
-          roughness={0.72}
+          color="#f0f8fc"
+          emissive="#d0e8f8"
+          emissiveIntensity={1.05}
+          roughness={0.68}
           side={THREE.DoubleSide}
+          toneMapped={false}
         />
       </mesh>
+
+      {[-17.6, 17.6].map(x => (
+        <mesh key={`crown-${x}`} position={[x, 11.35, -22]}>
+          <boxGeometry args={[0.35, 0.65, 54]} />
+          <meshStandardMaterial
+            color="#c8dce8"
+            emissive={accent}
+            emissiveIntensity={0.85}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
 
       {[-10, 10].map(x => (
         <mesh key={`beam-${x}`} position={[x, 11.78, -22]} rotation={[0, 0, Math.PI / 2]}>
           <boxGeometry args={[56, 0.28, 0.42]} />
           <meshStandardMaterial color="#9aacb8" metalness={0.42} roughness={0.45} />
         </mesh>
+      ))}
+
+      {soffitZs.map(z => (
+        <CeilingSoffitRow key={z} z={z} accent={accent} />
       ))}
 
       {troffers.map(slot => (
@@ -438,6 +550,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
   return (
     <>
       <IndoorCeilingGrid accent={config.accent} />
+      <IndoorCeilingVault accent={config.accent} />
 
       {[-14, 0, 14].map(x => (
         <mesh key={`duct-${x}`} position={[x, 10.85, -24]} rotation={[0, 0, Math.PI / 2]}>
@@ -643,15 +756,16 @@ function OutdoorRange() {
     <>
       <OutdoorSky />
 
-      {[-34, -52, -72, -88].map((z, index) => (
-        <mesh key={z} position={[0, 1.8 + index * 1.8, z]}>
-          <boxGeometry args={[150 - index * 16, 4 + index * 2, 2.5]} />
+      {[-38, -58, -78, -98].map((z, index) => (
+        <mesh key={z} position={[0, -0.5 + index * 0.8, z]} scale={[1.6 - index * 0.12, 0.28 + index * 0.06, 1]}>
+          <sphereGeometry args={[38 - index * 4, 18, 12]} />
           <meshStandardMaterial
             color={['#6a8498', '#7a94a8', '#8aa4b8', '#9ab4c8'][index]}
             roughness={0.98}
             metalness={0.01}
             transparent
-            opacity={0.78 - index * 0.06}
+            opacity={0.72 - index * 0.05}
+            flatShading
           />
         </mesh>
       ))}

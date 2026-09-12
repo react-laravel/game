@@ -159,6 +159,27 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 12 (2026-09-13)
+
+Follow-up to PR #11 (`cursor/shooting-range-visual-polish-172b`), addressing coordinator screenshot review.
+
+### Outdoor
+- `@react-three/drei` `Sky` atmospheric dome replaces flat gradient hemispheres + harsh sun disc.
+- Procedural canvas textures for grass, gravel, and earth berm (no external assets).
+- Icosahedron-cluster evergreens/deciduous trees + bush undergrowth replace cone/box vegetation.
+- Softer spherical distant hills, expanded chain-link fence with concrete footings, layered berm with rock cap.
+- Outdoor `mapConfigs` fog/hemisphere/rim tuned; tone mapping exposure 1.14.
+
+### Indoor ceiling
+- Root cause: ceiling vault used `BackSide` materials while the camera sits inside the dome (faces culled → black void).
+- `IndoorCeilingVault` with `DoubleSide` sphere cap, troffer grid, soffit rows, and angled canopy panels.
+- Brighter fill/background tokens; capture script waits 5s for WebGL settle.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Results screen shows non-zero hits (grade A / 4 hits / 80% accuracy).
+- Focused shooting-range tests: **95/95** passing.
+
 ## Shooting Range visual polish cycle 11 (2026-09-13)
 
 Follow-up to PR #10 (`cursor/shooting-range-overnight-polish-1bbb`), addressing coordinator screenshot review.

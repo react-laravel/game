@@ -159,6 +159,23 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 15 (2026-09-13)
+
+Follow-up after merging PR stack #9–#14 into `main`; addresses coordinator review that outdoor still read as a large flat green void.
+
+### Outdoor
+- Extended main gravel/dirt shooting lane from firing line to berm (12 m wide × 50 m long) with inner packed-earth center strip and dark edge borders.
+- Yellow firing-line stripe + subtle distance markers at 8/16/24/32/40 m; berm-approach gravel pad widened.
+- Eight flat grass-color variation patches and four small dirt wear spots on the sides (horizontal planes only — no tilted green slabs).
+- Berm, chain-link fence, and tree line unchanged from cycle 14.
+
+### Warehouse (light touch)
+- Center concrete lane stripe + yellow distance markers along the shooting aisle.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests green.
+
 ## Shooting Range visual polish cycle 14 (2026-09-13)
 
 Follow-up to PR #13 (`cursor/shooting-range-overnight-polish-db78`), addressing coordinator screenshot review.

@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { BarChart3, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BarChart3, Trophy, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -10,7 +10,10 @@ import {
   maxBucketValue,
   type ChartBucket,
 } from '../utils/chartAggregation'
+import { summarizeByMode } from '../utils/sessionInsights'
 import { clearSessionHistory, loadSessionHistory } from '../utils/statsStorage'
+import type { TrainingModeId } from '../types'
+import { trainingModes } from '../utils/trainingModes'
 
 interface ShootingHistoryProps {
   onClose: () => void
@@ -20,8 +23,13 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
   const history = useMemo(() => loadSessionHistory(), [])
   const daily = useMemo(() => aggregateDailyRecords(history), [history])
   const monthly = useMemo(() => aggregateMonthlyRecords(history), [history])
+  const modeSummaries = useMemo(() => summarizeByMode(history), [history])
+  const [modeFilter, setModeFilter] = useState<TrainingModeId | 'all'>('all')
 
   const latest = history[0]
+  const filteredHistory =
+    modeFilter === 'all' ? history : history.filter(record => record.modeId === modeFilter)
+  const recentSessions = filteredHistory.slice(0, 10)
 
   return (
     <div className="flex w-full flex-1 items-center justify-center pb-10">
@@ -59,6 +67,133 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
             </div>
           )}
 
+          {history.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber-400" />
+                <h3 className="font-semibold">各模式最佳</h3>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {modeSummaries
+                  .filter(summary => summary.sessions > 0)
+                  .map(summary => {
+                    const mode = trainingModes[summary.modeId]
+                    return (
+                      <div
+                        key={summary.modeId}
+                        className="rounded-2xl border border-border/70 bg-card/80 px-4 py-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold">{mode.name}</span>
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                            {mode.focus}
+                          </span>
+                        </div>
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <div className="text-muted-foreground">最佳</div>
+                            <div className="font-mono text-base font-bold tabular-nums">
+                              {summary.bestScore}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">均准</div>
+                            <div className="font-mono text-base font-bold tabular-nums">
+                              {summary.avgAccuracy}%
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">场次</div>
+                            <div className="font-mono text-base font-bold tabular-nums">
+                              {summary.sessions}
+                            </div>
+                          </div>
+                        </div>
+                        {summary.bestReactionMs !== null && (
+                          <div className="text-muted-foreground mt-1.5 text-[11px]">
+                            最快反应 {summary.bestReactionMs}ms
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            </section>
+          )}
+
+          {history.length > 0 && (
+            <section>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-semibold">最近场次</h3>
+                <div className="flex flex-wrap gap-1">
+                  <FilterChip
+                    active={modeFilter === 'all'}
+                    onClick={() => setModeFilter('all')}
+                    label="全部"
+                  />
+                  {Object.values(trainingModes).map(mode => (
+                    <FilterChip
+                      key={mode.id}
+                      active={modeFilter === mode.id}
+                      onClick={() => setModeFilter(mode.id)}
+                      label={mode.focus}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-border/70">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-muted/40 text-xs text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">日期</th>
+                      <th className="px-4 py-2 font-medium">模式</th>
+                      <th className="px-4 py-2 font-medium">得分</th>
+                      <th className="hidden px-4 py-2 font-medium sm:table-cell">精准度</th>
+                      <th className="hidden px-4 py-2 font-medium md:table-cell">射速</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentSessions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-6 text-center text-muted-foreground"
+                        >
+                          该模式下暂无记录
+                        </td>
+                      </tr>
+                    ) : (
+                      recentSessions.map(record => (
+                        <tr
+                          key={record.id}
+                          className="border-t border-border/50 transition-colors hover:bg-muted/20"
+                        >
+                          <td className="px-4 py-2.5 font-mono text-xs tabular-nums">
+                            {record.date}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className="font-medium">
+                              {trainingModes[record.modeId].name}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 font-mono font-bold tabular-nums">
+                            {record.score}
+                          </td>
+                          <td className="hidden px-4 py-2.5 font-mono tabular-nums sm:table-cell">
+                            {record.accuracy}%
+                          </td>
+                          <td className="hidden px-4 py-2.5 font-mono tabular-nums md:table-cell">
+                            {record.shotsPerMinute}/分
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           <ChartPanel title="近 14 天精准度" buckets={daily} field="avgAccuracy" suffix="%" />
           <ChartPanel title="近 14 天得分" buckets={daily} field="avgScore" />
           <ChartPanel title="近 6 个月月度得分" buckets={monthly} field="avgScore" />
@@ -79,6 +214,30 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
         </div>
       </Card>
     </div>
+  )
+}
+
+function FilterChip({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+        active
+          ? 'bg-primary/15 text-primary ring-1 ring-primary/25'
+          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 
@@ -108,7 +267,9 @@ function ChartPanel({
     <div className="rounded-2xl border border-border/70 bg-card/50 p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold">{title}</h3>
-        <span className="text-muted-foreground text-xs">共 {buckets.reduce((sum, bucket) => sum + bucket.sessions, 0)} 场</span>
+        <span className="text-muted-foreground text-xs">
+          共 {buckets.reduce((sum, bucket) => sum + bucket.sessions, 0)} 场
+        </span>
       </div>
       <div className="flex h-36 items-end gap-1.5">
         {buckets.map(bucket => {

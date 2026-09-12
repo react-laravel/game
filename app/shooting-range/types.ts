@@ -2,7 +2,15 @@ export type ShootingDifficulty = 'easy' | 'medium' | 'hard'
 
 export type ShootingMapId = 'indoor' | 'outdoor' | 'warehouse'
 
-export type TrainingModeId = 'static' | 'moving' | 'flick' | 'tracking' | 'timed'
+export type TrainingModeId =
+  | 'static'
+  | 'moving'
+  | 'flick'
+  | 'tracking'
+  | 'timed'
+  | 'precision'
+
+export type SpawnPattern = 'random' | 'grid'
 
 export interface ShootingBrowserSupport {
   supported: boolean

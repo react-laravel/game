@@ -1,22 +1,49 @@
-import { BarChart3, Crosshair, Gauge, MapPinned, MousePointer2, Sparkles, Target } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import {
+  BarChart3,
+  ChevronDown,
+  Crosshair,
+  Gauge,
+  MapPinned,
+  MousePointer2,
+  Play,
+  RotateCcw,
+  Sparkles,
+  Target,
+  Zap,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import { CrosshairSettings } from './CrosshairSettings'
+import type { DrillPreset } from '../utils/drillPresets'
+import { drillPresets } from '../utils/drillPresets'
+import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { mapOptions } from '../utils/mapConfigs'
-import { trainingModeOptions } from '../utils/trainingModes'
+import { trainingModeOptions, trainingModes } from '../utils/trainingModes'
 
 const DIFFICULTIES: Array<{
   id: ShootingDifficulty
   name: string
   label: string
-  detail: string
 }> = [
-  { id: 'easy', name: '新兵', label: '8 个目标', detail: '移动速度较慢，适合熟悉瞄准' },
-  { id: 'medium', name: '精英', label: '12 个目标', detail: '目标更多，移动节奏明显加快' },
-  { id: 'hard', name: '专家', label: '16 个目标', detail: '高机动目标，考验极限跟枪' },
+  { id: 'easy', name: '新兵', label: '8 靶' },
+  { id: 'medium', name: '精英', label: '12 靶' },
+  { id: 'hard', name: '专家', label: '16 靶' },
 ]
+
+const FOCUS_COLORS: Record<string, string> = {
+  Flick: 'from-rose-500/20 to-orange-500/10 text-rose-200',
+  Grid: 'from-cyan-500/20 to-blue-500/10 text-cyan-200',
+  Track: 'from-violet-500/20 to-purple-500/10 text-violet-200',
+  Strafe: 'from-amber-500/20 to-yellow-500/10 text-amber-200',
+  Speed: 'from-emerald-500/20 to-green-500/10 text-emerald-200',
+  Aim: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
+  Precision: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
+}
 
 interface ShootingSetupProps {
   difficulty: ShootingDifficulty
@@ -26,6 +53,7 @@ interface ShootingSetupProps {
   onMapChange: (mapId: ShootingMapId) => void
   onModeChange: (modeId: TrainingModeId) => void
   onStart: () => void
+  onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
   crosshairConfig: CrosshairConfig
   onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
@@ -40,144 +68,195 @@ export function ShootingSetup({
   onMapChange,
   onModeChange,
   onStart,
+  onQuickStart,
   onViewHistory,
   crosshairConfig,
   onCrosshairChange,
   onCrosshairReset,
 }: ShootingSetupProps) {
+  const [showCustom, setShowCustom] = useState(false)
+  const lastConfig = loadLastConfig()
+  const lastDrillId = loadLastDrillId()
+  const lastDrill = lastDrillId ? drillPresets.find(p => p.id === lastDrillId) : null
+
+  const selectedMode = trainingModes[modeId]
+
   return (
     <div className="flex w-full flex-1 items-center justify-center pb-10">
       <Card className="border-border/70 relative w-full max-w-5xl overflow-hidden p-0 shadow-2xl">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-amber-400 to-cyan-400" />
-        <div className="grid lg:grid-cols-[0.85fr_1.6fr]">
-          <div className="relative overflow-hidden bg-slate-950 p-7 text-white sm:p-9">
+        <div className="grid lg:grid-cols-[0.75fr_1.65fr]">
+          <div className="relative overflow-hidden bg-slate-950 p-7 text-white sm:p-8">
             <div className="absolute -top-20 -left-20 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
             <div className="relative">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 ring-1 ring-cyan-200/20">
                 <Crosshair className="h-7 w-7 text-cyan-200" />
               </div>
-              <p className="mt-7 text-xs font-bold tracking-[0.24em] text-amber-300 uppercase">
-                Tactical range
+              <p className="mt-6 text-xs font-bold tracking-[0.24em] text-amber-300 uppercase">
+                Aim trainer
               </p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight">精准反应训练</h1>
+              <h1 className="mt-2 text-3xl font-black tracking-tight">战术射击场</h1>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                选择场景与训练模式，在限时训练中提升命中率、射速与反应速度。
+                一键开始专项训练，或自定义场景与难度。每场结束后自动记录成绩与进步曲线。
               </p>
-              <div className="mt-8 space-y-3 text-sm text-slate-300">
+              <div className="mt-7 space-y-2.5 text-sm text-slate-300">
                 <div className="flex items-center gap-3">
-                  <MousePointer2 className="h-4 w-4 text-cyan-300" />
-                  鼠标瞄准与射击
+                  <Zap className="h-4 w-4 text-amber-300" />
+                  快速开始 · 6 种专项训练
                 </div>
                 <div className="flex items-center gap-3">
                   <Gauge className="h-4 w-4 text-cyan-300" />
-                  实时 FPS、精准度与射速
+                  实时 FPS、精准度、反应时间
                 </div>
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-4 w-4 text-cyan-300" />
-                  多场景与训练模式
+                  本地成绩评级与历史曲线
                 </div>
               </div>
-              <Button
-                variant="outline"
-                className="mt-8 border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-                onClick={onViewHistory}
-              >
-                <BarChart3 className="h-4 w-4" />
-                查看训练记录
-              </Button>
+              <div className="mt-7 flex flex-col gap-2">
+                {lastDrill && (
+                  <Button
+                    className="justify-start bg-amber-400/90 font-bold text-slate-950 hover:bg-amber-300"
+                    onClick={() => onQuickStart(lastDrill)}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    再来一局 · {lastDrill.name}
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="justify-start border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                  onClick={onViewHistory}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  训练记录与进步
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="bg-card p-7 sm:p-9">
+          <div className="bg-card p-6 sm:p-8">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-primary text-xs font-bold tracking-[0.18em] uppercase">
-                  训练配置
+                  Quick start
                 </p>
-                <h2 className="mt-1 text-2xl font-bold">选择场景与模式</h2>
+                <h2 className="mt-1 text-2xl font-bold">选择训练项目</h2>
               </div>
+              <span className="text-muted-foreground text-xs">点击即开始</span>
             </div>
 
-            <section className="mt-6">
-              <SectionLabel icon={MapPinned} title="场景" />
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {mapOptions.map(option => (
-                  <OptionCard
-                    key={option.id}
-                    selected={mapId === option.id}
-                    title={option.name}
-                    detail={option.description}
-                    onClick={() => onMapChange(option.id)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-6">
-              <SectionLabel icon={Target} title="训练模式" />
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {trainingModeOptions.map(option => (
-                  <OptionCard
-                    key={option.id}
-                    selected={modeId === option.id}
-                    title={option.name}
-                    detail={option.description}
-                    onClick={() => onModeChange(option.id)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-6">
-              <SectionLabel icon={Gauge} title="难度" />
-              <div className="mt-3 space-y-2">
-                {DIFFICULTIES.map((option, index) => {
-                  const selected = difficulty === option.id
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => onDifficultyChange(option.id)}
-                      className={`flex w-full items-center gap-4 rounded-2xl border p-3.5 text-left transition-all ${
-                        selected
-                          ? 'border-primary bg-primary/7 shadow-sm ring-1 ring-primary/20'
-                          : 'border-border hover:border-primary/40 hover:bg-muted/40'
-                      }`}
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {drillPresets.map(preset => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onQuickStart(preset)}
+                  className="group rounded-2xl border border-border bg-gradient-to-br from-muted/30 to-transparent p-3.5 text-left transition-all hover:border-primary/50 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span
+                      className={`rounded-lg bg-gradient-to-br px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${FOCUS_COLORS[preset.tag] ?? 'bg-muted text-muted-foreground'}`}
                     >
-                      <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-black text-sm ${
-                          selected
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground'
+                      {preset.tag}
+                    </span>
+                    <Play className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                  <div className="mt-2 font-bold">{preset.name}</div>
+                  <div className="text-muted-foreground mt-0.5 text-xs leading-5">
+                    {preset.subtitle}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="mt-5 flex w-full items-center justify-between rounded-xl border border-border/80 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/40"
+              onClick={() => setShowCustom(value => !value)}
+              aria-expanded={showCustom}
+            >
+              <span className="flex items-center gap-2">
+                <MousePointer2 className="h-4 w-4 text-primary" />
+                自定义场景与难度
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${showCustom ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {showCustom && (
+              <div className="mt-4 space-y-5 border-t border-border/60 pt-5">
+                <section>
+                  <SectionLabel icon={Target} title="训练模式" />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {trainingModeOptions.map(option => (
+                      <OptionCard
+                        key={option.id}
+                        selected={modeId === option.id}
+                        title={option.name}
+                        badge={option.focus}
+                        detail={option.description}
+                        onClick={() => onModeChange(option.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <SectionLabel icon={MapPinned} title="场景" />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    {mapOptions.map(option => (
+                      <OptionCard
+                        key={option.id}
+                        selected={mapId === option.id}
+                        title={option.name}
+                        detail={option.description}
+                        onClick={() => onMapChange(option.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <SectionLabel icon={Gauge} title="难度" />
+                  <div className="mt-2 flex gap-2">
+                    {DIFFICULTIES.map(option => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={difficulty === option.id}
+                        onClick={() => onDifficultyChange(option.id)}
+                        className={`flex-1 rounded-xl border px-3 py-2.5 text-center transition-all ${
+                          difficulty === option.id
+                            ? 'border-primary bg-primary/7 ring-1 ring-primary/20'
+                            : 'border-border hover:border-primary/40'
                         }`}
                       >
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="font-bold">{option.name}</span>
-                          <span className="text-muted-foreground text-xs">{option.label}</span>
-                        </span>
-                        <span className="text-muted-foreground mt-0.5 block text-xs">
-                          {option.detail}
-                        </span>
-                      </span>
-                    </button>
-                  )
-                })}
+                        <div className="font-bold text-sm">{option.name}</div>
+                        <div className="text-muted-foreground text-[10px]">{option.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <CrosshairSettings
+                  config={crosshairConfig}
+                  onChange={onCrosshairChange}
+                  onReset={onCrosshairReset}
+                />
               </div>
-            </section>
+            )}
 
-            <CrosshairSettings
-              config={crosshairConfig}
-              onChange={onCrosshairChange}
-              onReset={onCrosshairReset}
-            />
-
-            <Button className="mt-7 w-full py-6 text-base font-bold" onClick={onStart}>
-              进入射击场
+            <Button className="mt-5 w-full py-5 text-base font-bold" onClick={onStart}>
+              按当前设置开始 · {selectedMode.name}
             </Button>
+            {lastConfig && !showCustom && (
+              <p className="text-muted-foreground mt-2 text-center text-xs">
+                上次：{trainingModes[lastConfig.modeId].name} ·{' '}
+                {mapOptions.find(m => m.id === lastConfig.mapId)?.name}
+              </p>
+            )}
           </div>
         </div>
       </Card>
@@ -203,11 +282,13 @@ function SectionLabel({
 function OptionCard({
   selected,
   title,
+  badge,
   detail,
   onClick,
 }: {
   selected: boolean
   title: string
+  badge?: string
   detail: string
   onClick: () => void
 }) {
@@ -222,7 +303,14 @@ function OptionCard({
           : 'border-border hover:border-primary/40 hover:bg-muted/40'
       }`}
     >
-      <div className="font-semibold">{title}</div>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold">{title}</span>
+        {badge && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+            {badge}
+          </span>
+        )}
+      </div>
       <div className="text-muted-foreground mt-1 text-xs leading-5">{detail}</div>
     </button>
   )

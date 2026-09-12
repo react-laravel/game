@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LogOut, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { primeShootingAudio } from '../utils/audioUtils'
@@ -9,6 +9,12 @@ import { usePointerLock } from '../hooks/usePointerLock'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
 import { useShootingSession } from '../hooks/useShootingSession'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
+import { drillLabelForConfig } from '../utils/drillPresets'
+import {
+  compareToPersonalBest,
+  computeSessionGrade,
+} from '../utils/sessionInsights'
+import { loadSessionHistory } from '../utils/statsStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { CrosshairSettings } from './CrosshairSettings'
 import { Crosshair } from './game/Crosshair'
@@ -30,6 +36,7 @@ interface ShootingGameProps {
   onCrosshairReset: () => void
   setGameStarted?: (started: boolean) => void
   onViewHistory?: () => void
+  onChangeDrill?: () => void
 }
 
 export default function ShootingGame({
@@ -41,6 +48,7 @@ export default function ShootingGame({
   onCrosshairReset,
   setGameStarted,
   onViewHistory,
+  onChangeDrill,
 }: ShootingGameProps) {
   const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -156,6 +164,17 @@ export default function ShootingGame({
     returnToSettings()
   }, [releasePointerLock, returnToSettings])
 
+  const drillLabel = drillLabelForConfig(modeId, mapId, difficulty)
+  const sessionGrade = useMemo(
+    () => (gameOver ? computeSessionGrade(sessionStats, modeId) : null),
+    [gameOver, modeId, sessionStats]
+  )
+  const personalBestComparison = useMemo(
+    () =>
+      gameOver ? compareToPersonalBest(sessionStats, modeId, loadSessionHistory()) : null,
+    [gameOver, modeId, sessionStats]
+  )
+
   if (!browserSupport.supported && !browserSupport.useFallback) {
     return <UnsupportedShootingDevice message={browserSupport.message} />
   }
@@ -210,8 +229,13 @@ export default function ShootingGame({
         durationSeconds={durationSeconds}
         displayFps={displayFps}
         gameOver={gameOver}
+        modeId={modeId}
+        drillLabel={drillLabel}
+        grade={sessionGrade}
+        comparison={personalBestComparison}
         onRestart={handleRestart}
         onViewHistory={onViewHistory}
+        onChangeDrill={onChangeDrill}
       />
 
       {showStartOverlay && !gameOver && !pointerLockError && (

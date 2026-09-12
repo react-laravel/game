@@ -10,6 +10,8 @@ import {
   generateRandomDirection,
   generateRandomPosition,
   markTargetSpawned,
+  nextGridPosition,
+  resetGridSpawnIndex,
   respawnTarget,
 } from '../../utils/gameUtils'
 import { mapConfigs } from '../../utils/mapConfigs'
@@ -31,10 +33,14 @@ export interface ShootingSceneSnapshot {
 }
 
 function createTargets(settings: ReturnType<typeof resolveTrainingSettings>) {
+  if (settings.spawnPattern === 'grid') resetGridSpawnIndex()
   const speedVariance = settings.movement === 'linear' ? 0.012 : 0
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
-    position: generateRandomPosition(settings.gameAreaSize),
+    position:
+      settings.spawnPattern === 'grid'
+        ? nextGridPosition()
+        : generateRandomPosition(settings.gameAreaSize),
     scale: Math.random() * 0.18 + 0.55,
     speed: settings.targetSpeed + Math.random() * speedVariance,
     direction: generateRandomDirection(),
@@ -131,14 +137,14 @@ export function GameScene({
 
       const timer = setTimeout(() => {
         const current = targetObjects.current.get(id)
-        if (current) respawnTarget(current, settings.gameAreaSize)
+        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern)
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
       }, settings.respawnDelayMs)
 
       respawnTimers.current.set(id, timer)
     },
-    [settings.gameAreaSize, settings.respawnDelayMs]
+    [settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern]
   )
 
   const showMuzzleFlash = useCallback(() => {

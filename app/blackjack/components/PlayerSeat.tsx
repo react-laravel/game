@@ -25,11 +25,9 @@ const resultLabel: Record<string, string> = {
 function HandBlock({
   hand,
   label,
-  isActiveHand,
 }: {
   hand: PlayerHand
   label?: string
-  isActiveHand?: boolean
 }) {
   const showCards = hand.cards.length > 0
   const totalText = showCards
@@ -40,12 +38,7 @@ function HandBlock({
   const doubled = hand.status === 'doubled'
 
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center gap-0.5 rounded-lg px-0.5',
-        isActiveHand && 'ring-1 ring-amber-300/60 rounded-xl'
-      )}
-    >
+    <div className="flex flex-col items-center gap-0.5 rounded-lg px-0.5">
       {label && (
         <span className="text-[9px] text-emerald-100/50">{label}</span>
       )}
@@ -53,9 +46,6 @@ function HandBlock({
         <span className="rounded bg-orange-500/30 px-1 text-[9px] font-semibold text-orange-100">
           加倍×2
         </span>
-      )}
-      {hand.bet > 0 && (
-        <ChipStack amount={hand.bet} size="xs" maxVisible={4} />
       )}
       <div className="flex h-11 items-end justify-center">
         {showCards ? (
@@ -117,6 +107,11 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
         spectating && 'opacity-40'
       )}
     >
+      {totalBet > 0 && (
+        <div className="flex min-h-8 items-center justify-center">
+          <ChipStack amount={totalBet} size="xs" maxVisible={featured ? 6 : 5} />
+        </div>
+      )}
       <div className="flex h-4 max-w-full items-center gap-0.5 text-[11px] leading-tight text-emerald-50/90">
         {seat.isHuman ? (
           <User className="h-3 w-3 shrink-0 text-amber-300" />
@@ -131,12 +126,7 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
       <div className="h-4 text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
 
       {waiting ? (
-        <div className="flex h-[4.75rem] flex-col items-center justify-end gap-0.5">
-          <div className="flex min-h-8 items-end justify-center">
-            {totalBet > 0 ? (
-              <ChipStack amount={totalBet} size="xs" maxVisible={5} />
-            ) : null}
-          </div>
+        <div className="flex h-[4.75rem] flex-col items-center justify-center">
           <span className="h-4 text-[10px] text-emerald-100/40">
             {spectating ? '观战' : '…'}
           </span>
@@ -153,7 +143,6 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
               key={hand.id}
               hand={hand}
               label={multi ? `#${i + 1}` : undefined}
-              isActiveHand={isActive && seat.activeHandIndex === i}
             />
           ))}
         </div>

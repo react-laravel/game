@@ -50,4 +50,38 @@ describe('chartAggregation', () => {
     expect(buckets[0].avgScore).toBe(70)
     expect(buckets[1].avgScore).toBe(90)
   })
+
+  it('uses UTC bucket keys so grouping matches persisted record dates', () => {
+    const previousTz = process.env.TZ
+    process.env.TZ = 'Asia/Tokyo'
+
+    try {
+      const now = new Date('2026-09-12T12:00:00Z').getTime()
+      const records = [
+        makeRecord({ timestamp: now, date: '2026-09-12', accuracy: 80, score: 120 }),
+        makeRecord({ timestamp: now - 86_400_000, date: '2026-09-11', accuracy: 60, score: 80 }),
+      ]
+
+      const daily = aggregateDailyRecords(records, 3, now)
+      expect(daily[2].key).toBe('2026-09-12')
+      expect(daily[2].avgAccuracy).toBe(80)
+
+      const monthly = aggregateMonthlyRecords(
+        [
+          makeRecord({ timestamp: now, date: '2026-09-05', score: 90 }),
+          makeRecord({
+            timestamp: new Date('2026-08-15T12:00:00Z').getTime(),
+            date: '2026-08-15',
+            score: 70,
+          }),
+        ],
+        2,
+        now
+      )
+      expect(monthly[0].avgScore).toBe(70)
+      expect(monthly[1].avgScore).toBe(90)
+    } finally {
+      process.env.TZ = previousTz
+    }
+  })
 })

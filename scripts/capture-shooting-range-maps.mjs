@@ -37,12 +37,12 @@ async function enterFallbackPlay(page) {
   await page.waitForTimeout(800)
   const startBtn = page.getByRole('button', { name: /锁定鼠标并开始|点击开始/ })
   if (await startBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-    await startBtn.click()
+    await startBtn.click({ noWaitAfter: true })
     await page.waitForTimeout(800)
   }
   const fallback = page.getByRole('button', { name: '点击目标模式' })
   if (await fallback.isVisible({ timeout: 4000 }).catch(() => false)) {
-    await fallback.click()
+    await fallback.click({ noWaitAfter: true })
     await page.waitForTimeout(500)
   }
   await page.waitForTimeout(5000)

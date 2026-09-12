@@ -162,6 +162,15 @@ export function useShootingSession(
     setGameOver(true)
   }, [])
 
+  const injectSessionStats = useCallback((patch: Partial<SessionStats>) => {
+    if (patch.score !== undefined) setScore(patch.score)
+    if (patch.hits !== undefined) setHits(patch.hits)
+    if (patch.misses !== undefined) setMisses(patch.misses)
+    if (patch.shots !== undefined) setShots(patch.shots)
+    if (patch.bestStreak !== undefined) setBestStreak(patch.bestStreak)
+    if (patch.avgReactionMs !== undefined) setAvgReactionMs(patch.avgReactionMs)
+  }, [])
+
   const sessionStats = buildSessionStats()
 
   return {
@@ -186,5 +195,6 @@ export function useShootingSession(
     restartTraining,
     returnToSettings,
     endSessionEarly,
+    injectSessionStats,
   }
 }

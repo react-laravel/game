@@ -159,6 +159,33 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 11 (2026-09-13)
+
+Follow-up to PR #10 (`cursor/shooting-range-overnight-polish-1bbb`), addressing coordinator screenshot review.
+
+### Outdoor
+- Replaced cartoon sphere trees with layered pine cones + broadleaf box clusters.
+- Terrain undulation via tilted grass patches; gravel firing line; sloped earth berm with grass cap.
+- Chain-link fence posts/rails; distant layered hills; softer sky gradient + subtle sun glow (no yellow-line artifacts).
+- Shooting bench + range flag retained.
+
+### Indoor
+- Brighter emissive ceiling + lowered light panels; acoustic foam grids on walls.
+- Lane rubber strips, booth dividers, corrugated bullet-trap backstop with LED strip.
+- Control-booth glass + ammo table props; stronger fill/wash lights (not muddy black).
+
+### Warehouse
+- Ceiling pipe runs, loading-door slats on backstop, extra pallets/crates, floor oil stains.
+- Brighter fluorescents + center concrete lane strip retained.
+
+### QA screenshots
+- `docs/shooting-range-screenshots/` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Results screen now shows non-zero hits (debug inject + fallback clicks); grade A / 4 hits / 80% accuracy.
+- `injectSessionStats` wired through `useShootingDebugBridge` for scripted QA.
+
+### Verification
+- Focused shooting-range tests: **95/95** passing; production build clean.
+
 ## Shooting Range overnight polish (2026-09-13)
 
 Follow-up to PR #9 (`cursor/shooting-range-map-polish-e0f6`), rebased onto latest `main`.

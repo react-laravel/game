@@ -54,9 +54,6 @@ function HandBlock({
           加倍×2
         </span>
       )}
-      {hand.bet > 0 && (
-        <ChipStack amount={hand.bet} size="xs" maxVisible={4} />
-      )}
       <div className="flex h-11 items-end justify-center">
         {showCards ? (
           <CardFan cards={hand.cards} size="xs" />
@@ -117,6 +114,11 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
         spectating && 'opacity-40'
       )}
     >
+      {totalBet > 0 && (
+        <div className="flex min-h-8 items-center justify-center">
+          <ChipStack amount={totalBet} size="xs" maxVisible={featured ? 6 : 5} />
+        </div>
+      )}
       <div className="flex h-4 max-w-full items-center gap-0.5 text-[11px] leading-tight text-emerald-50/90">
         {seat.isHuman ? (
           <User className="h-3 w-3 shrink-0 text-amber-300" />
@@ -131,12 +133,7 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
       <div className="h-4 text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
 
       {waiting ? (
-        <div className="flex h-[4.75rem] flex-col items-center justify-end gap-0.5">
-          <div className="flex min-h-8 items-end justify-center">
-            {totalBet > 0 ? (
-              <ChipStack amount={totalBet} size="xs" maxVisible={5} />
-            ) : null}
-          </div>
+        <div className="flex h-[4.75rem] flex-col items-center justify-center">
           <span className="h-4 text-[10px] text-emerald-100/40">
             {spectating ? '观战' : '…'}
           </span>

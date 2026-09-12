@@ -3,6 +3,7 @@ import {
   getMoonDiceAssetFileName,
   getMoonDiceAssetSrc,
   MOON_DICE_DIE_CLASS,
+  MOON_DICE_DIE_FRAME_CLASS,
 } from '../moonDiceAssets'
 
 describe('moonDiceAssets', () => {
@@ -22,9 +23,10 @@ describe('moonDiceAssets', () => {
     )
   })
 
-  it('uses blend mode instead of opaque card backgrounds', () => {
-    expect(MOON_DICE_DIE_CLASS).toContain('mix-blend-multiply')
+  it('crops JPG padding without tinting dice faces', () => {
+    expect(MOON_DICE_DIE_FRAME_CLASS).toContain('overflow-hidden')
+    expect(MOON_DICE_DIE_CLASS).toContain('scale-[')
+    expect(MOON_DICE_DIE_CLASS).not.toContain('mix-blend-multiply')
     expect(MOON_DICE_DIE_CLASS).not.toContain('bg-white')
-    expect(MOON_DICE_DIE_CLASS).not.toContain('rounded-xl')
   })
 })

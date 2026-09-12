@@ -179,8 +179,9 @@ Follow-up to PR #9 (`cursor/shooting-range-map-polish-e0f6`), rebased onto lates
 
 ### Verification
 - Focused shooting-range tests: **92/92** passing (`type-check` clean).
-- Playwright self-critique artifacts: `/opt/cursor/artifacts/shooting-range-overnight-polish/` — setup, training canvas, results (D grade + zero-shot banner), map/drill captures under `maps/`.
-- Critique notes: results hierarchy readable; zero-shot path now honest; indoor map/HUD contrast OK in fallback mode; headless still uses click-target fallback (no real pointer lock).
+- **Committed PR screenshots** (viewable on GitHub): `docs/shooting-range-screenshots/` — setup, per-map training HUD, drill HUDs, results screen. Regenerate via `node scripts/capture-shooting-range-maps.mjs`.
+- Visual critique cycle 2: moved drill label panel below exit/settings buttons; zero-shot accuracy shows `—` in HUD and results bars (not misleading 100%).
+- Headless capture uses click-target fallback (no real pointer lock).
 
 ## Shooting Range Aimlabs-style UX upgrade (2026-09-13)
 

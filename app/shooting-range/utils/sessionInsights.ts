@@ -88,7 +88,22 @@ export function buildPerformanceHighlights(
   stats: SessionStats,
   modeId: TrainingModeId
 ): PerformanceHighlight[] {
-  const { accuracy, shotsPerMinute, avgReactionMs, bestStreak } = stats
+  const { accuracy, shots, shotsPerMinute, avgReactionMs, bestStreak } = stats
+
+  if (shots === 0) {
+    const emptySecondary =
+      modeId === 'flick' || modeId === 'precision'
+        ? { label: '反应速度', value: '—' }
+        : modeId === 'timed' || modeId === 'moving'
+          ? { label: '射速', value: '—' }
+          : { label: '最高连击', value: '0' }
+
+    return [
+      { label: '精准度', value: '—', percent: 6, accent: 'rose' },
+      { label: emptySecondary.label, value: emptySecondary.value, percent: 6, accent: 'amber' },
+    ]
+  }
+
   const highlights: PerformanceHighlight[] = [
     {
       label: '精准度',

@@ -3,7 +3,8 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3002'
-const OUT_DIR = process.env.OUT_DIR ?? '/opt/cursor/artifacts/shooting-range-iteration'
+const OUT_DIR =
+  process.env.OUT_DIR ?? path.join(process.cwd(), 'docs/shooting-range-screenshots')
 
 const MAPS = [
   { label: '室内靶场', id: 'indoor' },
@@ -45,7 +46,7 @@ async function enterFallbackPlay(page) {
     const state = window.render_game_to_text?.()
     return state && JSON.parse(state).mode === 'playing'
   }, { timeout: 15000 })
-  await page.waitForTimeout(2000)
+  await page.waitForTimeout(1800)
 }
 
 async function captureSetup(page, filePath) {
@@ -54,22 +55,37 @@ async function captureSetup(page, filePath) {
   await page.screenshot({ path: filePath, fullPage: true })
 }
 
-async function captureQuickStart(page, drillName, filePath) {
-  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('text=选择训练项目')
-  await page.getByRole('button', { name: new RegExp(drillName) }).first().click()
-  await enterFallbackPlay(page)
-  await page.locator('canvas').first().screenshot({ path: filePath })
+async function captureTrainingHud(page, filePath) {
+  await page.screenshot({ path: filePath, fullPage: false })
 }
 
-async function captureCustomMap(page, mapLabel, filePath) {
+async function captureCustomMapTraining(page, mapLabel, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
   await page.getByRole('button', { name: /自定义场景与难度/ }).click()
   await page.locator('button', { hasText: mapLabel }).first().click()
   await page.getByRole('button', { name: /按当前设置开始/ }).click()
   await enterFallbackPlay(page)
-  await page.locator('canvas').first().screenshot({ path: filePath })
+  await captureTrainingHud(page, filePath)
+}
+
+async function captureQuickStartTraining(page, drillName, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('text=选择训练项目')
+  await page.getByRole('button', { name: new RegExp(drillName) }).first().click()
+  await enterFallbackPlay(page)
+  await captureTrainingHud(page, filePath)
+}
+
+async function captureResultsScreen(page, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('text=选择训练项目')
+  await page.getByRole('button', { name: /甩枪反应/ }).first().click()
+  await enterFallbackPlay(page)
+  await page.evaluate(() => window.endShootingSession?.())
+  await page.waitForSelector('text=训练完成', { timeout: 10000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: filePath, fullPage: false })
 }
 
 async function main() {
@@ -81,11 +97,24 @@ async function main() {
   await captureSetup(page, path.join(OUT_DIR, 'setup-quick-start.png'))
 
   for (const map of MAPS) {
-    await captureCustomMap(page, map.label, path.join(OUT_DIR, `${map.id}.png`))
+    await captureCustomMapTraining(
+      page,
+      map.label,
+      path.join(OUT_DIR, `${map.id}-training-hud.png`)
+    )
   }
 
-  await captureQuickStart(page, '甩枪反应', path.join(OUT_DIR, 'drill-flick.png'))
-  await captureQuickStart(page, '网格速点', path.join(OUT_DIR, 'drill-precision.png'))
+  await captureQuickStartTraining(
+    page,
+    '甩枪反应',
+    path.join(OUT_DIR, 'drill-flick-training-hud.png')
+  )
+  await captureQuickStartTraining(
+    page,
+    '网格速点',
+    path.join(OUT_DIR, 'drill-precision-training-hud.png')
+  )
+  await captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png'))
 
   await browser.close()
   console.log(`Saved screenshots to ${OUT_DIR}`)

@@ -46,7 +46,6 @@ export default function ShootingGame({
     durationSeconds,
     gameOver,
     gameStarted,
-    setGameStarted: setSessionStarted,
     showStartOverlay,
     hitMarker,
     sessionStats,
@@ -59,10 +58,18 @@ export default function ShootingGame({
   const {
     browserSupport,
     pointerLockError,
+    isPointerLocked,
     requestPointerLock,
     enableFallbackControls,
     releasePointerLock,
   } = usePointerLock(canvasRef)
+
+  const needsPointerLock =
+    gameStarted &&
+    !gameOver &&
+    !browserSupport.useFallback &&
+    !isPointerLocked &&
+    !pointerLockError
 
   useShootingDebugBridge({
     canvasRef,
@@ -82,12 +89,21 @@ export default function ShootingGame({
     requestPointerLock()
   }, [beginTraining, requestPointerLock])
 
+  const resumePointerLock = useCallback(() => {
+    requestPointerLock()
+  }, [requestPointerLock])
+
   const handleShotResult = useCallback(
     (didHit: boolean, reactionMs?: number) => {
       recordShot(didHit, reactionMs)
     },
     [recordShot]
   )
+
+  const handleRestart = useCallback(() => {
+    restartTraining()
+    requestPointerLock()
+  }, [requestPointerLock, restartTraining])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -105,6 +121,26 @@ export default function ShootingGame({
     window.addEventListener('keydown', handleKeyDown, { passive: false })
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [gameOver, gameStarted, startGame])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || browserSupport.useFallback) return
+
+    const handleCanvasClick = () => {
+      if (gameStarted && !gameOver && !isPointerLocked) {
+        requestPointerLock()
+      }
+    }
+
+    canvas.addEventListener('click', handleCanvasClick)
+    return () => canvas.removeEventListener('click', handleCanvasClick)
+  }, [
+    browserSupport.useFallback,
+    gameOver,
+    gameStarted,
+    isPointerLocked,
+    requestPointerLock,
+  ])
 
   const handleBackToSettings = useCallback(() => {
     releasePointerLock()
@@ -128,11 +164,10 @@ export default function ShootingGame({
         useFallbackControls={browserSupport.useFallback}
         onShotResult={handleShotResult}
         onHitFeedback={showHitFeedback}
-        onGameStartedChange={setSessionStarted}
         onFpsReport={reportFps}
       />
 
-      {gameStarted && !gameOver && <Crosshair hit={hitMarker} />}
+      {gameStarted && !gameOver && isPointerLocked && <Crosshair hit={hitMarker} />}
 
       {gameStarted && (
         <Button
@@ -151,7 +186,7 @@ export default function ShootingGame({
         durationSeconds={durationSeconds}
         displayFps={displayFps}
         gameOver={gameOver}
-        onRestart={restartTraining}
+        onRestart={handleRestart}
         onViewHistory={onViewHistory}
       />
 
@@ -159,10 +194,14 @@ export default function ShootingGame({
         <ShootingReadyOverlay onStart={startGame} />
       )}
 
+      {needsPointerLock && !showStartOverlay && (
+        <ShootingReadyOverlay onStart={resumePointerLock} resume />
+      )}
+
       {pointerLockError && (
         <ShootingPointerLockError
           message={pointerLockError}
-          onRetry={startGame}
+          onRetry={resumePointerLock}
           onFallback={enableFallbackControls}
         />
       )}

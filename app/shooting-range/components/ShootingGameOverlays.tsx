@@ -13,7 +13,12 @@ export function UnsupportedShootingDevice({ message }: { message: string }) {
   )
 }
 
-export function ShootingReadyOverlay({ onStart }: { onStart: () => void }) {
+interface ShootingReadyOverlayProps {
+  onStart: () => void
+  resume?: boolean
+}
+
+export function ShootingReadyOverlay({ onStart, resume = false }: ShootingReadyOverlayProps) {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/48 p-4 backdrop-blur-[2px]">
       <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/95 p-7 text-center text-white shadow-2xl">
@@ -23,16 +28,20 @@ export function ShootingReadyOverlay({ onStart }: { onStart: () => void }) {
         <div className="mt-5 text-xs font-semibold tracking-[0.22em] text-amber-300/80 uppercase">
           Tactical range
         </div>
-        <h2 className="mt-2 text-2xl font-black">准备进入训练</h2>
+        <h2 className="mt-2 text-2xl font-black">
+          {resume ? '重新锁定鼠标' : '准备进入训练'}
+        </h2>
         <p className="mt-2 text-sm leading-6 text-white/55">
-          锁定鼠标后移动瞄准，左键射击。按 ESC 可随时释放鼠标。
+          {resume
+            ? '按 ESC 后需要重新锁定鼠标才能转动视角。点击下方按钮继续瞄准。'
+            : '锁定鼠标后移动瞄准，左键射击。按 ESC 可随时释放鼠标。'}
         </p>
         <Button
           className="mt-6 w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
           onClick={onStart}
         >
           <MousePointer2 className="h-4 w-4" />
-          锁定鼠标并开始
+          {resume ? '重新锁定鼠标' : '锁定鼠标并开始'}
         </Button>
       </div>
     </div>

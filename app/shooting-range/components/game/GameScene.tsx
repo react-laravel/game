@@ -31,11 +31,12 @@ export interface ShootingSceneSnapshot {
 }
 
 function createTargets(settings: ReturnType<typeof resolveTrainingSettings>) {
+  const speedVariance = settings.movement === 'linear' ? 0.012 : 0
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position: generateRandomPosition(settings.gameAreaSize),
     scale: Math.random() * 0.18 + 0.55,
-    speed: Math.random() * 0.008 + settings.targetSpeed,
+    speed: settings.targetSpeed + Math.random() * speedVariance,
     direction: generateRandomDirection(),
   }))
 }
@@ -47,7 +48,6 @@ interface GameSceneProps {
   onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback?: () => void
   gameStarted: boolean
-  setGameStarted: (started: boolean) => void
   useFallbackControls?: boolean
   sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
   onFpsReport?: (fps: number) => void
@@ -61,7 +61,6 @@ export function GameScene({
   onShotResult,
   onHitFeedback,
   gameStarted,
-  setGameStarted,
   useFallbackControls = false,
   sceneStateRef,
   onFpsReport,
@@ -263,26 +262,10 @@ export function GameScene({
   }, [camera, gameStarted, gl.domElement, useFallbackControls])
 
   useEffect(() => {
-    const handlePointerLockChange = () => {
-      const locked = document.pointerLockElement === gl.domElement
-      if (gameStarted && !useFallbackControls && !locked && document.pointerLockElement !== null) {
-        setGameStarted(false)
-      }
-    }
     const handleBeforeUnload = () => document.exitPointerLock?.()
-
-    document.addEventListener('pointerlockchange', handlePointerLockChange)
-    document.addEventListener('mozpointerlockchange', handlePointerLockChange)
-    document.addEventListener('webkitpointerlockchange', handlePointerLockChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      document.removeEventListener('pointerlockchange', handlePointerLockChange)
-      document.removeEventListener('mozpointerlockchange', handlePointerLockChange)
-      document.removeEventListener('webkitpointerlockchange', handlePointerLockChange)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [gameStarted, gl.domElement, setGameStarted, useFallbackControls])
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
 
   useEffect(
     () => () => {
@@ -308,6 +291,9 @@ export function GameScene({
           scale={target.scale}
           movement={settings.movement}
           jitterChance={settings.jitterChance}
+          faceCamera={settings.faceCamera}
+          orbitRadius={settings.orbitRadius}
+          orbitSpeed={settings.orbitSpeed}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />

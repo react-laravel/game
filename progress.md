@@ -150,6 +150,8 @@ Current prompt (2026-09-13): 射击音效不好，重新设计
 - Focused shooting-range tests: 78 passing.
 - Chart aggregation now buckets by UTC date/month keys so daily/monthly history charts match persisted `record.date` values in CI and non-UTC timezones.
 - Minesweeper flag-cycle test now reads the mine counter from the same `GameStat` card instead of the adjacent status card.
+- Shooting Range training modes now use distinct behavior profiles: static multi-target wall, fast linear bounce, single-target flick respawn, orbit tracking, and timed rush; static/flick targets no longer bill-board toward the camera.
+- Pointer lock re-acquire after ESC now shows a resume overlay, re-requests lock on click/restart, and tracks lock state in `usePointerLock`.
 
 ## Snake follow-angle notes (2026-09-13)
 

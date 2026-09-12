@@ -15,7 +15,6 @@ interface ShootingGameCanvasProps {
   useFallbackControls: boolean
   onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback: () => void
-  onGameStartedChange: (started: boolean) => void
   onFpsReport: (fps: number) => void
 }
 
@@ -30,7 +29,6 @@ function ShootingGameCanvasComponent({
   useFallbackControls,
   onShotResult,
   onHitFeedback,
-  onGameStartedChange,
   onFpsReport,
 }: ShootingGameCanvasProps) {
   return (
@@ -55,7 +53,6 @@ function ShootingGameCanvasComponent({
         onShotResult={onShotResult}
         onHitFeedback={onHitFeedback}
         gameStarted={gameStarted && !gameOver}
-        setGameStarted={onGameStartedChange}
         useFallbackControls={useFallbackControls}
         sceneStateRef={sceneSnapshot}
         onFpsReport={onFpsReport}

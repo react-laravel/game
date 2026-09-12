@@ -11,6 +11,9 @@ interface TargetProps {
   scale: number
   movement: TargetMovement
   jitterChance: number
+  faceCamera: boolean
+  orbitRadius: number
+  orbitSpeed: number
   onClick: (id: number) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
@@ -52,6 +55,9 @@ function TargetComponent({
   scale,
   movement,
   jitterChance,
+  faceCamera,
+  orbitRadius,
+  orbitSpeed,
   onClick,
   onReady,
   id,
@@ -64,9 +70,10 @@ function TargetComponent({
   const centerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
   const jitterRef = useRef(new THREE.Vector3())
-  const trackingOffset = useRef(new THREE.Vector3())
+  const orbitAnchor = useRef(new THREE.Vector3(...position))
   const hitElapsed = useRef(0)
   const previousHit = useRef(false)
+  const spawnPulse = useRef(1)
 
   useEffect(() => {
     const root = rootRef.current
@@ -76,9 +83,12 @@ function TargetComponent({
     root.userData.hit = false
     root.userData.direction = directionRef.current
     root.userData.spawnedAt = performance.now()
+    root.userData.orbitAnchor = orbitAnchor.current
+    orbitAnchor.current.set(...position)
+    spawnPulse.current = 1.35
     onReady?.(id, root)
     return () => onReady?.(id, null)
-  }, [id, onReady])
+  }, [id, onReady, position])
 
   useFrame(({ camera }, delta) => {
     const root = rootRef.current
@@ -90,6 +100,7 @@ function TargetComponent({
       previousHit.current = hit
       hitElapsed.current = 0
       visual.visible = true
+      if (!hit) spawnPulse.current = 1.35
       applyTargetLook(
         hit,
         plateMaterialRef.current,
@@ -99,45 +110,44 @@ function TargetComponent({
       )
     }
 
-    if (!hit && movement !== 'static' && speed > 0) {
-      const directionVector = directionRef.current
-
-      if (movement === 'tracking') {
-        const time = performance.now() * 0.001 + id
-        trackingOffset.current.set(
-          Math.sin(time * 1.4) * 0.55,
-          Math.cos(time * 1.1) * 0.35,
-          Math.sin(time * 0.9) * 0.25
+    if (!hit) {
+      if (movement === 'orbit' && orbitRadius > 0) {
+        const time = performance.now() * 0.001 * orbitSpeed + id * 1.7
+        root.position.set(
+          orbitAnchor.current.x + Math.cos(time) * orbitRadius,
+          orbitAnchor.current.y + Math.sin(time * 0.85) * orbitRadius * 0.42,
+          orbitAnchor.current.z + Math.sin(time * 1.1) * orbitRadius * 0.55
         )
+      } else if (movement === 'linear' && speed > 0) {
+        const directionVector = directionRef.current
         root.position.addScaledVector(directionVector, speed * 60 * delta)
-        root.position.addScaledVector(trackingOffset.current, delta * 2.2)
-      } else {
-        root.position.addScaledVector(directionVector, speed * 60 * delta)
+
+        const halfWidth = gameAreaSize * 0.42
+        const minY = 0.8
+        const maxY = Math.min(9, gameAreaSize * 0.42 + 2)
+        const nearZ = -7
+        const farZ = -(gameAreaSize + 9)
+
+        if (root.position.x < -halfWidth || root.position.x > halfWidth) directionVector.x *= -1
+        if (root.position.y < minY || root.position.y > maxY) directionVector.y *= -1
+        if (root.position.z > nearZ || root.position.z < farZ) directionVector.z *= -1
+
+        root.position.x = THREE.MathUtils.clamp(root.position.x, -halfWidth, halfWidth)
+        root.position.y = THREE.MathUtils.clamp(root.position.y, minY, maxY)
+        root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
+
+        if (jitterChance > 0 && Math.random() < delta * jitterChance) {
+          jitterRef.current.set((Math.random() - 0.5) * 0.55, (Math.random() - 0.5) * 0.35, 0)
+          directionVector.add(jitterRef.current).normalize()
+        }
       }
 
-      const halfWidth = gameAreaSize * 0.42
-      const minY = 0.8
-      const maxY = Math.min(9, gameAreaSize * 0.42 + 2)
-      const nearZ = -7
-      const farZ = -(gameAreaSize + 9)
-
-      if (root.position.x < -halfWidth || root.position.x > halfWidth) directionVector.x *= -1
-      if (root.position.y < minY || root.position.y > maxY) directionVector.y *= -1
-      if (root.position.z > nearZ || root.position.z < farZ) directionVector.z *= -1
-
-      root.position.x = THREE.MathUtils.clamp(root.position.x, -halfWidth, halfWidth)
-      root.position.y = THREE.MathUtils.clamp(root.position.y, minY, maxY)
-      root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
-
-      if (jitterChance > 0 && Math.random() < delta * jitterChance) {
-        jitterRef.current.set((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.2, 0)
-        directionVector.add(jitterRef.current).normalize()
-      }
-
-      const pulse = 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
+      spawnPulse.current = THREE.MathUtils.lerp(spawnPulse.current, 1, delta * 6)
+      const pulse =
+        movement === 'static'
+          ? spawnPulse.current
+          : 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
       visual.scale.setScalar(pulse)
-    } else if (!hit) {
-      visual.scale.setScalar(1 + Math.sin(performance.now() * 0.004 + id) * 0.02)
     } else {
       hitElapsed.current += delta
       const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2 - hitElapsed.current ** 2 * 45)
@@ -145,7 +155,7 @@ function TargetComponent({
       visual.visible = hitElapsed.current < 0.15
     }
 
-    root.lookAt(camera.position)
+    if (faceCamera) root.lookAt(camera.position)
   })
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {

@@ -1,85 +1,105 @@
 import type { TrainingModeId } from '../types'
 import { difficultySettings } from './gameUtils'
 
-export type TargetMovement = 'static' | 'linear' | 'tracking'
+export type TargetMovement = 'static' | 'linear' | 'orbit'
 
 export interface TrainingModeConfig {
   id: TrainingModeId
   name: string
   description: string
   durationSeconds: number
-  targetSpeedMultiplier: number
+  /** Absolute target speed before difficulty scaling. */
+  baseSpeed: number
   targetCountMultiplier: number
+  /** When set, caps how many targets are spawned regardless of difficulty count. */
+  maxActiveTargets?: number
   movement: TargetMovement
   respawnDelayMs: number
   scorePerHit: number
   jitterChance: number
+  faceCamera: boolean
+  orbitRadius?: number
+  orbitSpeed?: number
 }
 
 export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   static: {
     id: 'static',
     name: '固定靶',
-    description: '目标静止不动，专注瞄准与扳机控制',
+    description: '全场多靶同时静止，不跟枪旋转，练稳瞄',
     durationSeconds: 60,
-    targetSpeedMultiplier: 0,
+    baseSpeed: 0,
     targetCountMultiplier: 1,
     movement: 'static',
-    respawnDelayMs: 900,
+    respawnDelayMs: 1100,
     scorePerHit: 10,
     jitterChance: 0,
+    faceCamera: false,
   },
   moving: {
     id: 'moving',
     name: '移动靶',
-    description: '经典移动无人靶，考验追踪与预判',
+    description: '多靶高速反弹乱窜，需持续追踪预判',
     durationSeconds: 60,
-    targetSpeedMultiplier: 1,
+    baseSpeed: 0.055,
     targetCountMultiplier: 1,
     movement: 'linear',
-    respawnDelayMs: 900,
+    respawnDelayMs: 850,
     scorePerHit: 10,
-    jitterChance: 0.3,
+    jitterChance: 0.5,
+    faceCamera: true,
   },
   flick: {
     id: 'flick',
     name: '快速反应',
-    description: '少量目标快速刷新，训练甩枪与瞬间锁定',
+    description: '仅 1 个靶，命中后 0.35 秒换点闪现',
     durationSeconds: 60,
-    targetSpeedMultiplier: 0.35,
-    targetCountMultiplier: 0.45,
+    baseSpeed: 0,
+    targetCountMultiplier: 1,
+    maxActiveTargets: 1,
     movement: 'static',
-    respawnDelayMs: 550,
+    respawnDelayMs: 350,
     scorePerHit: 15,
     jitterChance: 0,
+    faceCamera: false,
   },
   tracking: {
     id: 'tracking',
     name: '追踪训练',
-    description: '目标沿平滑弧线移动，强化持续跟枪',
+    description: '少量靶沿圆形轨迹匀速环绕，练跟枪',
     durationSeconds: 60,
-    targetSpeedMultiplier: 0.75,
-    targetCountMultiplier: 0.85,
-    movement: 'tracking',
+    baseSpeed: 0,
+    targetCountMultiplier: 0.55,
+    movement: 'orbit',
     respawnDelayMs: 900,
     scorePerHit: 12,
-    jitterChance: 0.08,
+    jitterChance: 0,
+    faceCamera: true,
+    orbitRadius: 3.2,
+    orbitSpeed: 1.45,
   },
   timed: {
     id: 'timed',
     name: '限时挑战',
-    description: '45 秒高压节奏，速度与精度并重',
+    description: '45 秒高密度移动靶，射速与精度并重',
     durationSeconds: 45,
-    targetSpeedMultiplier: 1.35,
-    targetCountMultiplier: 1.1,
+    baseSpeed: 0.065,
+    targetCountMultiplier: 1.15,
     movement: 'linear',
-    respawnDelayMs: 700,
+    respawnDelayMs: 500,
     scorePerHit: 10,
-    jitterChance: 0.35,
+    jitterChance: 0.45,
+    faceCamera: true,
   },
 }
 
 export const trainingModeOptions = Object.values(trainingModes)
+
+const difficultySpeedScale = {
+  easy: 0.88,
+  medium: 1,
+  hard: 1.14,
+} as const
 
 export function resolveTrainingSettings(
   difficulty: keyof typeof difficultySettings,
@@ -87,15 +107,23 @@ export function resolveTrainingSettings(
 ) {
   const base = difficultySettings[difficulty]
   const mode = trainingModes[modeId]
+  const scaledCount = Math.max(1, Math.round(base.targetCount * mode.targetCountMultiplier))
+  const targetCount = mode.maxActiveTargets
+    ? Math.min(mode.maxActiveTargets, scaledCount)
+    : scaledCount
 
   return {
-    targetCount: Math.max(3, Math.round(base.targetCount * mode.targetCountMultiplier)),
-    targetSpeed: base.targetSpeed * mode.targetSpeedMultiplier,
+    targetCount,
+    targetSpeed: mode.baseSpeed * difficultySpeedScale[difficulty],
     gameAreaSize: base.gameAreaSize,
     movement: mode.movement,
     respawnDelayMs: mode.respawnDelayMs,
     scorePerHit: mode.scorePerHit,
     jitterChance: mode.jitterChance,
     durationSeconds: mode.durationSeconds,
+    faceCamera: mode.faceCamera,
+    orbitRadius: mode.orbitRadius ?? 0,
+    orbitSpeed: mode.orbitSpeed ?? 0,
+    maxActiveTargets: mode.maxActiveTargets,
   }
 }

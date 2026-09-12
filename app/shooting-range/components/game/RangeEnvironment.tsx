@@ -140,54 +140,50 @@ function IndoorCeilingVault({ accent }: { accent: string }) {
 
   return (
     <>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.78, -24]}>
+        <planeGeometry args={[38, 56]} />
+        <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+      </mesh>
+
       {canopyZs.map(z => (
-        <mesh key={`canopy-${z}`} position={[0, 9.8, z]} rotation={[-0.48, 0, 0]}>
-          <planeGeometry args={[33, 3.2]} />
-          <meshStandardMaterial
-            color="#f4fcff"
-            emissive="#d8f0ff"
-            emissiveIntensity={0.75}
-            fog={false}
-            side={THREE.DoubleSide}
-            toneMapped={false}
-          />
+        <mesh key={`canopy-${z}`} position={[0, 11.62, z]} rotation={[-0.42, 0, 0]}>
+          <planeGeometry args={[33, 2.8]} />
+          <meshBasicMaterial color="#f4fcff" fog={false} side={THREE.DoubleSide} toneMapped={false} />
         </mesh>
       ))}
 
-      <mesh position={[0, 5.5, -22]}>
-        <sphereGeometry args={[34, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.48]} />
-        <meshBasicMaterial color="#ecf6fc" side={THREE.DoubleSide} toneMapped={false} fog={false} />
-      </mesh>
-      <mesh position={[0, 5.5, -22]}>
-        <sphereGeometry args={[33.2, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.38]} />
-        <meshBasicMaterial
-          color="#f8fcff"
-          side={THREE.DoubleSide}
-          toneMapped={false}
-          transparent
-          opacity={0.74}
-          fog={false}
-        />
-      </mesh>
-
       {lightRows.map(z => (
-        <group key={z} position={[0, 10.6, z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <group key={z} position={[0, 11.68, z]} rotation={[-Math.PI / 2, 0, 0]}>
           <mesh>
             <planeGeometry args={[30, 1.6]} />
             <meshBasicMaterial color="#fcfeff" toneMapped={false} fog={false} />
           </mesh>
           <mesh position={[0, 0, 0.02]}>
             <planeGeometry args={[26, 1.1]} />
-            <meshBasicMaterial color={accent} toneMapped={false} transparent opacity={0.98} fog={false} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} />
           </mesh>
         </group>
       ))}
 
       {[-17.2, 17.2].map(x => (
-        <mesh key={x} position={[x, 10.8, -22]}>
-          <boxGeometry args={[0.5, 1.4, 50]} />
-          <meshBasicMaterial color="#c8dce8" toneMapped={false} fog={false} />
+        <mesh key={x} position={[x, 11.55, -24]}>
+          <boxGeometry args={[0.45, 0.55, 52]} />
+          <meshBasicMaterial color="#d8eaf4" toneMapped={false} fog={false} />
         </mesh>
+      ))}
+
+      {[-36, -42, -46].map(z => (
+        <group key={`apex-${z}`}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.76, z]}>
+            <planeGeometry args={[26, 4.5]} />
+            <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.7, z]}>
+            <planeGeometry args={[20, 2.2]} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <pointLight intensity={1.8} distance={24} color="#f4fcff" decay={2} position={[0, 11.2, z]} />
+        </group>
       ))}
     </>
   )
@@ -248,14 +244,7 @@ function IndoorCeilingGrid({ accent }: { accent: string }) {
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.84, -22]}>
         <planeGeometry args={[38, 58]} />
-        <meshStandardMaterial
-          color="#f0f8fc"
-          emissive="#d0e8f8"
-          emissiveIntensity={1.45}
-          roughness={0.68}
-          side={THREE.DoubleSide}
-          toneMapped={false}
-        />
+        <meshBasicMaterial color="#f0f8fc" toneMapped={false} fog={false} side={THREE.DoubleSide} />
       </mesh>
 
       {[-17.6, 17.6].map(x => (
@@ -554,11 +543,6 @@ function IndoorRange({ config }: { config: MapConfig }) {
     <>
       <IndoorCeilingGrid accent={config.accent} />
       <IndoorCeilingVault accent={config.accent} />
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.88, -22]}>
-        <planeGeometry args={[40, 60]} />
-        <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
-      </mesh>
 
       {[-14, 0, 14].map(x => (
         <mesh key={`duct-${x}`} position={[x, 10.85, -24]} rotation={[0, 0, Math.PI / 2]}>
@@ -1093,7 +1077,7 @@ export function RangeEnvironment({ config }: RangeEnvironmentProps) {
         position={config.directional.position}
         intensity={config.directional.intensity}
         color={config.directional.color}
-        castShadow={!isOutdoor}
+        castShadow={isWarehouse}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
         shadow-camera-far={75}

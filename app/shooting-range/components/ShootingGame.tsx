@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef } from 'react'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { primeShootingAudio } from '../utils/audioUtils'
+import { useFpsMeter } from '../hooks/useFpsMeter'
 import { usePointerLock } from '../hooks/usePointerLock'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
 import { useShootingSession } from '../hooks/useShootingSession'
-import type { ShootingDifficulty } from '../types'
+import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
 import type { ShootingSceneSnapshot } from './game/GameScene'
@@ -20,31 +21,41 @@ import {
 
 interface ShootingGameProps {
   difficulty: ShootingDifficulty
+  mapId: ShootingMapId
+  modeId: TrainingModeId
   setGameStarted?: (started: boolean) => void
+  onViewHistory?: () => void
 }
 
-export default function ShootingGame({ difficulty, setGameStarted }: ShootingGameProps) {
+export default function ShootingGame({
+  difficulty,
+  mapId,
+  modeId,
+  setGameStarted,
+  onViewHistory,
+}: ShootingGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneSnapshot = useRef<ShootingSceneSnapshot>({
     camera: { yaw: 0, pitch: 0 },
     targets: [],
   })
+  const config = { difficulty, mapId, modeId }
+  const { displayFps, reportFps } = useFpsMeter()
   const {
-    score,
-    shots,
     timeLeft,
+    durationSeconds,
     gameOver,
     gameStarted,
     setGameStarted: setSessionStarted,
     showStartOverlay,
     hitMarker,
-    addScore,
+    sessionStats,
     recordShot,
     showHitFeedback,
     beginTraining,
     restartTraining,
     returnToSettings,
-  } = useShootingSession(setGameStarted)
+  } = useShootingSession(config, setGameStarted)
   const {
     browserSupport,
     pointerLockError,
@@ -57,10 +68,11 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
     canvasRef,
     sceneSnapshot,
     difficulty,
+    mapId,
+    modeId,
     gameOver,
     gameStarted,
-    score,
-    shots,
+    stats: sessionStats,
     timeLeft,
   })
 
@@ -69,6 +81,13 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
     beginTraining()
     requestPointerLock()
   }, [beginTraining, requestPointerLock])
+
+  const handleShotResult = useCallback(
+    (didHit: boolean, reactionMs?: number) => {
+      recordShot(didHit, reactionMs)
+    },
+    [recordShot]
+  )
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -102,13 +121,15 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
         canvasRef={canvasRef}
         sceneSnapshot={sceneSnapshot}
         difficulty={difficulty}
+        mapId={mapId}
+        modeId={modeId}
         gameStarted={gameStarted}
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
-        onScore={addScore}
-        onShot={recordShot}
+        onShotResult={handleShotResult}
         onHitFeedback={showHitFeedback}
         onGameStartedChange={setSessionStarted}
+        onFpsReport={reportFps}
       />
 
       {gameStarted && !gameOver && <Crosshair hit={hitMarker} />}
@@ -125,11 +146,13 @@ export default function ShootingGame({ difficulty, setGameStarted }: ShootingGam
       )}
 
       <GameUI
-        score={score}
-        shots={shots}
+        stats={sessionStats}
         timeLeft={timeLeft}
+        durationSeconds={durationSeconds}
+        displayFps={displayFps}
         gameOver={gameOver}
         onRestart={restartTraining}
+        onViewHistory={onViewHistory}
       />
 
       {showStartOverlay && !gameOver && !pointerLockError && (

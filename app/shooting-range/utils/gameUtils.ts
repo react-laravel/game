@@ -46,8 +46,13 @@ export interface TargetRuntime {
   userData: {
     hit?: boolean
     direction?: MutableVec3
+    spawnedAt?: number
   }
   position: MutableVec3
+}
+
+export function markTargetSpawned(target: TargetRuntime) {
+  target.userData.spawnedAt = performance.now()
 }
 
 export function applyTargetHit(target: TargetRuntime) {
@@ -58,6 +63,7 @@ export function respawnTarget(target: TargetRuntime, gameAreaSize: number) {
   const [x, y, z] = generateRandomPosition(gameAreaSize)
   target.position.set(x, y, z)
   target.userData.hit = false
+  markTargetSpawned(target)
   const direction = target.userData.direction
   if (!direction) return
   const [dx, dy, dz] = generateRandomDirection()

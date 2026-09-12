@@ -77,7 +77,7 @@ export const ImpactFX = forwardRef<ImpactFXHandle>(function ImpactFX(_, ref) {
         <points
           key={index}
           ref={node => {
-            pointsRefs.current[index] = node
+            pointsRefs.current[index] = node as THREE.Points | null
           }}
           visible={false}
           frustumCulled={false}

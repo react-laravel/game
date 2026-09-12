@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from 'react'
 import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import type { TargetMovement } from '../../utils/trainingModes'
 
 interface TargetProps {
   position: [number, number, number]
@@ -8,6 +9,8 @@ interface TargetProps {
   speed: number
   gameAreaSize: number
   scale: number
+  movement: TargetMovement
+  jitterChance: number
   onClick: (id: number) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
@@ -47,6 +50,8 @@ function TargetComponent({
   speed,
   gameAreaSize,
   scale,
+  movement,
+  jitterChance,
   onClick,
   onReady,
   id,
@@ -59,6 +64,7 @@ function TargetComponent({
   const centerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
   const jitterRef = useRef(new THREE.Vector3())
+  const trackingOffset = useRef(new THREE.Vector3())
   const hitElapsed = useRef(0)
   const previousHit = useRef(false)
 
@@ -69,6 +75,7 @@ function TargetComponent({
     root.userData.isTarget = true
     root.userData.hit = false
     root.userData.direction = directionRef.current
+    root.userData.spawnedAt = performance.now()
     onReady?.(id, root)
     return () => onReady?.(id, null)
   }, [id, onReady])
@@ -92,9 +99,21 @@ function TargetComponent({
       )
     }
 
-    if (!hit) {
+    if (!hit && movement !== 'static' && speed > 0) {
       const directionVector = directionRef.current
-      root.position.addScaledVector(directionVector, speed * 60 * delta)
+
+      if (movement === 'tracking') {
+        const time = performance.now() * 0.001 + id
+        trackingOffset.current.set(
+          Math.sin(time * 1.4) * 0.55,
+          Math.cos(time * 1.1) * 0.35,
+          Math.sin(time * 0.9) * 0.25
+        )
+        root.position.addScaledVector(directionVector, speed * 60 * delta)
+        root.position.addScaledVector(trackingOffset.current, delta * 2.2)
+      } else {
+        root.position.addScaledVector(directionVector, speed * 60 * delta)
+      }
 
       const halfWidth = gameAreaSize * 0.42
       const minY = 0.8
@@ -110,13 +129,15 @@ function TargetComponent({
       root.position.y = THREE.MathUtils.clamp(root.position.y, minY, maxY)
       root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
 
-      if (Math.random() < delta * 0.3) {
+      if (jitterChance > 0 && Math.random() < delta * jitterChance) {
         jitterRef.current.set((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.2, 0)
         directionVector.add(jitterRef.current).normalize()
       }
 
       const pulse = 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
       visual.scale.setScalar(pulse)
+    } else if (!hit) {
+      visual.scale.setScalar(1 + Math.sin(performance.now() * 0.004 + id) * 0.02)
     } else {
       hitElapsed.current += delta
       const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2 - hitElapsed.current ** 2 * 45)

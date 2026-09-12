@@ -2,32 +2,36 @@ import { Canvas } from '@react-three/fiber'
 import { memo } from 'react'
 import type { MutableRefObject, RefObject } from 'react'
 import { GameScene, type ShootingSceneSnapshot } from './game/GameScene'
-import type { ShootingDifficulty } from '../types'
+import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 
 interface ShootingGameCanvasProps {
   canvasRef: RefObject<HTMLCanvasElement | null>
   sceneSnapshot: MutableRefObject<ShootingSceneSnapshot>
   difficulty: ShootingDifficulty
+  mapId: ShootingMapId
+  modeId: TrainingModeId
   gameStarted: boolean
   gameOver: boolean
   useFallbackControls: boolean
-  onScore: () => void
-  onShot: () => void
+  onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback: () => void
   onGameStartedChange: (started: boolean) => void
+  onFpsReport: (fps: number) => void
 }
 
 function ShootingGameCanvasComponent({
   canvasRef,
   sceneSnapshot,
   difficulty,
+  mapId,
+  modeId,
   gameStarted,
   gameOver,
   useFallbackControls,
-  onScore,
-  onShot,
+  onShotResult,
   onHitFeedback,
   onGameStartedChange,
+  onFpsReport,
 }: ShootingGameCanvasProps) {
   return (
     <Canvas
@@ -44,15 +48,17 @@ function ShootingGameCanvasComponent({
       className="outline-none"
     >
       <GameScene
-        key={difficulty}
+        key={`${difficulty}-${mapId}-${modeId}`}
         difficulty={difficulty}
-        onScore={onScore}
-        onShot={onShot}
+        mapId={mapId}
+        modeId={modeId}
+        onShotResult={onShotResult}
         onHitFeedback={onHitFeedback}
         gameStarted={gameStarted && !gameOver}
         setGameStarted={onGameStartedChange}
         useFallbackControls={useFallbackControls}
         sceneStateRef={sceneSnapshot}
+        onFpsReport={onFpsReport}
       />
     </Canvas>
   )

@@ -4,8 +4,9 @@ import { Suspense, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { cn } from '@/lib/helpers'
+import { ShootingHistory } from './components/ShootingHistory'
 import { ShootingSetup } from './components/ShootingSetup'
-import type { ShootingDifficulty } from './types'
+import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
   ssr: false,
@@ -18,7 +19,10 @@ const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
 
 export default function ShootingRangePage() {
   const [isStarted, setIsStarted] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [difficulty, setDifficulty] = useState<ShootingDifficulty>('easy')
+  const [mapId, setMapId] = useState<ShootingMapId>('indoor')
+  const [modeId, setModeId] = useState<TrainingModeId>('moving')
 
   return (
     <main
@@ -32,8 +36,9 @@ export default function ShootingRangePage() {
           title="战术射击场规则"
           rules={[
             '移动鼠标控制准星，点击左键射击',
-            '击中一个目标可获得 10 分',
-            '训练时间为 60 秒',
+            '不同训练模式有不同目标行为与得分规则',
+            '可在设置中选择室内、户外或仓库场景',
+            '训练结束后会自动保存到本地记录',
             '按 ESC 可释放鼠标并暂停操作',
             '精准度按命中次数与射击次数计算',
           ]}
@@ -41,11 +46,20 @@ export default function ShootingRangePage() {
       </div>
 
       {!isStarted ? (
-        <ShootingSetup
-          difficulty={difficulty}
-          onDifficultyChange={setDifficulty}
-          onStart={() => setIsStarted(true)}
-        />
+        showHistory ? (
+          <ShootingHistory onClose={() => setShowHistory(false)} />
+        ) : (
+          <ShootingSetup
+            difficulty={difficulty}
+            mapId={mapId}
+            modeId={modeId}
+            onDifficultyChange={setDifficulty}
+            onMapChange={setMapId}
+            onModeChange={setModeId}
+            onStart={() => setIsStarted(true)}
+            onViewHistory={() => setShowHistory(true)}
+          />
+        )
       ) : (
         <div className="relative h-full min-h-0 w-full flex-1">
           <Suspense
@@ -55,7 +69,16 @@ export default function ShootingRangePage() {
               </div>
             }
           >
-            <ShootingGame difficulty={difficulty} setGameStarted={setIsStarted} />
+            <ShootingGame
+              difficulty={difficulty}
+              mapId={mapId}
+              modeId={modeId}
+              setGameStarted={setIsStarted}
+              onViewHistory={() => {
+                setIsStarted(false)
+                setShowHistory(true)
+              }}
+            />
           </Suspense>
         </div>
       )}

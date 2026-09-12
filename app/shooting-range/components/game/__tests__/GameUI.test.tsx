@@ -1,74 +1,71 @@
 import { describe, expect, it, vi } from 'vitest'
 import { GameUI } from '../GameUI'
 
+const baseStats = {
+  score: 0,
+  hits: 0,
+  misses: 0,
+  shots: 0,
+  accuracy: 100,
+  shotsPerMinute: 0,
+  bestStreak: 0,
+  avgReactionMs: null,
+}
+
 describe('GameUI', () => {
   it('should render without crashing', () => {
     const result = GameUI({
-      score: 0,
+      stats: baseStats,
       timeLeft: 60,
+      durationSeconds: 60,
+      displayFps: 60,
       gameOver: false,
       onRestart: () => {},
     })
     expect(result).toBeDefined()
   })
 
-  it('should display score and time', () => {
+  it('should display score, fps, and richer stats', () => {
     const result = GameUI({
-      score: 150,
+      stats: {
+        ...baseStats,
+        score: 150,
+        hits: 15,
+        misses: 2,
+        shots: 17,
+        accuracy: 88,
+        shotsPerMinute: 42,
+        bestStreak: 5,
+        avgReactionMs: 280,
+      },
       timeLeft: 45.5,
+      durationSeconds: 60,
+      displayFps: 118,
       gameOver: false,
       onRestart: () => {},
     })
     expect(result).toBeDefined()
   })
 
-  it('should not show game over when game is not over', () => {
-    const result = GameUI({
-      score: 0,
-      timeLeft: 60,
-      gameOver: false,
-      onRestart: () => {},
-    })
-    expect(result).toBeDefined()
-  })
-
-  it('should show game over when game is over', () => {
-    const result = GameUI({
-      score: 500,
-      timeLeft: 0,
-      gameOver: true,
-      onRestart: () => {},
-    })
-    expect(result).toBeDefined()
-  })
-
-  it('should display final score in game over screen', () => {
-    const result = GameUI({
-      score: 999,
-      timeLeft: 0,
-      gameOver: true,
-      onRestart: () => {},
-    })
-    expect(result).toBeDefined()
-  })
-
-  it('should have restart button in game over', () => {
+  it('should show game over summary', () => {
     const onRestart = vi.fn()
     const result = GameUI({
-      score: 100,
+      stats: {
+        ...baseStats,
+        score: 999,
+        hits: 80,
+        misses: 10,
+        shots: 90,
+        accuracy: 89,
+        shotsPerMinute: 55,
+        bestStreak: 8,
+        avgReactionMs: 240,
+      },
       timeLeft: 0,
+      durationSeconds: 60,
+      displayFps: 60,
       gameOver: true,
       onRestart,
-    })
-    expect(result).toBeDefined()
-  })
-
-  it('should format timeLeft with one decimal', () => {
-    const result = GameUI({
-      score: 0,
-      timeLeft: 59.9,
-      gameOver: false,
-      onRestart: () => {},
     })
     expect(result).toBeDefined()
   })

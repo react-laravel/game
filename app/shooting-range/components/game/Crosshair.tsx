@@ -1,36 +1,118 @@
+import {
+  getCrosshairCircleRadius,
+  getCrosshairSegments,
+  getCrosshairViewboxSize,
+  shouldRenderCenterDot,
+  type CrosshairConfig,
+} from '../../utils/crosshairConfig'
+
 interface CrosshairProps {
+  config: CrosshairConfig
   hit?: boolean
+  className?: string
 }
 
-export function Crosshair({ hit = false }: CrosshairProps = {}) {
-  const color = hit ? 'bg-amber-300' : 'bg-cyan-100'
+export function Crosshair({ config, hit = false, className = '' }: CrosshairProps) {
+  const color = hit ? '#ffd166' : config.color
+  const opacity = hit ? Math.min(1, config.opacity + 0.05) : config.opacity
+  const segments = getCrosshairSegments(config)
+  const circleRadius = getCrosshairCircleRadius(config)
+  const center = getCrosshairViewboxSize() / 2
+  const outlineWidth = config.thickness + 2
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-      <div
-        className={`relative h-12 w-12 transition-transform duration-75 ${hit ? 'scale-110' : 'scale-100'}`}
-        aria-hidden="true"
+    <div
+      className={`pointer-events-none absolute inset-0 z-30 flex items-center justify-center ${className}`}
+      aria-hidden="true"
+    >
+      <svg
+        viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
+        className={`transition-transform duration-75 ${hit ? 'scale-110' : 'scale-100'}`}
+        style={{
+          width: `${config.size * 2.8}px`,
+          height: `${config.size * 2.8}px`,
+          opacity,
+        }}
       >
-        <div
-          className={`absolute inset-2 rounded-full border transition-colors ${
-            hit ? 'border-amber-300/90' : 'border-cyan-100/45'
-          }`}
-        />
-        <div className={`absolute top-0 left-1/2 h-3 w-0.5 -translate-x-1/2 ${color}`} />
-        <div className={`absolute bottom-0 left-1/2 h-3 w-0.5 -translate-x-1/2 ${color}`} />
-        <div className={`absolute top-1/2 left-0 h-0.5 w-3 -translate-y-1/2 ${color}`} />
-        <div className={`absolute top-1/2 right-0 h-0.5 w-3 -translate-y-1/2 ${color}`} />
-        <div className={`absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-1/2 rounded-full ${color}`} />
+        {config.showOutline && circleRadius !== null && (
+          <circle
+            cx={center}
+            cy={center}
+            r={circleRadius}
+            fill="none"
+            stroke="#041018"
+            strokeWidth={outlineWidth}
+            strokeOpacity={0.85}
+          />
+        )}
+        {config.showOutline &&
+          segments.map((segment, index) => (
+            <line
+              key={`outline-${index}`}
+              x1={segment.x1}
+              y1={segment.y1}
+              x2={segment.x2}
+              y2={segment.y2}
+              stroke="#041018"
+              strokeWidth={outlineWidth}
+              strokeLinecap="round"
+              strokeOpacity={0.85}
+            />
+          ))}
+
+        {circleRadius !== null && (
+          <circle
+            cx={center}
+            cy={center}
+            r={circleRadius}
+            fill="none"
+            stroke={color}
+            strokeWidth={config.thickness}
+          />
+        )}
+
+        {segments.map((segment, index) => (
+          <line
+            key={`line-${index}`}
+            x1={segment.x1}
+            y1={segment.y1}
+            x2={segment.x2}
+            y2={segment.y2}
+            stroke={color}
+            strokeWidth={config.thickness}
+            strokeLinecap="round"
+          />
+        ))}
+
+        {shouldRenderCenterDot(config) && (
+          <>
+            {config.showOutline && (
+              <circle
+                cx={center}
+                cy={center}
+                r={config.style === 'dot' ? config.thickness + 2.2 : config.thickness + 1.2}
+                fill="#041018"
+                fillOpacity={0.85}
+              />
+            )}
+            <circle
+              cx={center}
+              cy={center}
+              r={config.style === 'dot' ? config.thickness + 1.1 : config.thickness * 0.75}
+              fill={color}
+            />
+          </>
+        )}
 
         {hit && (
           <>
-            <div className="absolute top-2 left-2 h-0.5 w-3 rotate-45 bg-amber-200" />
-            <div className="absolute top-2 right-2 h-0.5 w-3 -rotate-45 bg-amber-200" />
-            <div className="absolute bottom-2 left-2 h-0.5 w-3 -rotate-45 bg-amber-200" />
-            <div className="absolute right-2 bottom-2 h-0.5 w-3 rotate-45 bg-amber-200" />
+            <line x1={18} y1={18} x2={28} y2={28} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
+            <line x1={46} y1={18} x2={36} y2={28} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
+            <line x1={18} y1={46} x2={28} y2={36} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
+            <line x1={46} y1={46} x2={36} y2={36} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
           </>
         )}
-      </div>
+      </svg>
     </div>
   )
 }

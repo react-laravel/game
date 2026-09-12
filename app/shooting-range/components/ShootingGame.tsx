@@ -1,14 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
-import { LogOut } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { LogOut, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { primeShootingAudio } from '../utils/audioUtils'
 import { useFpsMeter } from '../hooks/useFpsMeter'
 import { usePointerLock } from '../hooks/usePointerLock'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
 import { useShootingSession } from '../hooks/useShootingSession'
+import type { CrosshairConfig } from '../utils/crosshairConfig'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import { CrosshairSettings } from './CrosshairSettings'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
 import type { ShootingSceneSnapshot } from './game/GameScene'
@@ -23,6 +25,9 @@ interface ShootingGameProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  crosshairConfig: CrosshairConfig
+  onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
+  onCrosshairReset: () => void
   setGameStarted?: (started: boolean) => void
   onViewHistory?: () => void
 }
@@ -31,9 +36,13 @@ export default function ShootingGame({
   difficulty,
   mapId,
   modeId,
+  crosshairConfig,
+  onCrosshairChange,
+  onCrosshairReset,
   setGameStarted,
   onViewHistory,
 }: ShootingGameProps) {
+  const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneSnapshot = useRef<ShootingSceneSnapshot>({
     camera: { yaw: 0, pitch: 0 },
@@ -167,17 +176,32 @@ export default function ShootingGame({
         onFpsReport={reportFps}
       />
 
-      {gameStarted && !gameOver && isPointerLocked && <Crosshair hit={hitMarker} />}
+      {gameStarted && !gameOver && isPointerLocked && (
+        <Crosshair config={crosshairConfig} hit={hitMarker} />
+      )}
 
       {gameStarted && (
-        <Button
-          variant="ghost"
-          className="absolute top-5 left-5 z-40 border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
-          onClick={handleBackToSettings}
-        >
-          <LogOut className="h-4 w-4" />
-          结束训练
-        </Button>
+        <div className="absolute top-5 left-5 z-40 flex gap-2">
+          <Button
+            variant="ghost"
+            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            onClick={handleBackToSettings}
+          >
+            <LogOut className="h-4 w-4" />
+            结束训练
+          </Button>
+          <Button
+            variant="ghost"
+            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            onClick={() => {
+              releasePointerLock()
+              setShowCrosshairSettings(true)
+            }}
+            aria-label="准星设置"
+          >
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        </div>
       )}
 
       <GameUI
@@ -204,6 +228,28 @@ export default function ShootingGame({
           onRetry={resumePointerLock}
           onFallback={enableFallbackControls}
         />
+      )}
+
+      {showCrosshairSettings && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-card p-6 shadow-2xl">
+            <CrosshairSettings
+              compact
+              config={crosshairConfig}
+              onChange={onCrosshairChange}
+              onReset={onCrosshairReset}
+            />
+            <Button
+              className="mt-6 w-full"
+              onClick={() => {
+                setShowCrosshairSettings(false)
+                if (gameStarted && !gameOver) requestPointerLock()
+              }}
+            >
+              保存并继续
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -1,6 +1,8 @@
 import { BarChart3, Crosshair, Gauge, MapPinned, MousePointer2, Sparkles, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import type { CrosshairConfig } from '../utils/crosshairConfig'
+import { CrosshairSettings } from './CrosshairSettings'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { mapOptions } from '../utils/mapConfigs'
 import { trainingModeOptions } from '../utils/trainingModes'
@@ -25,6 +27,9 @@ interface ShootingSetupProps {
   onModeChange: (modeId: TrainingModeId) => void
   onStart: () => void
   onViewHistory: () => void
+  crosshairConfig: CrosshairConfig
+  onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
+  onCrosshairReset: () => void
 }
 
 export function ShootingSetup({
@@ -36,6 +41,9 @@ export function ShootingSetup({
   onModeChange,
   onStart,
   onViewHistory,
+  crosshairConfig,
+  onCrosshairChange,
+  onCrosshairReset,
 }: ShootingSetupProps) {
   return (
     <div className="flex w-full flex-1 items-center justify-center pb-10">
@@ -160,6 +168,12 @@ export function ShootingSetup({
                 })}
               </div>
             </section>
+
+            <CrosshairSettings
+              config={crosshairConfig}
+              onChange={onCrosshairChange}
+              onReset={onCrosshairReset}
+            />
 
             <Button className="mt-7 w-full py-6 text-base font-bold" onClick={onStart}>
               进入射击场

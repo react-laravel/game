@@ -49,7 +49,7 @@ Current prompt (2026-09-12): 贪吃蛇，除了按开始，wasd 或者方向键�
 - Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
 - Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.
 
-- Moon-dice dice no longer sit on opaque white cards: removed the `bg-white`/border wrapper and use `mix-blend-multiply` so the JPG padding blends into the green felt.
+- Moon-dice dice faces read white again: removed `mix-blend-multiply` (it tinted faces green on the felt) and crop JPG padding with a scaled, overflow-hidden frame instead of opaque cards.
 
 - Bowling alley now has a patterned carpet floor, side walls, ceiling lights, seating, and a pinsetter behind the pins so the follow-cam no longer looks into a black void.
 - Maze size can switch between a square and an A4-portrait rectangle (slider width × taller paper height, e.g. 15×21) so on-screen play and print both match the paper.

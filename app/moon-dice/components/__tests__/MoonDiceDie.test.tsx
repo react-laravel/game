@@ -16,12 +16,14 @@ vi.mock('next/image', () => ({
 }))
 
 describe('MoonDiceDie', () => {
-  it('renders resting dice without opaque card styling', () => {
+  it('renders resting dice without blend tint or opaque cards', () => {
     render(<MoonDiceDie value={4} />)
 
+    const frame = screen.getByTestId('moon-dice-die')
     const die = screen.getByRole('img', { name: '骰子 4' })
     expect(die).toHaveAttribute('src', expect.stringContaining('/mooncake/4.jpg'))
-    expect(die.className).toContain('mix-blend-multiply')
+    expect(frame.className).toContain('overflow-hidden')
+    expect(die.className).not.toContain('mix-blend-multiply')
     expect(die.className).not.toContain('bg-white')
   })
 

@@ -57,7 +57,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial
           color="#edf4fa"
           emissive="#c8e4f4"
-          emissiveIntensity={0.48}
+          emissiveIntensity={0.55}
           roughness={0.78}
           side={THREE.DoubleSide}
         />
@@ -93,6 +93,13 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <mesh key={`wainscot-${x}`} position={[x, 2.2, -24]}>
           <boxGeometry args={[0.08, 4.2, 54]} />
           <meshStandardMaterial color="#6a8898" metalness={0.3} roughness={0.55} />
+        </mesh>
+      ))}
+
+      {[-17.65, 17.65].map(x => (
+        <mesh key={`panel-${x}`} position={[x, 7.8, -24]}>
+          <boxGeometry args={[0.06, 6, 50]} />
+          <meshStandardMaterial color="#8aa8b8" metalness={0.12} roughness={0.72} />
         </mesh>
       ))}
 
@@ -239,13 +246,13 @@ function OutdoorRange() {
         </mesh>
       ))}
 
-      <mesh position={[0, 1.1, -30]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, -1.97, -30]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[30, 4]} />
         <meshStandardMaterial color="#8a7a58" roughness={0.92} />
       </mesh>
 
-      <mesh position={[0, 2.6, -46]}>
-        <boxGeometry args={[36, 5, 1.2]} />
+      <mesh position={[0, 1.8, -46]}>
+        <boxGeometry args={[36, 3.5, 1.2]} />
         <meshStandardMaterial color="#7a6a52" roughness={0.9} />
       </mesh>
 
@@ -422,6 +429,11 @@ function WarehouseRange({ config }: { config: MapConfig }) {
           </mesh>
         </group>
       ))}
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.964, -21]}>
+        <planeGeometry args={[10, 46]} />
+        <meshStandardMaterial color="#6a6058" metalness={0.15} roughness={0.75} />
+      </mesh>
 
       {[-16, 16].map(x => (
         <WallSconce key={x} x={x} z={-14} color={config.accent} />

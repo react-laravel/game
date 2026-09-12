@@ -168,7 +168,11 @@ Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots af
 - Outdoor: flat sky/ground, sharp horizon, no props.
 - Warehouse: muddy-dark, minimal industrial identity.
 
-### Final state (cycle 8)
+### Cycles 9–10
+- Fixed outdoor berm floating at y=1.1 (caused orange horizontal artifact); dirt path now on ground.
+- Indoor acoustic wall panels, warehouse center concrete strip, `toneMappingExposure` 1.12 for overall brightness.
+
+### Final state (cycle 10)
 - **Indoor:** emissive ceiling plane, ducting, 5 recessed light strips, wainscoting, corrugated rubber backstop, lane markers, booth number signs, wall sconces, wash lights.
 - **Outdoor:** layered gradient sky hemispheres, sun disc + clouds, distant fogged hills, grass patches, fence posts, shooting bench, range flag, trees; horizon haze plane removed after it caused a dark band (cycle 7 regression fixed in cycle 8).
 - **Warehouse:** steel truss ceiling, 4 hanging fluorescents, yellow lane lines, safety stripes on racks, loading-dock door, 7 crate stacks, wall sconces, brighter fill.

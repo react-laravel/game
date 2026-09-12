@@ -26,19 +26,49 @@ function detectBrowserSupport(): ShootingBrowserSupport {
   return { supported: true, message: '', useFallback: false }
 }
 
+function isCanvasLocked(canvas: HTMLCanvasElement | null) {
+  return Boolean(canvas && document.pointerLockElement === canvas)
+}
+
 export function usePointerLock(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const [pointerLockError, setPointerLockError] = useState<string | null>(null)
   const [browserSupport, setBrowserSupport] = useState(detectBrowserSupport)
+  const [isPointerLocked, setIsPointerLocked] = useState(false)
+
+  const syncLockState = useCallback(() => {
+    setIsPointerLocked(isCanvasLocked(canvasRef.current))
+  }, [canvasRef])
 
   const handlePointerLockFailure = useCallback(() => {
     setPointerLockError(POINTER_LOCK_ERROR_MESSAGE)
     setBrowserSupport(previous => ({ ...previous, useFallback: true }))
+    setIsPointerLocked(false)
   }, [])
 
   useEffect(() => {
     document.addEventListener('pointerlockerror', handlePointerLockFailure)
     return () => document.removeEventListener('pointerlockerror', handlePointerLockFailure)
   }, [handlePointerLockFailure])
+
+  useEffect(() => {
+    const handlePointerLockChange = () => {
+      syncLockState()
+      if (isCanvasLocked(canvasRef.current)) {
+        setPointerLockError(null)
+      }
+    }
+
+    document.addEventListener('pointerlockchange', handlePointerLockChange)
+    document.addEventListener('mozpointerlockchange', handlePointerLockChange)
+    document.addEventListener('webkitpointerlockchange', handlePointerLockChange)
+    syncLockState()
+
+    return () => {
+      document.removeEventListener('pointerlockchange', handlePointerLockChange)
+      document.removeEventListener('mozpointerlockchange', handlePointerLockChange)
+      document.removeEventListener('webkitpointerlockchange', handlePointerLockChange)
+    }
+  }, [canvasRef, syncLockState])
 
   useEffect(
     () => () => {
@@ -53,25 +83,35 @@ export function usePointerLock(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
     try {
       const lockResult = canvasRef.current?.requestPointerLock()
-      if (!lockResult) return
-      void lockResult.catch(handlePointerLockFailure)
+      if (!lockResult) {
+        syncLockState()
+        return
+      }
+      void lockResult
+        .then(() => {
+          syncLockState()
+        })
+        .catch(handlePointerLockFailure)
     } catch {
       handlePointerLockFailure()
     }
-  }, [browserSupport.useFallback, canvasRef, handlePointerLockFailure])
+  }, [browserSupport.useFallback, canvasRef, handlePointerLockFailure, syncLockState])
 
   const enableFallbackControls = useCallback(() => {
     setPointerLockError(null)
     setBrowserSupport(previous => ({ ...previous, useFallback: true }))
+    setIsPointerLocked(false)
   }, [])
 
   const releasePointerLock = useCallback(() => {
     document.exitPointerLock?.()
+    setIsPointerLocked(false)
   }, [])
 
   return {
     browserSupport,
     pointerLockError,
+    isPointerLocked,
     requestPointerLock,
     enableFallbackControls,
     releasePointerLock,

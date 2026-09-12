@@ -66,6 +66,10 @@ vi.mock('../../../utils/trainingModes', () => ({
     scorePerHit: 10,
     jitterChance: 0.3,
     durationSeconds: 60,
+    faceCamera: true,
+    orbitRadius: 0,
+    orbitSpeed: 0,
+    maxActiveTargets: undefined,
   })),
 }))
 
@@ -95,7 +99,6 @@ describe('GameScene', () => {
     modeId: 'moving' as const,
     onShotResult: vi.fn(),
     gameStarted: false,
-    setGameStarted: vi.fn(),
     useFallbackControls: false,
   }
 
@@ -206,13 +209,6 @@ describe('GameScene', () => {
   })
 
   describe('Event Listeners', () => {
-    it('should add pointerlockchange event listener', () => {
-      const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
-      render(<GameScene {...defaultProps} gameStarted={true} />)
-
-      expect(addEventListenerSpy).toHaveBeenCalledWith('pointerlockchange', expect.any(Function))
-    })
-
     it('should add beforeunload event listener', () => {
       const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
       render(<GameScene {...defaultProps} gameStarted={true} />)

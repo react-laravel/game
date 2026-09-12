@@ -1,19 +1,18 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_CROSSHAIR_CONFIG } from '../../../utils/crosshairConfig'
 import { Crosshair } from '../Crosshair'
 
 describe('Crosshair', () => {
-  it('should render without crashing', () => {
-    const result = Crosshair()
+  it('should render configured crosshair', () => {
+    const result = Crosshair({ config: DEFAULT_CROSSHAIR_CONFIG })
     expect(result).toBeDefined()
   })
 
-  it('should have pointer-events-none class', () => {
-    const result = Crosshair()
-    expect(result).toBeDefined()
-  })
-
-  it('should render with absolute positioning', () => {
-    const result = Crosshair()
+  it('should render hit feedback state', () => {
+    const result = Crosshair({
+      config: { ...DEFAULT_CROSSHAIR_CONFIG, style: 'dot' },
+      hit: true,
+    })
     expect(result).toBeDefined()
   })
 })

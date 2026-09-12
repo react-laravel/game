@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { DEFAULT_CROSSHAIR_CONFIG } from '../../utils/crosshairConfig'
 import { ShootingSetup } from '../ShootingSetup'
 
 describe('ShootingSetup', () => {
@@ -9,6 +10,8 @@ describe('ShootingSetup', () => {
     const onModeChange = vi.fn()
     const onStart = vi.fn()
     const onViewHistory = vi.fn()
+    const onCrosshairChange = vi.fn()
+    const onCrosshairReset = vi.fn()
 
     render(
       <ShootingSetup
@@ -20,6 +23,9 @@ describe('ShootingSetup', () => {
         onModeChange={onModeChange}
         onStart={onStart}
         onViewHistory={onViewHistory}
+        crosshairConfig={DEFAULT_CROSSHAIR_CONFIG}
+        onCrosshairChange={onCrosshairChange}
+        onCrosshairReset={onCrosshairReset}
       />
     )
 

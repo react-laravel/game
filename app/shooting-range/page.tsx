@@ -6,6 +6,7 @@ import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { cn } from '@/lib/helpers'
 import { ShootingHistory } from './components/ShootingHistory'
 import { ShootingSetup } from './components/ShootingSetup'
+import { useCrosshairSettings } from './hooks/useCrosshairSettings'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
@@ -23,6 +24,8 @@ export default function ShootingRangePage() {
   const [difficulty, setDifficulty] = useState<ShootingDifficulty>('easy')
   const [mapId, setMapId] = useState<ShootingMapId>('indoor')
   const [modeId, setModeId] = useState<TrainingModeId>('moving')
+  const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
+    useCrosshairSettings()
 
   return (
     <main
@@ -58,6 +61,9 @@ export default function ShootingRangePage() {
             onModeChange={setModeId}
             onStart={() => setIsStarted(true)}
             onViewHistory={() => setShowHistory(true)}
+            crosshairConfig={crosshairConfig}
+            onCrosshairChange={updateCrosshair}
+            onCrosshairReset={resetCrosshair}
           />
         )
       ) : (
@@ -73,6 +79,9 @@ export default function ShootingRangePage() {
               difficulty={difficulty}
               mapId={mapId}
               modeId={modeId}
+              crosshairConfig={crosshairConfig}
+              onCrosshairChange={updateCrosshair}
+              onCrosshairReset={resetCrosshair}
               setGameStarted={setIsStarted}
               onViewHistory={() => {
                 setIsStarted(false)

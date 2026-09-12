@@ -47,6 +47,7 @@ export interface TargetRuntime {
     hit?: boolean
     direction?: MutableVec3
     spawnedAt?: number
+    orbitAnchor?: MutableVec3
   }
   position: MutableVec3
 }
@@ -62,6 +63,7 @@ export function applyTargetHit(target: TargetRuntime) {
 export function respawnTarget(target: TargetRuntime, gameAreaSize: number) {
   const [x, y, z] = generateRandomPosition(gameAreaSize)
   target.position.set(x, y, z)
+  target.userData.orbitAnchor?.set(x, y, z)
   target.userData.hit = false
   markTargetSpawned(target)
   const direction = target.userData.direction

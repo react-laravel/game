@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BarChart3,
   ChevronDown,
@@ -75,9 +75,15 @@ export function ShootingSetup({
   onCrosshairReset,
 }: ShootingSetupProps) {
   const [showCustom, setShowCustom] = useState(false)
-  const lastConfig = loadLastConfig()
-  const lastDrillId = loadLastDrillId()
-  const lastDrill = lastDrillId ? drillPresets.find(p => p.id === lastDrillId) : null
+  const [lastConfig, setLastConfig] = useState<ReturnType<typeof loadLastConfig>>(null)
+  const [lastDrill, setLastDrill] = useState<DrillPreset | null>(null)
+
+  useEffect(() => {
+    const config = loadLastConfig()
+    const drillId = loadLastDrillId()
+    setLastConfig(config)
+    setLastDrill(drillId ? (drillPresets.find(p => p.id === drillId) ?? null) : null)
+  }, [])
 
   const selectedMode = trainingModes[modeId]
 

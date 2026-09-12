@@ -180,6 +180,7 @@ Follow-up to PR #9 (`cursor/shooting-range-map-polish-e0f6`), rebased onto lates
 ### Verification
 - Focused shooting-range tests: **92/92** passing (`type-check` clean).
 - **Committed PR screenshots** (viewable on GitHub): `docs/shooting-range-screenshots/` — setup, per-map training HUD, drill HUDs, results screen. Regenerate via `node scripts/capture-shooting-range-maps.mjs`.
+- SSR fix: `lastConfigStorage` no longer touches `localStorage` when `window` is undefined; `ShootingSetup` loads last drill/config in `useEffect`.
 - Visual critique cycle 2: moved drill label panel below exit/settings buttons; zero-shot accuracy shows `—` in HUD and results bars (not misleading 100%).
 - Headless capture uses click-target fallback (no real pointer lock).
 

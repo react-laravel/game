@@ -6,6 +6,11 @@ import { toast } from 'sonner'
 import { GameHud, GameResultOverlay, GameStage, GameStat } from '@/components/game'
 import { SnakeBoard } from './components/SnakeBoard'
 import { useSnakeGameStore } from './store'
+import {
+  canChangeToDirection,
+  directionFromKey,
+  OPPOSITE_DIRECTIONS,
+} from './utils/controls'
 import type { Direction, Position } from './utils/snakePath'
 
 const SNAKE_RULES = [
@@ -33,22 +38,6 @@ const DIRECTION_MAP = {
   DOWN: { x: 0, y: 1 },
   LEFT: { x: -1, y: 0 },
   RIGHT: { x: 1, y: 0 },
-} as const
-
-// 相反方向映射
-const OPPOSITE_DIRECTIONS = {
-  UP: 'DOWN',
-  DOWN: 'UP',
-  LEFT: 'RIGHT',
-  RIGHT: 'LEFT',
-} as const
-
-// 键盘映射
-const KEY_DIRECTION_MAP = {
-  ArrowUp: 'UP',
-  ArrowDown: 'DOWN',
-  ArrowLeft: 'LEFT',
-  ArrowRight: 'RIGHT',
 } as const
 
 export default function SnakeGame() {
@@ -165,17 +154,30 @@ export default function SnakeGame() {
     })
   }, [checkCollision, generateFood, addFoodEaten, incrementGamesPlayed])
 
+  const startGameWithDirection = useCallback(
+    (newDirection: Direction) => {
+      if (gameOverRef.current) {
+        resetGameRef.current()
+      }
+
+      gameStartedRef.current = true
+      setGameStarted(true)
+
+      if (canChangeToDirection(directionRef.current, newDirection)) {
+        directionRef.current = newDirection
+        setDirection(newDirection)
+      }
+
+      directionQueueRef.current = []
+    },
+    []
+  )
+
   // 方向控制
   const changeDirection = useCallback((newDirection: Direction) => {
     if (!gameStartedRef.current || gameOverRef.current) return
 
-    // 防止反向移动和重复方向
-    if (
-      OPPOSITE_DIRECTIONS[directionRef.current] === newDirection ||
-      directionRef.current === newDirection
-    ) {
-      return
-    }
+    if (!canChangeToDirection(directionRef.current, newDirection)) return
 
     // 将方向变化加入队列，避免快速按键时丢失
     if (directionQueueRef.current.length < 2) {
@@ -203,9 +205,18 @@ export default function SnakeGame() {
   // 键盘控制
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key in KEY_DIRECTION_MAP) {
+      const nextDirection = directionFromKey(e.key)
+      if (nextDirection) {
         e.preventDefault()
-        changeDirection(KEY_DIRECTION_MAP[e.key as keyof typeof KEY_DIRECTION_MAP] as Direction)
+
+        if (e.repeat) return
+
+        if (!gameStartedRef.current || gameOverRef.current) {
+          startGameWithDirection(nextDirection)
+          return
+        }
+
+        changeDirection(nextDirection)
       } else if (e.key === ' ') {
         e.preventDefault()
         if (gameOverRef.current) {
@@ -218,7 +229,7 @@ export default function SnakeGame() {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [changeDirection])
+  }, [changeDirection, startGameWithDirection])
 
   // 触摸控制
   useEffect(() => {

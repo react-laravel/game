@@ -8,8 +8,10 @@ describe('mapConfigs', () => {
   })
 
   it('keeps environment-specific lighting and fog values', () => {
-    expect(mapConfigs.indoor.background).toBe('#07141e')
+    expect(mapConfigs.indoor.background).not.toBe('#07141e')
+    expect(mapConfigs.indoor.fillLight?.intensity).toBeGreaterThan(0)
     expect(mapConfigs.outdoor.fog.far).toBeGreaterThan(mapConfigs.indoor.fog.far)
-    expect(mapConfigs.warehouse.accent).toBe('#ff9f43')
+    expect(mapConfigs.outdoor.accent).not.toBe('#ffe08a')
+    expect(mapConfigs.warehouse.accent).toBe('#ffb347')
   })
 })

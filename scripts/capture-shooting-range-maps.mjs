@@ -12,6 +12,12 @@ const MAPS = [
   { label: '工业仓库', id: 'warehouse' },
 ]
 
+async function installQaFallback(page) {
+  await page.addInitScript(() => {
+    window.__SHOOTING_FORCE_FALLBACK__ = true
+  })
+}
+
 async function mockAuth(page) {
   await page.route('**/api/user', async route => {
     await route.fulfill({
@@ -33,19 +39,41 @@ async function mockAuth(page) {
 }
 
 async function enterFallbackPlay(page) {
-  await page.locator('canvas').first().waitFor({ state: 'attached', timeout: 20000 })
-  await page.waitForTimeout(800)
-  const startBtn = page.getByRole('button', { name: /锁定鼠标并开始|点击开始/ })
-  if (await startBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-    await startBtn.click({ noWaitAfter: true })
-    await page.waitForTimeout(800)
+  await page.locator('canvas[data-engine]').first().waitFor({ state: 'attached', timeout: 30000 })
+  await page.waitForTimeout(1200)
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const startBtn = page.getByRole('button', { name: /锁定鼠标并开始|点击开始/ })
+    if (await startBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await startBtn.click({ force: true, noWaitAfter: true, timeout: 5000 }).catch(() => {})
+      await page.waitForTimeout(700)
+    }
+
+    const fallback = page.getByRole('button', { name: '点击目标模式' })
+    if (await fallback.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await fallback.click({ force: true, noWaitAfter: true, timeout: 5000 }).catch(() => {})
+      await page.waitForTimeout(700)
+    }
+
+    const ready = page.getByText('准备进入训练')
+    if (!(await ready.isVisible({ timeout: 800 }).catch(() => false))) {
+      break
+    }
+
+    await page.keyboard.press('Enter').catch(() => {})
+    await page.waitForTimeout(700)
   }
+
   const fallback = page.getByRole('button', { name: '点击目标模式' })
-  if (await fallback.isVisible({ timeout: 4000 }).catch(() => false)) {
-    await fallback.click({ noWaitAfter: true })
-    await page.waitForTimeout(500)
+  if (await fallback.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await fallback.click({ force: true, noWaitAfter: true, timeout: 5000 }).catch(() => {})
+    await page.waitForTimeout(900)
   }
-  await page.waitForTimeout(5000)
+
+  await page.getByRole('button', { name: '结束训练' }).waitFor({ state: 'visible', timeout: 20000 })
+  await page.getByText('准备进入训练').waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {})
+  await page.getByText('无法锁定鼠标').waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {})
+  await page.waitForTimeout(5500)
 }
 
 async function captureSetup(page, filePath) {
@@ -55,6 +83,14 @@ async function captureSetup(page, filePath) {
 }
 
 async function captureTrainingHud(page, filePath) {
+  const fallback = page.getByRole('button', { name: '点击目标模式' })
+  if (await fallback.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await fallback.click({ force: true, noWaitAfter: true, timeout: 5000 }).catch(() => {})
+    await page.waitForTimeout(1200)
+  }
+  await page.getByText('无法锁定鼠标').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
+  await page.locator('canvas[data-engine]').first().waitFor({ state: 'visible', timeout: 10000 })
+  await page.waitForTimeout(800)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -94,7 +130,12 @@ async function scoreFallbackHits(page, attempts = 8) {
 
   for (let i = 0; i < Math.min(attempts, grid.length); i += 1) {
     const [rx, ry] = grid[i]
-    await canvas.click({ position: { x: box.width * rx, y: box.height * ry }, force: true })
+    await canvas.click({
+      position: { x: box.width * rx, y: box.height * ry },
+      force: true,
+      noWaitAfter: true,
+      timeout: 5000,
+    }).catch(() => {})
     await page.waitForTimeout(220)
   }
 }
@@ -126,33 +167,37 @@ async function captureResultsScreen(page, filePath) {
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
+async function runStep(label, fn) {
+  try {
+    await fn()
+    console.log(`Captured ${label}`)
+  } catch (error) {
+    console.error(`Failed ${label}:`, error instanceof Error ? error.message : error)
+  }
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true })
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await installQaFallback(page)
   await mockAuth(page)
 
-  await captureSetup(page, path.join(OUT_DIR, 'setup-quick-start.png'))
+  await runStep('setup', () => captureSetup(page, path.join(OUT_DIR, 'setup-quick-start.png')))
 
   for (const map of MAPS) {
-    await captureCustomMapTraining(
-      page,
-      map.label,
-      path.join(OUT_DIR, `${map.id}-training-hud.png`)
+    await runStep(map.id, () =>
+      captureCustomMapTraining(page, map.label, path.join(OUT_DIR, `${map.id}-training-hud.png`))
     )
   }
 
-  await captureQuickStartTraining(
-    page,
-    '甩枪反应',
-    path.join(OUT_DIR, 'drill-flick-training-hud.png')
+  await runStep('drill-flick', () =>
+    captureQuickStartTraining(page, '甩枪反应', path.join(OUT_DIR, 'drill-flick-training-hud.png'))
   )
-  await captureQuickStartTraining(
-    page,
-    '网格速点',
-    path.join(OUT_DIR, 'drill-precision-training-hud.png')
+  await runStep('drill-precision', () =>
+    captureQuickStartTraining(page, '网格速点', path.join(OUT_DIR, 'drill-precision-training-hud.png'))
   )
-  await captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png'))
+  await runStep('results', () => captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png')))
 
   await browser.close()
   console.log(`Saved screenshots to ${OUT_DIR}`)

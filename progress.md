@@ -159,6 +159,29 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 14 (2026-09-13)
+
+Follow-up to PR #13 (`cursor/shooting-range-overnight-polish-db78`), addressing coordinator screenshot review.
+
+### Outdoor
+- Removed tilted `terrainPatches` grass planes (root cause of diagonal green berm slab intersecting left-side trees).
+- Rebuilt backstop berm as stacked earth boxes + horizontal grass cap (no pitched grass plane).
+- Outdoor uses a single textured grass ground plane at `y=-2` (no duplicate base floor mesh).
+- Evergreen/deciduous trees: layered icosahedron foliage (`detail: 2`), smoother materials, tapered silhouettes; bush clumps softened.
+
+### Indoor ceiling
+- Lowered ceiling height to `INDOOR_CEILING_Y = 8.25` so fixtures sit inside the FPS upper field of view.
+- Added lane-spanning troffer bars (`IndoorLaneLightBars`), upper-wall wash panels, hanging fixtures, denser overhead rows + troffer grid.
+- Ceiling/troffer emissive planes use `DoubleSide` + `meshBasicMaterial` so panels read from below.
+- Indoor tone-mapping exposure 1.48; fill light lowered to ceiling height.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Capture script: `__SHOOTING_FORCE_FALLBACK__` QA flag, resilient overlay dismissal, per-step error isolation.
+- Results screen shows non-zero hits (grade A / 4 hits / 80% accuracy).
+- Pixel QA: indoor upper band bright pixels **0% → 62.5%** (visible troffer rows); outdoor mid-left no tilted green slab.
+- Focused shooting-range tests: **95/95** passing.
+
 ## Shooting Range visual polish cycle 13 (2026-09-13)
 
 Follow-up to PR #12 (`cursor/shooting-range-outdoor-indoor-polish-4e75`), addressing coordinator screenshot review.

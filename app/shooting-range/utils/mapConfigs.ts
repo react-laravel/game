@@ -29,7 +29,7 @@ export const mapConfigs: Record<ShootingMapId, MapConfig> = {
     floor: { color: '#4a6272', metalness: 0.14, roughness: 0.74 },
     grid: [80, 40, '#5a9cb0', '#456878'],
     accent: '#9de8ff',
-    fillLight: { color: '#f4fcff', intensity: 2.65, position: [0, 11, -28] },
+    fillLight: { color: '#f4fcff', intensity: 2.85, position: [0, 7.75, -28] },
   },
   outdoor: {
     id: 'outdoor',

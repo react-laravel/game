@@ -33,7 +33,7 @@ export function ShootingReadyOverlay({ onStart, resume = false }: ShootingReadyO
         </h2>
         <p className="mt-2 text-sm leading-6 text-white/55">
           {resume
-            ? '按 ESC 后需要重新锁定鼠标才能转动视角。点击下方按钮继续瞄准。'
+            ? '按 ESC 后需要重新锁定鼠标才能转动视角。点击按钮或按 Enter / Space 继续瞄准。'
             : '锁定鼠标后移动瞄准，左键射击。按 ESC 可随时释放鼠标。'}
         </p>
         <Button

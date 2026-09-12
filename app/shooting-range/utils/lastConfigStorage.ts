@@ -3,18 +3,25 @@ import type { ShootingSetupConfig } from '../types'
 export const LAST_CONFIG_KEY = 'shooting-range-last-config'
 export const LAST_DRILL_KEY = 'shooting-range-last-drill'
 
+function readStorage(): Storage | null {
+  if (typeof window === 'undefined') return null
+  return window.localStorage
+}
+
 export function saveLastConfig(
   config: ShootingSetupConfig,
   drillId?: string,
-  storage: Pick<Storage, 'setItem'> = localStorage
+  storage: Pick<Storage, 'setItem'> | null = readStorage()
 ) {
+  if (!storage) return
   storage.setItem(LAST_CONFIG_KEY, JSON.stringify(config))
   if (drillId) storage.setItem(LAST_DRILL_KEY, drillId)
 }
 
 export function loadLastConfig(
-  storage: Pick<Storage, 'getItem'> = localStorage
+  storage: Pick<Storage, 'getItem'> | null = readStorage()
 ): ShootingSetupConfig | null {
+  if (!storage) return null
   try {
     const raw = storage.getItem(LAST_CONFIG_KEY)
     if (!raw) return null
@@ -26,6 +33,9 @@ export function loadLastConfig(
   }
 }
 
-export function loadLastDrillId(storage: Pick<Storage, 'getItem'> = localStorage): string | null {
+export function loadLastDrillId(
+  storage: Pick<Storage, 'getItem'> | null = readStorage()
+): string | null {
+  if (!storage) return null
   return storage.getItem(LAST_DRILL_KEY)
 }

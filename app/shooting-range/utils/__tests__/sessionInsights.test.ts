@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { SessionRecord, SessionStats } from '../../types'
 import {
+  buildPerformanceHighlights,
   compareToPersonalBest,
   computeSessionGrade,
   getPersonalBest,
+  gradeLabel,
   summarizeByMode,
 } from '../sessionInsights'
 
@@ -35,6 +37,26 @@ function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
 describe('sessionInsights', () => {
   it('grades high-accuracy flick runs highly', () => {
     expect(computeSessionGrade(baseStats, 'flick')).toBe('S')
+    expect(gradeLabel('S')).toBe('精英表现')
+  })
+
+  it('returns D when no shots were fired', () => {
+    expect(computeSessionGrade({ ...baseStats, shots: 0, hits: 0, accuracy: 100 }, 'flick')).toBe(
+      'D'
+    )
+  })
+
+  it('builds mode-specific performance highlights', () => {
+    const flickHighlights = buildPerformanceHighlights(baseStats, 'flick')
+    expect(flickHighlights).toHaveLength(2)
+    expect(flickHighlights[1]?.label).toBe('反应速度')
+
+    const movingHighlights = buildPerformanceHighlights(baseStats, 'moving')
+    expect(movingHighlights[1]?.label).toBe('射速')
+
+    const emptyHighlights = buildPerformanceHighlights({ ...baseStats, shots: 0, hits: 0 }, 'flick')
+    expect(emptyHighlights[0]?.value).toBe('—')
+    expect(emptyHighlights[1]?.value).toBe('—')
   })
 
   it('finds personal best per mode', () => {

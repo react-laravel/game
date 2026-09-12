@@ -30,6 +30,15 @@ function isCanvasLocked(canvas: HTMLCanvasElement | null) {
   return Boolean(canvas && document.pointerLockElement === canvas)
 }
 
+function requestCanvasPointerLock(canvas: HTMLCanvasElement) {
+  const lockOptions = { unadjustedMovement: true } as PointerLockOptions
+  try {
+    return canvas.requestPointerLock(lockOptions)
+  } catch {
+    return canvas.requestPointerLock()
+  }
+}
+
 export function usePointerLock(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const [pointerLockError, setPointerLockError] = useState<string | null>(null)
   const [browserSupport, setBrowserSupport] = useState(detectBrowserSupport)
@@ -82,7 +91,12 @@ export function usePointerLock(canvasRef: RefObject<HTMLCanvasElement | null>) {
     if (browserSupport.useFallback) return
 
     try {
-      const lockResult = canvasRef.current?.requestPointerLock()
+      const canvas = canvasRef.current
+      if (!canvas) {
+        syncLockState()
+        return
+      }
+      const lockResult = requestCanvasPointerLock(canvas)
       if (!lockResult) {
         syncLockState()
         return

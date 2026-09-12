@@ -71,6 +71,7 @@ export default function ShootingGame({
     beginTraining,
     restartTraining,
     returnToSettings,
+    endSessionEarly,
   } = useShootingSession(config, setGameStarted)
   const {
     browserSupport,
@@ -98,6 +99,7 @@ export default function ShootingGame({
     gameStarted,
     stats: sessionStats,
     timeLeft,
+    onEndSession: endSessionEarly,
   })
 
   const startGame = useCallback(() => {
@@ -133,11 +135,28 @@ export default function ShootingGame({
         event.preventDefault()
         startGame()
       }
+      if (
+        (event.code === 'Enter' || event.code === 'Space') &&
+        needsPointerLock &&
+        !showStartOverlay &&
+        !pointerLockError
+      ) {
+        event.preventDefault()
+        resumePointerLock()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown, { passive: false })
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [gameOver, gameStarted, startGame])
+  }, [
+    gameOver,
+    gameStarted,
+    needsPointerLock,
+    pointerLockError,
+    resumePointerLock,
+    showStartOverlay,
+    startGame,
+  ])
 
   useEffect(() => {
     const canvas = canvasRef.current

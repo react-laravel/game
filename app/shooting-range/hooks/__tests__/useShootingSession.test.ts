@@ -88,8 +88,22 @@ describe('useShootingSession', () => {
     expect(result.current.hitMarker).toBe(true)
 
     act(() => {
-      vi.advanceTimersByTime(110)
+      vi.advanceTimersByTime(85)
     })
     expect(result.current.hitMarker).toBe(false)
+  })
+
+  it('can end the session early for QA and persist results', () => {
+    const { result } = renderHook(() => useShootingSession(baseConfig))
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.recordShot(true, 220)
+      result.current.endSessionEarly()
+    })
+
+    expect(result.current.gameOver).toBe(true)
+    expect(result.current.timeLeft).toBe(0)
+    expect(loadSessionHistory()).toHaveLength(1)
   })
 })

@@ -36,12 +36,15 @@ Current prompt (2026-09-13): 射击音效不好，重新设计
 
 Current prompt (2026-09-12): 修复 `/bowling` 穿模（球/瓶/边沟/助跑区物理碰撞体与网格对齐）
 
+Current prompt (2026-09-12): 贪吃蛇，除了按开始，wasd 或者方向键都需要能直接开始
+
 ## Current work
 
 - Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
 - In-game HUD shows live FPS (250ms throttled), hits/misses, accuracy, shots/min, streak, and reaction time; sessions persist to `localStorage` and surface in the end-of-run summary.
 - Hit path keeps pooled ImpactFX, cached raycast object lists, ref-stable callbacks, and in-place respawns to avoid render-loop allocations and light churn.
 - Bowling clipping fix: added shared `layout.ts` + `colliders.ts`, approach/gutter/back-wall physics, ball/pin rest heights on the lane surface, taller side walls, and lower default restitution.
+- Snake idle/game-over screens now start a run on WASD or arrow keys (same as Start, plus first direction when valid). Key repeats are ignored before play; opposite first moves still follow existing snake rules.
 - Shooting Range gun and hit sounds are now synthesized with Web Audio (crack/thump vs metallic ping) instead of pitching the same `shot.mp3`.
 - Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
 - Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.
@@ -164,12 +167,17 @@ Current prompt (2026-09-12): 修复 `/bowling` 穿模（球/瓶/边沟/助跑区
 - Indoor range lighting/materials brightened (ceiling fill, lighter walls/floor/fog); outdoor map no longer renders indoor ceiling strip lights that appeared as yellow lines at the top.
 - Added Overwatch-style crosshair customization (style/color/size/thickness/gap/opacity/center dot/outline) with live preview, localStorage persistence, setup panel, and in-game settings overlay.
 
+## Snake keyboard start (2026-09-12)
+
+- `/snake` previously only reacted to direction keys after clicking 开始. Arrow keys and WASD now start (or restart) from idle/game-over, apply the first direction when it is not opposite, and ignore `keydown` repeats before play.
+- Focused snake tests: 31 passing (controls helpers + keyboard-start page tests).
+
 ## Snake follow-angle notes (2026-09-13)
 
 - `/snake` no longer fills grid cells as disconnected squares. The actor is a polyline through cell centers with `stroke-linejoin: round`, plus a head rotated by movement heading.
 - The old head-direction helper treated “body on the right” as facing right; heading now uses `head - behind`.
 - Browser: start pose is a 3-segment capsule facing right; after ArrowDown the path `11.5,11.5 11.5,10.5 10.5,10.5` shows a rounded L and `data-heading=90`.
-- Focused snake tests: 22 passing.
+- Focused snake tests: 22 passing (body/heading); keyboard-start adds 9 more in the same suite.
 
 ## TODOs / suggestions for the next agent
 

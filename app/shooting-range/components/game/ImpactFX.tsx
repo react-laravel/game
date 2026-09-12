@@ -89,8 +89,8 @@ export const ImpactFX = forwardRef<ImpactFXHandle>(function ImpactFX(_, ref) {
             ref={node => {
               materialRefs.current[index] = node
             }}
-            color="#ffb020"
-            size={0.16}
+            color="#fff4d6"
+            size={0.13}
             sizeAttenuation
             transparent
             opacity={1}

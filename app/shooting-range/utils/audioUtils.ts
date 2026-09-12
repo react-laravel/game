@@ -202,50 +202,49 @@ export const playShotSound = () => {
     })
     playNoiseBurst(context, destination, {
       start: start + 0.03,
-      duration: 0.11,
-      volume: 0.04,
-      highpass: 160,
-      lowpass: 620,
+      duration: 0.08,
+      volume: 0.028,
+      highpass: 180,
+      lowpass: 520,
     })
   })
 }
 
-/** Hollow metal drone impact: inharmonic pings plus a short spark. */
+/** Hollow metal drone impact: crisp ping with a short spark, less low-end mud. */
 export const playHitSound = () => {
   withAudio((context, destination) => {
     const start = context.currentTime
-    const pitch = jitter(1, 0.12)
+    const pitch = jitter(1, 0.1)
 
     playNoiseBurst(context, destination, {
       start,
-      duration: 0.028,
-      volume: 0.07,
-      highpass: 2200,
-      lowpass: 7600,
-    })
-    playTone(context, destination, {
-      type: 'triangle',
-      frequency: 1960 * pitch,
-      frequencyEnd: 1320 * pitch,
-      duration: 0.1,
-      volume: 0.09,
-      start,
-    })
-    playTone(context, destination, {
-      type: 'triangle',
-      frequency: 2940 * pitch,
-      frequencyEnd: 1680 * pitch,
-      duration: 0.075,
+      duration: 0.018,
       volume: 0.055,
-      start: start + 0.006,
+      highpass: 3200,
+      lowpass: 9200,
     })
     playTone(context, destination, {
-      type: 'sine',
-      frequency: 340 * pitch,
-      frequencyEnd: 170,
-      duration: 0.09,
-      volume: 0.07,
+      type: 'triangle',
+      frequency: 2280 * pitch,
+      frequencyEnd: 1680 * pitch,
+      duration: 0.07,
+      volume: 0.1,
       start,
+    })
+    playTone(context, destination, {
+      type: 'triangle',
+      frequency: 3520 * pitch,
+      frequencyEnd: 2480 * pitch,
+      duration: 0.05,
+      volume: 0.065,
+      start: start + 0.004,
+    })
+    playTone(context, destination, {
+      type: 'square',
+      frequency: 4200 * pitch,
+      duration: 0.008,
+      volume: 0.022,
+      start: start + 0.002,
     })
   })
 }

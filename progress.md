@@ -159,6 +159,29 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range overnight polish (2026-09-13)
+
+Follow-up to PR #9 (`cursor/shooting-range-map-polish-e0f6`), rebased onto latest `main`.
+
+### Post-run results
+- `GameUI` results card: grade subtitle (`gradeLabel`), elapsed time, mode-specific performance bars (`buildPerformanceHighlights`), accuracy delta vs personal best, zero-shot guidance copy.
+- `computeSessionGrade` returns `D` when `shots === 0` (no more misleading B on empty runs).
+- Debug QA: `window.endShootingSession()` ends an active run immediately; `render_game_to_text` reports `game-over`.
+
+### Hit feedback
+- Hit audio retuned: shorter high-band ping + spark (removed muddy low sine body); gunshot room tail softened.
+- Crosshair hit flash: brighter gold, faster 85ms pulse, slightly larger scale snap.
+- Impact particles: shorter 0.42s burst, smaller/brighter additive sparks.
+
+### Pointer lock after ESC
+- `requestPointerLock` prefers `{ unadjustedMovement: true }` with legacy fallback.
+- Resume overlay + canvas click re-lock; **Enter / Space** also re-acquires lock (matches start overlay).
+
+### Verification
+- Focused shooting-range tests: **92/92** passing (`type-check` clean).
+- Playwright self-critique artifacts: `/opt/cursor/artifacts/shooting-range-overnight-polish/` — setup, training canvas, results (D grade + zero-shot banner), map/drill captures under `maps/`.
+- Critique notes: results hierarchy readable; zero-shot path now honest; indoor map/HUD contrast OK in fallback mode; headless still uses click-target fallback (no real pointer lock).
+
 ## Shooting Range Aimlabs-style UX upgrade (2026-09-13)
 
 Inspired by Aimlabs (scenarios, quick start, post-run results) without copying assets.

@@ -13,8 +13,8 @@ interface CrosshairProps {
 }
 
 export function Crosshair({ config, hit = false, className = '' }: CrosshairProps) {
-  const color = hit ? '#ffd166' : config.color
-  const opacity = hit ? Math.min(1, config.opacity + 0.05) : config.opacity
+  const color = hit ? '#fff3bf' : config.color
+  const opacity = hit ? Math.min(1, config.opacity + 0.12) : config.opacity
   const segments = getCrosshairSegments(config)
   const circleRadius = getCrosshairCircleRadius(config)
   const center = getCrosshairViewboxSize() / 2
@@ -27,7 +27,7 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
     >
       <svg
         viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
-        className={`transition-transform duration-75 ${hit ? 'scale-110' : 'scale-100'}`}
+        className={`transition-transform duration-50 ease-out ${hit ? 'scale-[1.14]' : 'scale-100'}`}
         style={{
           width: `${config.size * 2.8}px`,
           height: `${config.size * 2.8}px`,

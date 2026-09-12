@@ -3,7 +3,7 @@ import type { SessionStats, ShootingSetupConfig } from '../types'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
 
-const HIT_MARKER_DURATION_MS = 110
+const HIT_MARKER_DURATION_MS = 85
 
 export function useShootingSession(
   config: ShootingSetupConfig,
@@ -157,6 +157,11 @@ export function useShootingSession(
     onTrainingStateChange?.(false)
   }, [onTrainingStateChange])
 
+  const endSessionEarly = useCallback(() => {
+    setTimeLeft(0)
+    setGameOver(true)
+  }, [])
+
   const sessionStats = buildSessionStats()
 
   return {
@@ -180,5 +185,6 @@ export function useShootingSession(
     beginTraining,
     restartTraining,
     returnToSettings,
+    endSessionEarly,
   }
 }

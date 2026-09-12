@@ -4,6 +4,13 @@ import type { ShootingBrowserSupport } from '../types'
 const POINTER_LOCK_ERROR_MESSAGE = '浏览器拒绝了鼠标锁定请求。'
 
 function detectBrowserSupport(): ShootingBrowserSupport {
+  if (
+    typeof window !== 'undefined' &&
+    (window as Window & { __SHOOTING_FORCE_FALLBACK__?: boolean }).__SHOOTING_FORCE_FALLBACK__
+  ) {
+    return { supported: true, message: '', useFallback: true }
+  }
+
   const isMobile =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 

@@ -7,6 +7,9 @@ interface RangeEnvironmentProps {
   config: MapConfig
 }
 
+/** Lowered so troffer rows sit inside the FPS upper field of view (~8m room height). */
+const INDOOR_CEILING_Y = 8.25
+
 function createCanvasTexture(
   width: number,
   height: number,
@@ -101,7 +104,7 @@ function CeilingTroffer({
   intensity?: number
 }) {
   return (
-    <group position={[x, 11.68, z]}>
+    <group position={[x, INDOOR_CEILING_Y - 0.04, z]}>
       <mesh>
         <boxGeometry args={[3.4, 0.22, 1.75]} />
         <meshStandardMaterial color="#8a9aaa" metalness={0.48} roughness={0.38} />
@@ -111,9 +114,10 @@ function CeilingTroffer({
         <meshStandardMaterial
           color="#f6fcff"
           emissive={accent}
-          emissiveIntensity={1.55}
+          emissiveIntensity={2.05}
           roughness={0.28}
           toneMapped={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
       <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -121,9 +125,10 @@ function CeilingTroffer({
         <meshStandardMaterial
           color="#ffffff"
           emissive="#e8f8ff"
-          emissiveIntensity={1.1}
+          emissiveIntensity={1.55}
           roughness={0.2}
           toneMapped={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
       <pointLight intensity={intensity} distance={18} color="#eef8ff" decay={2} position={[0, -0.25, 0]} />
@@ -133,40 +138,35 @@ function CeilingTroffer({
 
 function IndoorCeilingVault({ accent }: { accent: string }) {
   const lightRows = useMemo(
-    () => [-6, -14, -22, -30, -38, -46],
+    () => [-4, -9, -14, -19, -24, -29, -34, -39, -44, -49],
     []
   )
-  const canopyZs = useMemo(() => [-8, -16, -24, -32, -40], [])
-
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.78, -24]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y + 0.06, -24]}>
         <planeGeometry args={[38, 56]} />
         <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {canopyZs.map(z => (
-        <mesh key={`canopy-${z}`} position={[0, 11.62, z]} rotation={[-0.42, 0, 0]}>
-          <planeGeometry args={[33, 2.8]} />
-          <meshBasicMaterial color="#f4fcff" fog={false} side={THREE.DoubleSide} toneMapped={false} />
-        </mesh>
-      ))}
-
       {lightRows.map(z => (
-        <group key={z} position={[0, 11.68, z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <group key={z} position={[0, INDOOR_CEILING_Y - 0.04, z]} rotation={[-Math.PI / 2, 0, 0]}>
           <mesh>
-            <planeGeometry args={[30, 1.6]} />
-            <meshBasicMaterial color="#fcfeff" toneMapped={false} fog={false} />
+            <planeGeometry args={[32, 2.0]} />
+            <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
           </mesh>
           <mesh position={[0, 0, 0.02]}>
-            <planeGeometry args={[26, 1.1]} />
-            <meshBasicMaterial color={accent} toneMapped={false} fog={false} />
+            <planeGeometry args={[28, 1.35]} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, 0, 0.04]}>
+            <planeGeometry args={[22, 0.85]} />
+            <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
           </mesh>
         </group>
       ))}
 
       {[-17.2, 17.2].map(x => (
-        <mesh key={x} position={[x, 11.55, -24]}>
+        <mesh key={x} position={[x, INDOOR_CEILING_Y - 0.17, -24]}>
           <boxGeometry args={[0.45, 0.55, 52]} />
           <meshBasicMaterial color="#d8eaf4" toneMapped={false} fog={false} />
         </mesh>
@@ -174,15 +174,15 @@ function IndoorCeilingVault({ accent }: { accent: string }) {
 
       {[-36, -42, -46].map(z => (
         <group key={`apex-${z}`}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.76, z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y + 0.04, z]}>
             <planeGeometry args={[26, 4.5]} />
             <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.7, z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y - 0.02, z]}>
             <planeGeometry args={[20, 2.2]} />
             <meshBasicMaterial color={accent} toneMapped={false} fog={false} side={THREE.DoubleSide} />
           </mesh>
-          <pointLight intensity={1.8} distance={24} color="#f4fcff" decay={2} position={[0, 11.2, z]} />
+          <pointLight intensity={1.8} distance={24} color="#f4fcff" decay={2} position={[0, INDOOR_CEILING_Y - 0.52, z]} />
         </group>
       ))}
     </>
@@ -199,7 +199,7 @@ function CeilingSoffitRow({
   width?: number
 }) {
   return (
-    <group position={[0, 10.85, z]}>
+    <group position={[0, INDOOR_CEILING_Y - 0.87, z]}>
       <mesh>
         <boxGeometry args={[width, 0.32, 1.4]} />
         <meshStandardMaterial color="#8a9aaa" metalness={0.4} roughness={0.42} />
@@ -227,28 +227,149 @@ function CeilingSoffitRow({
   )
 }
 
+function IndoorLaneLightBars({ accent }: { accent: string }) {
+  const rowZs = useMemo(() => Array.from({ length: 9 }, (_, i) => -8 - i * 5), [])
+
+  return (
+    <>
+      {rowZs.map(z => (
+        <group key={`lane-bar-${z}`} position={[0, 5.85, z]}>
+          <mesh>
+            <boxGeometry args={[36, 0.28, 2.5]} />
+            <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} />
+          </mesh>
+          <mesh position={[0, -0.13, 0]}>
+            <boxGeometry args={[32, 0.1, 1.85]} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} />
+          </mesh>
+          <mesh position={[0, -0.2, 0]}>
+            <boxGeometry args={[26, 0.05, 1.2]} />
+            <meshBasicMaterial color="#f4fcff" toneMapped={false} fog={false} />
+          </mesh>
+        </group>
+      ))}
+    </>
+  )
+}
+
+function IndoorUpperWallLights({ accent }: { accent: string }) {
+  const rowZs = useMemo(() => Array.from({ length: 12 }, (_, i) => -4 - i * 4), [])
+
+  return (
+    <>
+      {rowZs.flatMap(z =>
+        [-17.35, 17.35].map(x => (
+          <group key={`wall-light-${x}-${z}`} position={[x, 7.55, z]}>
+            <mesh rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}>
+              <planeGeometry args={[3.8, 1.05]} />
+              <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+            </mesh>
+            <mesh
+              rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+              position={[0, 0, 0.02]}
+            >
+              <planeGeometry args={[3.2, 0.62]} />
+              <meshBasicMaterial color={accent} toneMapped={false} fog={false} side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        ))
+      )}
+    </>
+  )
+}
+
+function IndoorHangingFixtures({ accent }: { accent: string }) {
+  const slots = useMemo(() => {
+    const points: Array<{ x: number; z: number }> = []
+    for (let row = 0; row < 12; row += 1) {
+      for (const x of [-12, 0, 12]) {
+        points.push({ x, z: -5 - row * 4 })
+      }
+    }
+    return points
+  }, [])
+
+  return (
+    <>
+      {slots.map(({ x, z }) => (
+        <group key={`hang-${x}-${z}`} position={[x, INDOOR_CEILING_Y - 0.55, z]}>
+          <mesh>
+            <boxGeometry args={[3.6, 0.14, 1.55]} />
+            <meshStandardMaterial color="#c8dce8" metalness={0.35} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, -0.12, 0]}>
+            <boxGeometry args={[3.1, 0.06, 1.25]} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} />
+          </mesh>
+          <mesh position={[0, -0.18, 0]}>
+            <boxGeometry args={[2.5, 0.04, 0.95]} />
+            <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} />
+          </mesh>
+        </group>
+      ))}
+    </>
+  )
+}
+
+function IndoorOverheadLightRows({ accent }: { accent: string }) {
+  const rowZs = useMemo(() => Array.from({ length: 16 }, (_, i) => -1.5 - i * 3.2), [])
+
+  return (
+    <>
+      {rowZs.map(z => (
+        <group key={`overhead-${z}`} position={[0, INDOOR_CEILING_Y - 0.14, z]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[36, 3.2]} />
+            <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0.03]}>
+            <planeGeometry args={[31, 2.0]} />
+            <meshBasicMaterial color={accent} toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0.05]}>
+            <planeGeometry args={[24, 1.1]} />
+            <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+          <pointLight intensity={1.65} distance={18} color="#f4fcff" decay={2} position={[0, -0.35, 0]} />
+        </group>
+      ))}
+    </>
+  )
+}
+
 function IndoorCeilingGrid({ accent }: { accent: string }) {
   const troffers = useMemo(() => {
     const slots: Array<{ x: number; z: number }> = []
-    for (let row = 0; row < 5; row += 1) {
-      for (let col = 0; col < 3; col += 1) {
-        slots.push({ x: -8 + col * 8, z: -8 - row * 9 })
+    for (let row = 0; row < 7; row += 1) {
+      for (let col = 0; col < 5; col += 1) {
+        slots.push({ x: -16 + col * 8, z: -6 - row * 7 })
       }
     }
     return slots
   }, [])
 
-  const soffitZs = useMemo(() => Array.from({ length: 11 }, (_, i) => -3 - i * 4.5), [])
+  const soffitZs = useMemo(() => Array.from({ length: 14 }, (_, i) => -2 - i * 3.6), [])
 
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.84, -22]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y + 0.12, -22]}>
         <planeGeometry args={[38, 58]} />
-        <meshBasicMaterial color="#f0f8fc" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#f8fcff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
       </mesh>
 
+      {Array.from({ length: 12 }, (_, i) => (
+        <mesh
+          key={`panel-row-${i}`}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, INDOOR_CEILING_Y + 0.07, -4 - i * 4.5]}
+        >
+          <planeGeometry args={[34, 2.4]} />
+          <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+
       {[-17.6, 17.6].map(x => (
-        <mesh key={`crown-${x}`} position={[x, 11.35, -22]}>
+        <mesh key={`crown-${x}`} position={[x, INDOOR_CEILING_Y - 0.37, -22]}>
           <boxGeometry args={[0.35, 0.65, 54]} />
           <meshStandardMaterial
             color="#c8dce8"
@@ -260,7 +381,7 @@ function IndoorCeilingGrid({ accent }: { accent: string }) {
       ))}
 
       {[-10, 10].map(x => (
-        <mesh key={`beam-${x}`} position={[x, 11.78, -22]} rotation={[0, 0, Math.PI / 2]}>
+        <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y + 0.06, -22]} rotation={[0, 0, Math.PI / 2]}>
           <boxGeometry args={[56, 0.28, 0.42]} />
           <meshStandardMaterial color="#9aacb8" metalness={0.42} roughness={0.45} />
         </mesh>
@@ -289,7 +410,7 @@ function CeilingLightStrip({
   width?: number
 }) {
   return (
-    <group position={[0, 11.55, z]}>
+    <group position={[0, INDOOR_CEILING_Y - 0.17, z]}>
       <mesh>
         <boxGeometry args={[width, 0.14, 0.55]} />
         <meshStandardMaterial
@@ -354,11 +475,12 @@ function AcousticFoamGrid({ x, z, facing }: { x: number; z: number; facing: 'lef
 function EvergreenTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const foliage = useMemo(
     () => [
-      { pos: [0, 3.5, 0] as [number, number, number], r: 1.15, color: '#2d5a36' },
-      { pos: [-0.45, 2.9, 0.25] as [number, number, number], r: 0.9, color: '#356840' },
-      { pos: [0.4, 2.8, -0.2] as [number, number, number], r: 0.85, color: '#2f6238' },
-      { pos: [0.15, 4.1, 0.1] as [number, number, number], r: 0.72, color: '#3d7044' },
-      { pos: [-0.2, 3.2, -0.35] as [number, number, number], r: 0.68, color: '#326038' },
+      { pos: [0, 2.4, 0] as [number, number, number], r: 1.05, color: '#2a5230' },
+      { pos: [0, 3.35, 0] as [number, number, number], r: 0.92, color: '#315a38' },
+      { pos: [0, 4.15, 0] as [number, number, number], r: 0.72, color: '#3a6840' },
+      { pos: [-0.38, 3.0, 0.22] as [number, number, number], r: 0.62, color: '#2f5e36' },
+      { pos: [0.35, 2.85, -0.18] as [number, number, number], r: 0.58, color: '#346238' },
+      { pos: [0.12, 4.55, 0.08] as [number, number, number], r: 0.48, color: '#427048' },
     ],
     []
   )
@@ -366,13 +488,13 @@ function EvergreenTree({ position, scale = 1 }: { position: [number, number, num
   return (
     <group position={position} scale={scale}>
       <mesh position={[0, 1.15, 0]} castShadow>
-        <cylinderGeometry args={[0.16, 0.28, 2.3, 8]} />
+        <cylinderGeometry args={[0.14, 0.24, 2.3, 8]} />
         <meshStandardMaterial color="#4a3828" roughness={0.96} />
       </mesh>
       {foliage.map((cluster, i) => (
         <mesh key={i} position={cluster.pos} castShadow>
-          <icosahedronGeometry args={[cluster.r, 1]} />
-          <meshStandardMaterial color={cluster.color} roughness={0.9} flatShading />
+          <icosahedronGeometry args={[cluster.r, 2]} />
+          <meshStandardMaterial color={cluster.color} roughness={0.88} metalness={0.02} />
         </mesh>
       ))}
     </group>
@@ -388,12 +510,13 @@ function DeciduousTree({
 }) {
   const foliage = useMemo(
     () => [
-      { pos: [0, 3.6, 0] as [number, number, number], r: 1.35, color: '#3f7844' },
-      { pos: [-0.7, 3.1, 0.15] as [number, number, number], r: 1.0, color: '#4a8450' },
-      { pos: [0.65, 3.2, -0.2] as [number, number, number], r: 0.95, color: '#457a48' },
-      { pos: [0.2, 4.2, 0.35] as [number, number, number], r: 0.8, color: '#528a54' },
-      { pos: [-0.25, 3.8, -0.45] as [number, number, number], r: 0.7, color: '#3a7040' },
-      { pos: [0.5, 3.5, 0.5] as [number, number, number], r: 0.65, color: '#4a8650' },
+      { pos: [0, 3.5, 0] as [number, number, number], r: 1.2, color: '#3d7442' },
+      { pos: [-0.62, 3.05, 0.12] as [number, number, number], r: 0.88, color: '#48804c' },
+      { pos: [0.58, 3.15, -0.18] as [number, number, number], r: 0.82, color: '#437848' },
+      { pos: [0.18, 4.05, 0.28] as [number, number, number], r: 0.68, color: '#508a52' },
+      { pos: [-0.22, 3.75, -0.38] as [number, number, number], r: 0.6, color: '#386c3c' },
+      { pos: [0.45, 3.45, 0.42] as [number, number, number], r: 0.55, color: '#46844a' },
+      { pos: [-0.15, 4.35, -0.12] as [number, number, number], r: 0.45, color: '#569058' },
     ],
     []
   )
@@ -401,13 +524,13 @@ function DeciduousTree({
   return (
     <group position={position} scale={scale}>
       <mesh position={[0, 1.45, 0]} castShadow>
-        <cylinderGeometry args={[0.12, 0.2, 2.9, 8]} />
+        <cylinderGeometry args={[0.11, 0.18, 2.9, 8]} />
         <meshStandardMaterial color="#5a4532" roughness={0.95} />
       </mesh>
       {foliage.map((cluster, i) => (
         <mesh key={i} position={cluster.pos} castShadow>
-          <icosahedronGeometry args={[cluster.r, 1]} />
-          <meshStandardMaterial color={cluster.color} roughness={0.88} flatShading />
+          <icosahedronGeometry args={[cluster.r, 2]} />
+          <meshStandardMaterial color={cluster.color} roughness={0.86} metalness={0.02} />
         </mesh>
       ))}
     </group>
@@ -428,8 +551,8 @@ function BushClump({ position, scale = 1 }: { position: [number, number, number]
     <group position={position} scale={scale}>
       {blobs.map((blob, i) => (
         <mesh key={i} position={blob.pos} castShadow>
-          <icosahedronGeometry args={[blob.r, 0]} />
-          <meshStandardMaterial color={['#3a6840', '#427048', '#366038'][i % 3]} roughness={0.92} flatShading />
+          <icosahedronGeometry args={[blob.r, 1]} />
+          <meshStandardMaterial color={['#3a6840', '#427048', '#366038'][i % 3]} roughness={0.9} />
         </mesh>
       ))}
     </group>
@@ -541,11 +664,15 @@ function IndoorRange({ config }: { config: MapConfig }) {
 
   return (
     <>
+      <IndoorLaneLightBars accent={config.accent} />
+      <IndoorUpperWallLights accent={config.accent} />
+      <IndoorHangingFixtures accent={config.accent} />
+      <IndoorOverheadLightRows accent={config.accent} />
       <IndoorCeilingGrid accent={config.accent} />
       <IndoorCeilingVault accent={config.accent} />
 
       {[-14, 0, 14].map(x => (
-        <mesh key={`duct-${x}`} position={[x, 10.85, -24]} rotation={[0, 0, Math.PI / 2]}>
+        <mesh key={`duct-${x}`} position={[x, INDOOR_CEILING_Y - 0.87, -24]} rotation={[0, 0, Math.PI / 2]}>
           <boxGeometry args={[54, 0.5, 0.5]} />
           <meshStandardMaterial color="#9aacb8" metalness={0.55} roughness={0.38} />
         </mesh>
@@ -694,7 +821,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
       ))}
 
       {[-12, -24, -36].map(z => (
-        <pointLight key={`ceiling-${z}`} position={[0, 11.2, z]} intensity={0.65} color="#eef8ff" distance={22} decay={2} />
+        <pointLight key={`ceiling-${z}`} position={[0, INDOOR_CEILING_Y - 0.52, z]} intensity={0.65} color="#eef8ff" distance={22} decay={2} />
       ))}
     </>
   )
@@ -731,19 +858,7 @@ function OutdoorRange() {
 
   const bushes = useMemo(
     () => [
-      [-10, -14], [12, -16], [-6, -22], [8, -20], [-18, -28], [16, -30],
-    ],
-    []
-  )
-
-  const terrainPatches = useMemo(
-    (): Array<[number, number, number, number, number]> => [
-      [-14, -16, 12, 9, 0.04],
-      [11, -18, 14, 8, -0.03],
-      [-5, -30, 16, 11, 0.05],
-      [16, -34, 11, 9, -0.02],
-      [-18, -40, 13, 10, 0.03],
-      [8, -48, 15, 8, -0.04],
+      [-10, -14], [12, -16], [-6, -22], [8, -20], [16, -30], [-4, -34],
     ],
     []
   )
@@ -766,23 +881,7 @@ function OutdoorRange() {
         </mesh>
       ))}
 
-      {terrainPatches.map(([x, z, w, d, tilt], i) => (
-        <mesh
-          key={i}
-          rotation={[-Math.PI / 2 + tilt, (i % 3) * 0.4, 0]}
-          position={[x, -1.978 + Math.abs(tilt) * 2, z]}
-        >
-          <planeGeometry args={[w, d]} />
-          <meshStandardMaterial
-            map={grassTexture}
-            color="#4a7a48"
-            roughness={0.94}
-            metalness={0.02}
-          />
-        </mesh>
-      ))}
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.971, -10]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -10]} receiveShadow>
         <planeGeometry args={[160, 160]} />
         <meshStandardMaterial
           map={grassTexture}
@@ -802,21 +901,21 @@ function OutdoorRange() {
         <meshStandardMaterial map={gravelTexture} color="#7a6a52" roughness={0.88} />
       </mesh>
 
-      <mesh position={[0, 0.35, -44]} rotation={[0.38, 0, 0]}>
-        <boxGeometry args={[42, 3.2, 2.8]} />
+      <mesh position={[0, 0.85, -44]}>
+        <boxGeometry args={[42, 1.7, 2.8]} />
         <meshStandardMaterial map={earthTexture} color="#6a5840" roughness={0.96} />
       </mesh>
-      <mesh position={[0, 0.15, -44.5]} rotation={[0.35, 0, 0]}>
-        <boxGeometry args={[40, 0.5, 2.2]} />
+      <mesh position={[0, 0.35, -44.5]}>
+        <boxGeometry args={[40, 0.55, 2.4]} />
         <meshStandardMaterial map={earthTexture} color="#5a4838" roughness={0.94} />
       </mesh>
-      <mesh position={[0, 2.15, -45.2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[40, 3.2]} />
-        <meshStandardMaterial map={grassTexture} color="#4a8a48" roughness={0.93} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.62, -44.8]}>
+        <planeGeometry args={[40, 2.8]} />
+        <meshStandardMaterial map={grassTexture} color="#4a8a48" roughness={0.93} side={THREE.DoubleSide} />
       </mesh>
       {[-14, -7, 0, 7, 14].map(x => (
-        <mesh key={x} position={[x, 1.85, -45.5]} rotation={[0.35, 0, 0]}>
-          <boxGeometry args={[0.35, 0.28, 0.35]} />
+        <mesh key={x} position={[x, 1.48, -45.2]}>
+          <boxGeometry args={[0.35, 0.22, 0.35]} />
           <meshStandardMaterial color="#6a6458" roughness={0.92} />
         </mesh>
       ))}
@@ -1103,14 +1202,16 @@ export function RangeEnvironment({ config }: RangeEnvironmentProps) {
         />
       )}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, isOutdoor ? -10 : -20]} receiveShadow>
-        <planeGeometry args={[isOutdoor ? 160 : 48, isOutdoor ? 160 : 84]} />
-        <meshStandardMaterial
-          color={config.floor.color}
-          metalness={config.floor.metalness}
-          roughness={config.floor.roughness}
-        />
-      </mesh>
+      {!isOutdoor && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -20]} receiveShadow>
+          <planeGeometry args={[48, 84]} />
+          <meshStandardMaterial
+            color={config.floor.color}
+            metalness={config.floor.metalness}
+            roughness={config.floor.roughness}
+          />
+        </mesh>
+      )}
 
 
       {!isOutdoor && !isWarehouse && (

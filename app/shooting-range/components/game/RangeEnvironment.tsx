@@ -1,9 +1,172 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import type { MapConfig } from '../../utils/mapConfigs'
 
 interface RangeEnvironmentProps {
   config: MapConfig
+}
+
+function createCanvasTexture(
+  width: number,
+  height: number,
+  paint: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
+  repeat = 4
+) {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  paint(ctx, width, height)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(repeat, repeat)
+  texture.colorSpace = THREE.SRGBColorSpace
+  return texture
+}
+
+function useGrassTexture() {
+  return useMemo(
+    () =>
+      createCanvasTexture(256, 256, (ctx, w, h) => {
+        ctx.fillStyle = '#4a7a48'
+        ctx.fillRect(0, 0, w, h)
+        for (let i = 0; i < 4200; i += 1) {
+          const x = Math.random() * w
+          const y = Math.random() * h
+          const shade = Math.random()
+          ctx.fillStyle =
+            shade > 0.82
+              ? 'rgba(90, 68, 42, 0.35)'
+              : shade > 0.55
+                ? `rgba(${58 + Math.random() * 28}, ${108 + Math.random() * 32}, ${58 + Math.random() * 22}, 0.55)`
+                : `rgba(${42 + Math.random() * 18}, ${92 + Math.random() * 24}, ${48 + Math.random() * 16}, 0.45)`
+          ctx.fillRect(x, y, 1 + Math.random() * 2, 1 + Math.random() * 3)
+        }
+      }, 6),
+    []
+  )
+}
+
+function useGravelTexture() {
+  return useMemo(
+    () =>
+      createCanvasTexture(128, 128, (ctx, w, h) => {
+        ctx.fillStyle = '#8a7a62'
+        ctx.fillRect(0, 0, w, h)
+        for (let i = 0; i < 900; i += 1) {
+          const x = Math.random() * w
+          const y = Math.random() * h
+          const size = 1 + Math.random() * 2.5
+          const tone = 110 + Math.random() * 50
+          ctx.fillStyle = `rgb(${tone}, ${tone - 12}, ${tone - 28})`
+          ctx.beginPath()
+          ctx.arc(x, y, size, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }, 3),
+    []
+  )
+}
+
+function useEarthTexture() {
+  return useMemo(
+    () =>
+      createCanvasTexture(128, 128, (ctx, w, h) => {
+        ctx.fillStyle = '#6a5840'
+        ctx.fillRect(0, 0, w, h)
+        for (let i = 0; i < 700; i += 1) {
+          const x = Math.random() * w
+          const y = Math.random() * h
+          const tone = 80 + Math.random() * 45
+          ctx.fillStyle = `rgba(${tone + 18}, ${tone}, ${tone - 22}, 0.65)`
+          ctx.fillRect(x, y, 2 + Math.random() * 4, 1 + Math.random() * 3)
+        }
+      }, 2),
+    []
+  )
+}
+
+function CeilingTroffer({
+  x,
+  z,
+  accent,
+  intensity = 1.35,
+}: {
+  x: number
+  z: number
+  accent: string
+  intensity?: number
+}) {
+  return (
+    <group position={[x, 11.68, z]}>
+      <mesh>
+        <boxGeometry args={[3.4, 0.22, 1.75]} />
+        <meshStandardMaterial color="#8a9aaa" metalness={0.48} roughness={0.38} />
+      </mesh>
+      <mesh position={[0, -0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[3.0, 1.45]} />
+        <meshStandardMaterial
+          color="#f6fcff"
+          emissive={accent}
+          emissiveIntensity={1.35}
+          roughness={0.28}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[2.6, 1.15]} />
+        <meshStandardMaterial
+          color="#ffffff"
+          emissive="#e8f8ff"
+          emissiveIntensity={0.95}
+          roughness={0.2}
+          toneMapped={false}
+        />
+      </mesh>
+      <pointLight intensity={intensity} distance={18} color="#eef8ff" decay={2} position={[0, -0.25, 0]} />
+    </group>
+  )
+}
+
+function IndoorCeilingGrid({ accent }: { accent: string }) {
+  const troffers = useMemo(() => {
+    const slots: Array<{ x: number; z: number }> = []
+    for (let row = 0; row < 5; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        slots.push({ x: -8 + col * 8, z: -8 - row * 9 })
+      }
+    }
+    return slots
+  }, [])
+
+  return (
+    <>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.84, -22]}>
+        <planeGeometry args={[36, 56]} />
+        <meshStandardMaterial
+          color="#e8f2f8"
+          emissive="#c8e0f0"
+          emissiveIntensity={0.62}
+          roughness={0.72}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {[-10, 10].map(x => (
+        <mesh key={`beam-${x}`} position={[x, 11.78, -22]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[56, 0.28, 0.42]} />
+          <meshStandardMaterial color="#9aacb8" metalness={0.42} roughness={0.45} />
+        </mesh>
+      ))}
+
+      {troffers.map(slot => (
+        <CeilingTroffer key={`${slot.x}-${slot.z}`} x={slot.x} z={slot.z} accent={accent} />
+      ))}
+    </>
+  )
 }
 
 function CeilingLightStrip({
@@ -24,8 +187,9 @@ function CeilingLightStrip({
         <meshStandardMaterial
           color="#e8f4fc"
           emissive={accent}
-          emissiveIntensity={0.72}
+          emissiveIntensity={0.95}
           roughness={0.32}
+          toneMapped={false}
         />
       </mesh>
       <mesh position={[0, -0.08, 0]}>
@@ -79,28 +243,35 @@ function AcousticFoamGrid({ x, z, facing }: { x: number; z: number; facing: 'lef
   )
 }
 
-function PineTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+function EvergreenTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  const foliage = useMemo(
+    () => [
+      { pos: [0, 3.5, 0] as [number, number, number], r: 1.15, color: '#2d5a36' },
+      { pos: [-0.45, 2.9, 0.25] as [number, number, number], r: 0.9, color: '#356840' },
+      { pos: [0.4, 2.8, -0.2] as [number, number, number], r: 0.85, color: '#2f6238' },
+      { pos: [0.15, 4.1, 0.1] as [number, number, number], r: 0.72, color: '#3d7044' },
+      { pos: [-0.2, 3.2, -0.35] as [number, number, number], r: 0.68, color: '#326038' },
+    ],
+    []
+  )
+
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <cylinderGeometry args={[0.18, 0.32, 2.2, 6]} />
+      <mesh position={[0, 1.15, 0]} castShadow>
+        <cylinderGeometry args={[0.16, 0.28, 2.3, 8]} />
         <meshStandardMaterial color="#4a3828" roughness={0.96} />
       </mesh>
-      {[
-        { y: 2.3, r: 1.65, h: 1.35, color: '#2a5530' },
-        { y: 3.2, r: 1.25, h: 1.2, color: '#316038' },
-        { y: 3.95, r: 0.85, h: 1.0, color: '#3a6a42' },
-      ].map(layer => (
-        <mesh key={layer.y} position={[0, layer.y, 0]} castShadow>
-          <coneGeometry args={[layer.r, layer.h, 7]} />
-          <meshStandardMaterial color={layer.color} roughness={0.92} />
+      {foliage.map((cluster, i) => (
+        <mesh key={i} position={cluster.pos} castShadow>
+          <icosahedronGeometry args={[cluster.r, 1]} />
+          <meshStandardMaterial color={cluster.color} roughness={0.9} flatShading />
         </mesh>
       ))}
     </group>
   )
 }
 
-function BroadleafTree({
+function DeciduousTree({
   position,
   scale = 1,
 }: {
@@ -109,24 +280,48 @@ function BroadleafTree({
 }) {
   const foliage = useMemo(
     () => [
-      [0, 3.4, 0, 1.4],
-      [-0.55, 3.0, 0.2, 1.0],
-      [0.5, 3.1, -0.15, 0.95],
-      [0.1, 3.8, 0.35, 0.85],
+      { pos: [0, 3.6, 0] as [number, number, number], r: 1.35, color: '#3f7844' },
+      { pos: [-0.7, 3.1, 0.15] as [number, number, number], r: 1.0, color: '#4a8450' },
+      { pos: [0.65, 3.2, -0.2] as [number, number, number], r: 0.95, color: '#457a48' },
+      { pos: [0.2, 4.2, 0.35] as [number, number, number], r: 0.8, color: '#528a54' },
+      { pos: [-0.25, 3.8, -0.45] as [number, number, number], r: 0.7, color: '#3a7040' },
+      { pos: [0.5, 3.5, 0.5] as [number, number, number], r: 0.65, color: '#4a8650' },
     ],
     []
   )
 
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 1.4, 0]} castShadow>
-        <cylinderGeometry args={[0.14, 0.22, 2.8, 6]} />
+      <mesh position={[0, 1.45, 0]} castShadow>
+        <cylinderGeometry args={[0.12, 0.2, 2.9, 8]} />
         <meshStandardMaterial color="#5a4532" roughness={0.95} />
       </mesh>
-      {foliage.map(([x, y, z, s], i) => (
-        <mesh key={i} position={[x, y, z]} castShadow>
-          <boxGeometry args={[s * 1.6, s * 1.1, s * 1.4]} />
-          <meshStandardMaterial color={['#3d7040', '#457848', '#3a6840'][i % 3]} roughness={0.9} />
+      {foliage.map((cluster, i) => (
+        <mesh key={i} position={cluster.pos} castShadow>
+          <icosahedronGeometry args={[cluster.r, 1]} />
+          <meshStandardMaterial color={cluster.color} roughness={0.88} flatShading />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function BushClump({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  const blobs = useMemo(
+    () => [
+      { pos: [0, 0.35, 0] as [number, number, number], r: 0.55 },
+      { pos: [-0.35, 0.25, 0.2] as [number, number, number], r: 0.42 },
+      { pos: [0.3, 0.28, -0.15] as [number, number, number], r: 0.38 },
+    ],
+    []
+  )
+
+  return (
+    <group position={position} scale={scale}>
+      {blobs.map((blob, i) => (
+        <mesh key={i} position={blob.pos} castShadow>
+          <icosahedronGeometry args={[blob.r, 0]} />
+          <meshStandardMaterial color={['#3a6840', '#427048', '#366038'][i % 3]} roughness={0.92} flatShading />
         </mesh>
       ))}
     </group>
@@ -134,45 +329,52 @@ function BroadleafTree({
 }
 
 function OutdoorSky() {
-  const clouds = useMemo(
+  const cloudBanks = useMemo(
     () => [
-      [-28, 34, -88, 16, 2.4, 0.16],
-      [20, 32, -84, 14, 2.0, 0.14],
-      [-4, 36, -96, 12, 1.8, 0.12],
+      { pos: [-24, 28, -82] as [number, number, number], scale: [14, 3.2, 5] as [number, number, number], opacity: 0.22 },
+      { pos: [18, 30, -78] as [number, number, number], scale: [12, 2.8, 4.5] as [number, number, number], opacity: 0.18 },
+      { pos: [-6, 32, -92] as [number, number, number], scale: [18, 3.5, 6] as [number, number, number], opacity: 0.2 },
+      { pos: [32, 26, -68] as [number, number, number], scale: [10, 2.4, 4] as [number, number, number], opacity: 0.15 },
     ],
     []
   )
 
   return (
     <>
-      <mesh position={[0, 6, -30]}>
-        <sphereGeometry args={[110, 36, 18, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-        <meshBasicMaterial color="#3d7aaa" side={THREE.BackSide} toneMapped={false} />
+      <Sky
+        distance={450000}
+        sunPosition={[85, 28, -45]}
+        mieCoefficient={0.004}
+        mieDirectionalG={0.82}
+        rayleigh={1.8}
+        turbidity={4.5}
+      />
+      <mesh position={[0, -1.5, -55]}>
+        <sphereGeometry args={[95, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.28]} />
+        <meshBasicMaterial color="#d8e8f4" side={THREE.BackSide} transparent opacity={0.42} toneMapped={false} />
       </mesh>
-      <mesh position={[0, -4, -50]}>
-        <sphereGeometry args={[100, 32, 14, 0, Math.PI * 2, 0, Math.PI * 0.32]} />
-        <meshBasicMaterial
-          color="#c8e4f4"
-          side={THREE.BackSide}
-          transparent
-          opacity={0.55}
-          toneMapped={false}
-        />
+      <mesh position={[38, 34, -72]}>
+        <sphereGeometry args={[5.5, 12, 12]} />
+        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.18} toneMapped={false} depthWrite={false} />
       </mesh>
-      <mesh position={[42, 36, -78]}>
-        <sphereGeometry args={[4.2, 10, 10]} />
-        <meshBasicMaterial color="#fff6e0" transparent opacity={0.28} toneMapped={false} />
+      <mesh position={[38, 34, -72]}>
+        <sphereGeometry args={[2.2, 10, 10]} />
+        <meshBasicMaterial color="#fff4e8" transparent opacity={0.55} toneMapped={false} depthWrite={false} />
       </mesh>
-      <mesh position={[42, 36, -78]}>
-        <sphereGeometry args={[1.4, 8, 8]} />
-        <meshBasicMaterial color="#fffaf2" toneMapped={false} />
-      </mesh>
-      {clouds.map(([x, y, z, w, h, opacity], i) => (
-        <group key={i} position={[x, y, z]} rotation={[0.08, (i - 1) * 0.45, 0.05]}>
-          <mesh>
-            <planeGeometry args={[w, h]} />
-            <meshBasicMaterial color="#f8fbff" transparent opacity={opacity} toneMapped={false} depthWrite={false} />
-          </mesh>
+      {cloudBanks.map((bank, i) => (
+        <group key={i} position={bank.pos} rotation={[0.04, i * 0.7, 0.02]}>
+          {[0, 0.35, -0.3].map((xOff, j) => (
+            <mesh key={j} position={[xOff * bank.scale[0] * 0.25, 0, j * 0.8]}>
+              <sphereGeometry args={[bank.scale[0] * 0.22, 8, 8]} />
+              <meshBasicMaterial
+                color="#f4f8fc"
+                transparent
+                opacity={bank.opacity}
+                toneMapped={false}
+                depthWrite={false}
+              />
+            </mesh>
+          ))}
         </group>
       ))}
     </>
@@ -180,36 +382,50 @@ function OutdoorSky() {
 }
 
 function ChainLinkFence({ x }: { x: number }) {
-  const posts = [-6, -20, -34, -48]
+  const posts = [-6, -14, -20, -27, -34, -41, -48]
+  const panelZs = [-10, -17, -24, -31, -38, -45]
+
   return (
     <group>
       {posts.map(z => (
-        <mesh key={z} position={[x, 1.15, z]} castShadow>
-          <boxGeometry args={[0.12, 2.3, 0.12]} />
-          <meshStandardMaterial color="#7a7068" metalness={0.55} roughness={0.48} />
-        </mesh>
-      ))}
-      {[-6, -48].map(z => (
-        <group key={`rail-${z}`}>
-          <mesh position={[x, 2.05, z === -6 ? -6 : -48]} rotation={[0, 0, 0]}>
-            <boxGeometry args={[0.06, 0.06, Math.abs(z === -6 ? 0 : 42)]} />
-            <meshStandardMaterial color="#9a9088" metalness={0.65} roughness={0.38} />
+        <group key={z} position={[x, 0, z]}>
+          <mesh position={[0, 0.18, 0]} castShadow>
+            <boxGeometry args={[0.35, 0.36, 0.35]} />
+            <meshStandardMaterial color="#6a6458" roughness={0.88} />
+          </mesh>
+          <mesh position={[0, 1.25, 0]} castShadow>
+            <cylinderGeometry args={[0.05, 0.07, 2.35, 6]} />
+            <meshStandardMaterial color="#7a7068" metalness={0.58} roughness={0.45} />
+          </mesh>
+          <mesh position={[0, 2.42, 0]}>
+            <sphereGeometry args={[0.08, 6, 6]} />
+            <meshStandardMaterial color="#8a8278" metalness={0.65} roughness={0.38} />
           </mesh>
         </group>
       ))}
-      <mesh position={[x, 2.05, -27]}>
-        <boxGeometry args={[0.06, 0.06, 42]} />
-        <meshStandardMaterial color="#9a9088" metalness={0.65} roughness={0.38} />
+
+      <mesh position={[x, 2.15, -27]}>
+        <boxGeometry args={[0.08, 0.08, 44]} />
+        <meshStandardMaterial color="#a8a098" metalness={0.68} roughness={0.35} />
       </mesh>
-      <mesh position={[x, 0.35, -27]}>
-        <boxGeometry args={[0.06, 0.06, 42]} />
-        <meshStandardMaterial color="#8a8278" metalness={0.6} roughness={0.42} />
+      <mesh position={[x, 0.42, -27]}>
+        <boxGeometry args={[0.08, 0.08, 44]} />
+        <meshStandardMaterial color="#8a8278" metalness={0.62} roughness={0.4} />
       </mesh>
-      {Array.from({ length: 14 }, (_, i) => (
-        <mesh key={i} position={[x, 1.2, -8 - i * 2.9]}>
-          <boxGeometry args={[0.03, 1.65, 0.03]} />
-          <meshStandardMaterial color="#a8a098" metalness={0.7} roughness={0.35} transparent opacity={0.65} />
-        </mesh>
+
+      {panelZs.map(z => (
+        <group key={z} position={[x, 1.25, z]}>
+          <mesh>
+            <planeGeometry args={[0.02, 1.55]} />
+            <meshStandardMaterial color="#9a9488" metalness={0.72} roughness={0.32} transparent opacity={0.55} />
+          </mesh>
+          {[-0.55, 0, 0.55].map(yOff => (
+            <mesh key={yOff} position={[0, yOff, 0]} rotation={[0, 0, Math.PI / 4]}>
+              <planeGeometry args={[0.02, 1.4]} />
+              <meshStandardMaterial color="#a8a298" metalness={0.7} roughness={0.35} transparent opacity={0.45} />
+            </mesh>
+          ))}
+        </group>
       ))}
     </group>
   )
@@ -221,36 +437,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
 
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.85, -18]}>
-        <planeGeometry args={[42, 72]} />
-        <meshStandardMaterial
-          color="#f8fcff"
-          emissive="#e0f0ff"
-          emissiveIntensity={0.78}
-          roughness={0.68}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {[-8, 0, 8].map(x => (
-        <mesh key={`panel-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, 10.6, -20]}>
-          <planeGeometry args={[10, 18]} />
-          <meshStandardMaterial
-            color="#eef8ff"
-            emissive="#c8e8f8"
-            emissiveIntensity={0.35}
-            roughness={0.55}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
-
-      {[-10, 10].map(x => (
-        <mesh key={`beam-${x}`} position={[x, 11.2, -24]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[54, 0.35, 0.45]} />
-          <meshStandardMaterial color="#a8bcc8" metalness={0.45} roughness={0.42} />
-        </mesh>
-      ))}
+      <IndoorCeilingGrid accent={config.accent} />
 
       {[-14, 0, 14].map(x => (
         <mesh key={`duct-${x}`} position={[x, 10.85, -24]} rotation={[0, 0, Math.PI / 2]}>
@@ -260,7 +447,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
       ))}
 
       {lightZs.map(z => (
-        <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={2.1} />
+        <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={1.85} />
       ))}
 
       <ambientLight intensity={0.42} color="#e0f0ff" />
@@ -405,28 +592,49 @@ function IndoorRange({ config }: { config: MapConfig }) {
 }
 
 function OutdoorRange() {
+  const grassTexture = useGrassTexture()
+  const gravelTexture = useGravelTexture()
+  const earthTexture = useEarthTexture()
+
+  useEffect(() => {
+    return () => {
+      grassTexture?.dispose()
+      gravelTexture?.dispose()
+      earthTexture?.dispose()
+    }
+  }, [grassTexture, gravelTexture, earthTexture])
+
   const treeLine = useMemo(
     () => [
-      { pos: [-20, -24] as [number, number], type: 'pine' as const, scale: 1.1 },
-      { pos: [-12, -32] as [number, number], type: 'broad' as const, scale: 0.95 },
-      { pos: [8, -28] as [number, number], type: 'pine' as const, scale: 1.0 },
-      { pos: [18, -38] as [number, number], type: 'broad' as const, scale: 1.15 },
-      { pos: [-24, -42] as [number, number], type: 'pine' as const, scale: 0.9 },
-      { pos: [4, -46] as [number, number], type: 'broad' as const, scale: 1.05 },
-      { pos: [-14, -54] as [number, number], type: 'pine' as const, scale: 1.2 },
-      { pos: [22, -50] as [number, number], type: 'broad' as const, scale: 0.88 },
+      { pos: [-22, -22] as [number, number], type: 'evergreen' as const, scale: 1.15 },
+      { pos: [-14, -30] as [number, number], type: 'deciduous' as const, scale: 1.0 },
+      { pos: [10, -26] as [number, number], type: 'evergreen' as const, scale: 1.05 },
+      { pos: [20, -36] as [number, number], type: 'deciduous' as const, scale: 1.2 },
+      { pos: [-26, -40] as [number, number], type: 'evergreen' as const, scale: 0.95 },
+      { pos: [2, -44] as [number, number], type: 'deciduous' as const, scale: 1.08 },
+      { pos: [-16, -52] as [number, number], type: 'evergreen' as const, scale: 1.25 },
+      { pos: [24, -48] as [number, number], type: 'deciduous' as const, scale: 0.92 },
+      { pos: [-8, -58] as [number, number], type: 'evergreen' as const, scale: 1.1 },
+      { pos: [14, -56] as [number, number], type: 'deciduous' as const, scale: 0.85 },
+    ],
+    []
+  )
+
+  const bushes = useMemo(
+    () => [
+      [-10, -14], [12, -16], [-6, -22], [8, -20], [-18, -28], [16, -30],
     ],
     []
   )
 
   const terrainPatches = useMemo(
-    (): Array<[number, number, number, number, number, string]> => [
-      [-14, -16, 12, 9, 0.04, '#4a8450'],
-      [11, -18, 14, 8, -0.03, '#3f7844'],
-      [-5, -30, 16, 11, 0.05, '#528a54'],
-      [16, -34, 11, 9, -0.02, '#467a4a'],
-      [-18, -40, 13, 10, 0.03, '#4a8650'],
-      [8, -48, 15, 8, -0.04, '#3d7042'],
+    (): Array<[number, number, number, number, number]> => [
+      [-14, -16, 12, 9, 0.04],
+      [11, -18, 14, 8, -0.03],
+      [-5, -30, 16, 11, 0.05],
+      [16, -34, 11, 9, -0.02],
+      [-18, -40, 13, 10, 0.03],
+      [8, -48, 15, 8, -0.04],
     ],
     []
   )
@@ -435,47 +643,73 @@ function OutdoorRange() {
     <>
       <OutdoorSky />
 
-      {[-34, -52, -72].map((z, index) => (
-        <mesh key={z} position={[0, 2.2 + index * 2.2, z]}>
-          <boxGeometry args={[140 - index * 18, 5 + index * 2.5, 3]} />
+      {[-34, -52, -72, -88].map((z, index) => (
+        <mesh key={z} position={[0, 1.8 + index * 1.8, z]}>
+          <boxGeometry args={[150 - index * 16, 4 + index * 2, 2.5]} />
           <meshStandardMaterial
-            color={['#5a7a92', '#6a8ea4', '#7a9cb4'][index]}
+            color={['#6a8498', '#7a94a8', '#8aa4b8', '#9ab4c8'][index]}
             roughness={0.98}
             metalness={0.01}
             transparent
-            opacity={0.82 - index * 0.08}
+            opacity={0.78 - index * 0.06}
           />
         </mesh>
       ))}
 
-      {terrainPatches.map(([x, z, w, d, tilt, color], i) => (
+      {terrainPatches.map(([x, z, w, d, tilt], i) => (
         <mesh
           key={i}
           rotation={[-Math.PI / 2 + tilt, (i % 3) * 0.4, 0]}
           position={[x, -1.978 + Math.abs(tilt) * 2, z]}
         >
           <planeGeometry args={[w, d]} />
-          <meshStandardMaterial color={color} roughness={0.94} metalness={0.02} />
+          <meshStandardMaterial
+            map={grassTexture}
+            color="#4a7a48"
+            roughness={0.94}
+            metalness={0.02}
+          />
         </mesh>
       ))}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.972, -8]}>
-        <planeGeometry args={[14, 3.5]} />
-        <meshStandardMaterial color="#8a7a62" roughness={0.92} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.971, -10]}>
+        <planeGeometry args={[160, 160]} />
+        <meshStandardMaterial
+          map={grassTexture}
+          color="#4a7a48"
+          roughness={0.96}
+          metalness={0.02}
+        />
       </mesh>
 
-      <mesh position={[0, 0.55, -43]} rotation={[0.42, 0, 0]}>
-        <boxGeometry args={[40, 3.8, 2.4]} />
-        <meshStandardMaterial color="#6a5a42" roughness={0.96} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, -8]}>
+        <planeGeometry args={[16, 4]} />
+        <meshStandardMaterial map={gravelTexture} color="#8a7a62" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 2.35, -44.2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[38, 2.8]} />
-        <meshStandardMaterial color="#4a8a48" roughness={0.93} />
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.967, -5]}>
+        <planeGeometry args={[4, 12]} />
+        <meshStandardMaterial map={gravelTexture} color="#7a6a52" roughness={0.88} />
       </mesh>
-      <mesh position={[0, 1.5, -44.8]} rotation={[0.38, 0, 0]}>
-        <boxGeometry args={[36, 0.35, 0.25]} />
-        <meshStandardMaterial color="#5a5048" roughness={0.88} />
+
+      <mesh position={[0, 0.35, -44]} rotation={[0.38, 0, 0]}>
+        <boxGeometry args={[42, 3.2, 2.8]} />
+        <meshStandardMaterial map={earthTexture} color="#6a5840" roughness={0.96} />
       </mesh>
+      <mesh position={[0, 0.15, -44.5]} rotation={[0.35, 0, 0]}>
+        <boxGeometry args={[40, 0.5, 2.2]} />
+        <meshStandardMaterial map={earthTexture} color="#5a4838" roughness={0.94} />
+      </mesh>
+      <mesh position={[0, 2.15, -45.2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[40, 3.2]} />
+        <meshStandardMaterial map={grassTexture} color="#4a8a48" roughness={0.93} />
+      </mesh>
+      {[-14, -7, 0, 7, 14].map(x => (
+        <mesh key={x} position={[x, 1.85, -45.5]} rotation={[0.35, 0, 0]}>
+          <boxGeometry args={[0.35, 0.28, 0.35]} />
+          <meshStandardMaterial color="#6a6458" roughness={0.92} />
+        </mesh>
+      ))}
 
       <group position={[-20, 0, -10]}>
         <mesh position={[0, 2.5, 0]}>
@@ -506,11 +740,15 @@ function OutdoorRange() {
       <ChainLinkFence x={-15} />
       <ChainLinkFence x={15} />
 
+      {bushes.map(([x, z], i) => (
+        <BushClump key={i} position={[x, -1.95, z]} scale={0.85 + (i % 3) * 0.12} />
+      ))}
+
       {treeLine.map(({ pos, type, scale }, i) =>
-        type === 'pine' ? (
-          <PineTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
+        type === 'evergreen' ? (
+          <EvergreenTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
         ) : (
-          <BroadleafTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
+          <DeciduousTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
         )
       )}
     </>
@@ -764,25 +1002,6 @@ export function RangeEnvironment({ config }: RangeEnvironmentProps) {
         />
       </mesh>
 
-      {isOutdoor && (
-        <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.985, -10]}>
-            <planeGeometry args={[160, 160]} />
-            <meshStandardMaterial color="#3a6840" roughness={0.96} metalness={0.02} transparent opacity={0.28} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.983, -10]}>
-            <planeGeometry args={[160, 160, 32, 32]} />
-            <meshStandardMaterial
-              color="#4a7a4e"
-              roughness={0.97}
-              metalness={0.01}
-              wireframe={false}
-              transparent
-              opacity={0.12}
-            />
-          </mesh>
-        </>
-      )}
 
       {!isOutdoor && !isWarehouse && (
         <gridHelper position={[0, -1.97, -20]} args={config.grid} />

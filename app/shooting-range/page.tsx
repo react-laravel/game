@@ -1,12 +1,14 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { cn } from '@/lib/helpers'
 import { ShootingHistory } from './components/ShootingHistory'
 import { ShootingSetup } from './components/ShootingSetup'
 import { useCrosshairSettings } from './hooks/useCrosshairSettings'
+import type { DrillPreset } from './utils/drillPresets'
+import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
@@ -21,11 +23,53 @@ const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
 export default function ShootingRangePage() {
   const [isStarted, setIsStarted] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [difficulty, setDifficulty] = useState<ShootingDifficulty>('easy')
+  const [difficulty, setDifficulty] = useState<ShootingDifficulty>('medium')
   const [mapId, setMapId] = useState<ShootingMapId>('indoor')
   const [modeId, setModeId] = useState<TrainingModeId>('moving')
   const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
     useCrosshairSettings()
+
+  useEffect(() => {
+    const last = loadLastConfig()
+    if (!last) return
+    setDifficulty(last.difficulty)
+    setMapId(last.mapId)
+    setModeId(last.modeId)
+  }, [])
+
+  const persistConfig = useCallback(
+    (next: { difficulty: ShootingDifficulty; mapId: ShootingMapId; modeId: TrainingModeId }, drillId?: string) => {
+      saveLastConfig(
+        { difficulty: next.difficulty, mapId: next.mapId, modeId: next.modeId },
+        drillId
+      )
+    },
+    []
+  )
+
+  const applyPreset = useCallback((preset: DrillPreset) => {
+    setDifficulty(preset.difficulty)
+    setMapId(preset.mapId)
+    setModeId(preset.modeId)
+    persistConfig(preset, preset.id)
+  }, [persistConfig])
+
+  const handleQuickStart = useCallback(
+    (preset: DrillPreset) => {
+      applyPreset(preset)
+      setIsStarted(true)
+    },
+    [applyPreset]
+  )
+
+  const handleStart = useCallback(() => {
+    persistConfig({ difficulty, mapId, modeId })
+    setIsStarted(true)
+  }, [difficulty, mapId, modeId, persistConfig])
+
+  const handleReturnToSetup = useCallback(() => {
+    setIsStarted(false)
+  }, [])
 
   return (
     <main
@@ -38,12 +82,11 @@ export default function ShootingRangePage() {
         <GameRulesDialog
           title="战术射击场规则"
           rules={[
+            '点击训练卡片可一键开始专项训练',
             '移动鼠标控制准星，点击左键射击',
-            '不同训练模式有不同目标行为与得分规则',
-            '可在设置中选择室内、户外或仓库场景',
-            '训练结束后会自动保存到本地记录',
+            '不同训练模式有不同目标行为与评分标准',
+            '训练结束后会显示评级并自动保存到本地',
             '按 ESC 可释放鼠标并暂停操作',
-            '精准度按命中次数与射击次数计算',
           ]}
         />
       </div>
@@ -59,7 +102,8 @@ export default function ShootingRangePage() {
             onDifficultyChange={setDifficulty}
             onMapChange={setMapId}
             onModeChange={setModeId}
-            onStart={() => setIsStarted(true)}
+            onStart={handleStart}
+            onQuickStart={handleQuickStart}
             onViewHistory={() => setShowHistory(true)}
             crosshairConfig={crosshairConfig}
             onCrosshairChange={updateCrosshair}
@@ -87,6 +131,7 @@ export default function ShootingRangePage() {
                 setIsStarted(false)
                 setShowHistory(true)
               }}
+              onChangeDrill={handleReturnToSetup}
             />
           </Suspense>
         </div>

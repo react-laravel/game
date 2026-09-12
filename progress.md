@@ -159,6 +159,27 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 13 (2026-09-13)
+
+Follow-up to PR #12 (`cursor/shooting-range-outdoor-indoor-polish-4e75`), addressing coordinator screenshot review.
+
+### Outdoor
+- Removed semi-transparent BackSide sky-wash hemisphere (visible blue dome cutting through mid-scene).
+- Replaced full-sphere distant hills (camera was inside the radius) with flat box silhouettes.
+- Pushed fog start past the view frustum (`near` 102, camera `far` 130) to eliminate fog-shell dome artifact.
+- Softer hill opacity + slightly stronger sun/rim; `@react-three/drei` `Sky` retained.
+
+### Indoor ceiling
+- Root cause for dark apex: oversized vault sphere (r=34) wrapped the camera; replaced with flat `meshBasicMaterial` ceiling planes + cyan strip rows.
+- Brighter troffer/soffit emissive, fill light moved to ceiling height, apex accent panels + wash point lights at z −36/−42/−46.
+- Disabled directional shadow casting on indoor/outdoor (warehouse only) so ceiling panels are not shadow-muddied.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs` (`noWaitAfter` on pointer-lock clicks).
+- Results screen shows non-zero hits (grade A / 4 hits / 80% accuracy).
+- Pixel QA: outdoor mid-frame blue-dome-like pixels **43.6% → 1.2%** vs PR #12; indoor apex band brightness **36 → 43**.
+- Focused shooting-range tests: **95/95** passing.
+
 ## Shooting Range visual polish cycle 12 (2026-09-13)
 
 Follow-up to PR #11 (`cursor/shooting-range-visual-polish-172b`), addressing coordinator screenshot review.

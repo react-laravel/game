@@ -1,3 +1,4 @@
+import { getMazeBounds } from './generateMaze'
 import type { MazeCell } from './store'
 
 export interface MazeWallLine {
@@ -8,7 +9,8 @@ export interface MazeWallLine {
 }
 
 export interface PrintableMazeGeometry {
-  mazeSize: number
+  cols: number
+  rows: number
   strokeWidth: number
   labelSize: number
   lines: MazeWallLine[]
@@ -16,12 +18,11 @@ export interface PrintableMazeGeometry {
   end: { x: number; y: number; label: '终' }
 }
 
-export function getPrintableMazeGeometry(
-  maze: MazeCell[][],
-  mazeSize: number
-): PrintableMazeGeometry {
+export function getPrintableMazeGeometry(maze: MazeCell[][]): PrintableMazeGeometry {
+  const { cols, rows } = getMazeBounds(maze)
   const lines: MazeWallLine[] = []
   const seen = new Set<string>()
+  const scale = Math.max(cols, rows, 1)
 
   const addLine = (x1: number, y1: number, x2: number, y2: number) => {
     const key = `${x1},${y1},${x2},${y2}`
@@ -33,8 +34,8 @@ export function getPrintableMazeGeometry(
     lines.push({ x1, y1, x2, y2 })
   }
 
-  for (let y = 0; y < mazeSize; y++) {
-    for (let x = 0; x < mazeSize; x++) {
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
       const cell = maze[y]?.[x]
       if (!cell) {
         continue
@@ -56,12 +57,13 @@ export function getPrintableMazeGeometry(
   }
 
   return {
-    mazeSize,
-    strokeWidth: Math.min(0.16, Math.max(0.07, 2.2 / mazeSize)),
-    labelSize: Math.max(0.55, mazeSize * 0.04),
+    cols,
+    rows,
+    strokeWidth: Math.min(0.16, Math.max(0.07, 2.2 / scale)),
+    labelSize: Math.max(0.55, scale * 0.04),
     lines,
     start: { x: 0.5, y: 0.5, label: '起' },
-    end: { x: mazeSize - 0.5, y: mazeSize - 0.5, label: '终' },
+    end: { x: cols - 0.5, y: rows - 0.5, label: '终' },
   }
 }
 

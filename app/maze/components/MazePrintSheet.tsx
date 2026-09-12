@@ -5,17 +5,18 @@ import type { MazeCell } from '../store'
 
 interface MazePrintSheetProps {
   maze: MazeCell[][]
-  mazeSize: number
 }
 
-export default function MazePrintSheet({ maze, mazeSize }: MazePrintSheetProps) {
+export default function MazePrintSheet({ maze }: MazePrintSheetProps) {
   if (maze.length === 0) {
     return null
   }
 
-  const geometry = getPrintableMazeGeometry(maze, mazeSize)
+  const geometry = getPrintableMazeGeometry(maze)
   const pad = geometry.labelSize
-  const viewSize = mazeSize + pad * 2
+  const viewWidth = geometry.cols + pad * 2
+  const viewHeight = geometry.rows + pad * 2
+  const fillsPaper = geometry.rows > geometry.cols
 
   return (
     <section
@@ -23,17 +24,21 @@ export default function MazePrintSheet({ maze, mazeSize }: MazePrintSheetProps) 
       className="hidden print:fixed print:inset-0 print:z-[1000] print:flex print:flex-col print:items-center print:justify-center print:gap-3 print:bg-white print:p-[8mm] print:text-black"
     >
       <h1 className="text-xl font-bold">
-        迷宫 {mazeSize} × {mazeSize}
+        迷宫 {geometry.cols} × {geometry.rows}
       </h1>
       <p className="text-sm">用笔从「起」走到「终」，不要穿过黑线。</p>
       <svg
-        viewBox={`${-pad} ${-pad} ${viewSize} ${viewSize}`}
-        className="max-h-[calc(100vh-36mm)] w-full max-w-[180mm]"
+        viewBox={`${-pad} ${-pad} ${viewWidth} ${viewHeight}`}
+        className={
+          fillsPaper
+            ? 'h-[calc(100vh-36mm)] w-auto max-w-full'
+            : 'max-h-[calc(100vh-36mm)] w-full max-w-[180mm]'
+        }
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label={`可打印迷宫 ${mazeSize}乘${mazeSize}`}
+        aria-label={`可打印迷宫 ${geometry.cols}乘${geometry.rows}`}
       >
-        <rect x={-pad} y={-pad} width={viewSize} height={viewSize} fill="#ffffff" />
+        <rect x={-pad} y={-pad} width={viewWidth} height={viewHeight} fill="#ffffff" />
         <circle
           cx={geometry.start.x}
           cy={geometry.start.y}
@@ -73,7 +78,7 @@ export default function MazePrintSheet({ maze, mazeSize }: MazePrintSheetProps) 
           {geometry.start.label}
         </text>
         <text
-          x={mazeSize + pad * 0.12}
+          x={geometry.cols + pad * 0.12}
           y={geometry.end.y}
           textAnchor="start"
           dominantBaseline="middle"

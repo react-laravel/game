@@ -4,7 +4,8 @@ import { useEffect, useCallback, useRef } from 'react'
 import { Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { MAX_MAZE_SIZE, MIN_MAZE_SIZE } from '../constants'
+import { getMazeDimensions, MAX_MAZE_SIZE, MIN_MAZE_SIZE } from '../constants'
+import { getMazeRenderLayout } from '../generateMaze'
 import { printCurrentMaze } from '../printMaze'
 import { useMazeStore } from '../store'
 import MazeCanvas from './MazeCanvas'
@@ -18,12 +19,18 @@ export default function MazeGame() {
     isAutoMoving,
     maze,
     mazeSize,
+    mazeShape,
     moves,
     gameTime,
     startGame,
     resetGame,
     setMazeSize,
+    setMazeShape,
   } = useMazeStore()
+  const dimensions = maze.length > 0 ? { cols: maze[0].length, rows: maze.length } : getMazeDimensions(mazeShape, mazeSize)
+  const easySize = getMazeDimensions(mazeShape, MIN_MAZE_SIZE)
+  const mediumSize = getMazeDimensions(mazeShape, 15)
+  const hardSize = getMazeDimensions(mazeShape, MAX_MAZE_SIZE)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -49,13 +56,8 @@ export default function MazeGame() {
       // 计算实际的迷宫渲染区域（与Canvas绘制逻辑保持一致）
       const canvasWidth = rect.width
       const canvasHeight = rect.height
-      const cellSize = Math.min(canvasWidth, canvasHeight) / mazeSize
-      const mazeRenderWidth = cellSize * mazeSize
-      const mazeRenderHeight = cellSize * mazeSize
-
-      // 计算迷宫在Canvas中的偏移（如果Canvas不是正方形）
-      const offsetX = (canvasWidth - mazeRenderWidth) / 2
-      const offsetY = (canvasHeight - mazeRenderHeight) / 2
+      const { cols, rows, cellSize, mazeRenderWidth, mazeRenderHeight, offsetX, offsetY } =
+        getMazeRenderLayout(maze, canvasWidth, canvasHeight, getMazeDimensions(mazeShape, mazeSize))
 
       // 调整坐标到迷宫渲染区域
       const adjustedX = x - offsetX
@@ -76,8 +78,8 @@ export default function MazeGame() {
       }
 
       // 确保坐标在有效范围内
-      const clampedX = Math.max(0, Math.min(mazeSize - 1, mazeX))
-      const clampedY = Math.max(0, Math.min(mazeSize - 1, mazeY))
+      const clampedX = Math.max(0, Math.min(cols - 1, mazeX))
+      const clampedY = Math.max(0, Math.min(rows - 1, mazeY))
 
       console.log('🎯 坐标转换:', {
         click: { x: clientX, y: clientY },
@@ -87,14 +89,14 @@ export default function MazeGame() {
         mazeRender: { width: mazeRenderWidth, height: mazeRenderHeight },
         offset: { x: offsetX, y: offsetY },
         adjusted: { x: adjustedX, y: adjustedY },
-        maze: { x: mazeX, y: mazeY },
+        grid: { x: mazeX, y: mazeY },
         clamped: { x: clampedX, y: clampedY },
-        mazeSize,
+        maze: { cols, rows },
       })
 
       return { x: clampedX, y: clampedY }
     },
-    [mazeSize]
+    [maze, mazeShape, mazeSize]
   )
 
   // 处理画布点击
@@ -237,8 +239,30 @@ export default function MazeGame() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">迷宫难度</span>
               <span className="rounded border px-2 py-1 font-mono text-xs">
-                {mazeSize}×{mazeSize}
+                {dimensions.cols}×{dimensions.rows}
               </span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={mazeShape === 'square' ? 'default' : 'outline'}
+                onClick={() => setMazeShape('square')}
+                aria-pressed={mazeShape === 'square'}
+                data-testid="maze-shape-square"
+              >
+                正方形
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={mazeShape === 'a4' ? 'default' : 'outline'}
+                onClick={() => setMazeShape('a4')}
+                aria-pressed={mazeShape === 'a4'}
+                data-testid="maze-shape-a4"
+              >
+                A4 纸
+              </Button>
             </div>
             <Slider
               value={[mazeSize]}
@@ -252,11 +276,13 @@ export default function MazeGame() {
             />
             <div className="text-muted-foreground flex justify-between text-xs">
               <span>
-                简单 ({MIN_MAZE_SIZE}×{MIN_MAZE_SIZE})
+                简单 ({easySize.cols}×{easySize.rows})
               </span>
-              <span>中等 (15×15)</span>
               <span>
-                困难 ({MAX_MAZE_SIZE}×{MAX_MAZE_SIZE})
+                中等 ({mediumSize.cols}×{mediumSize.rows})
+              </span>
+              <span>
+                困难 ({hardSize.cols}×{hardSize.rows})
               </span>
             </div>
           </div>
@@ -294,7 +320,7 @@ export default function MazeGame() {
         <MazeCanvas ref={canvasRef} />
       </div>
 
-      <MazePrintSheet maze={maze} mazeSize={mazeSize} />
+      <MazePrintSheet maze={maze} />
 
       {gameCompleted && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:hidden">

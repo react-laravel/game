@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { clampMazeSize, DEFAULT_MAZE_SIZE } from './constants'
+import { clampMazeSize, DEFAULT_MAZE_SHAPE, DEFAULT_MAZE_SIZE, getMazeDimensions, type MazeShape } from './constants'
+import { generateMazeGrid, getMazeBounds } from './generateMaze'
 
 export interface MazeCell {
   top: boolean
@@ -24,6 +25,7 @@ export interface MazeStore {
 
   // 迷宫设置
   mazeSize: number
+  mazeShape: MazeShape
   maze: MazeCell[][]
 
   // 小球
@@ -39,6 +41,7 @@ export interface MazeStore {
   startGame: () => void
   resetGame: () => void
   setMazeSize: (size: number) => void
+  setMazeShape: (shape: MazeShape) => void
   generateMaze: () => void
   moveBall: (direction: 'up' | 'down' | 'left' | 'right') => void
   moveToPosition: (targetX: number, targetY: number) => void
@@ -62,6 +65,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
   moves: 0,
 
   mazeSize: DEFAULT_MAZE_SIZE,
+  mazeShape: DEFAULT_MAZE_SHAPE,
   maze: [],
 
   ball: { x: 0, y: 0, z: 0 },
@@ -143,66 +147,39 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     get().startGame()
   },
 
+  setMazeShape: (shape: MazeShape) => {
+    const state = get()
+    if (shape === state.mazeShape && state.gameStarted && state.maze.length > 0) {
+      return
+    }
+
+    stopGameTimer()
+    set({
+      mazeShape: shape,
+      gameStarted: false,
+      gameCompleted: false,
+      gameTime: 0,
+      moves: 0,
+      ball: { x: 0, y: 0, z: 0 },
+      isMoving: false,
+      autoPath: [],
+      isAutoMoving: false,
+      autoMoveInterrupt: true,
+      maze: [],
+    })
+    get().startGame()
+  },
+
   generateMaze: () => {
-    const { mazeSize } = get()
-    console.log('🏗️ 生成迷宫, 大小:', mazeSize)
-    const maze: MazeCell[][] = []
-
-    // 初始化迷宫网格
-    for (let y = 0; y < mazeSize; y++) {
-      maze[y] = []
-      for (let x = 0; x < mazeSize; x++) {
-        maze[y][x] = {
-          top: true,
-          right: true,
-          bottom: true,
-          left: true,
-          visited: false,
-        }
-      }
-    }
-
-    // 使用递归回溯算法生成迷宫
-    const stack: Array<{ x: number; y: number }> = []
-    const startX = 0
-    const startY = 0
-
-    maze[startY][startX].visited = true
-    stack.push({ x: startX, y: startY })
-
-    while (stack.length > 0) {
-      const current = stack[stack.length - 1]
-      const neighbors = getUnvisitedNeighbors(current.x, current.y, maze, mazeSize)
-
-      if (neighbors.length > 0) {
-        const next = neighbors[Math.floor(Math.random() * neighbors.length)]
-
-        // 移除墙壁
-        if (next.x === current.x + 1) {
-          maze[current.y][current.x].right = false
-          maze[next.y][next.x].left = false
-        } else if (next.x === current.x - 1) {
-          maze[current.y][current.x].left = false
-          maze[next.y][next.x].right = false
-        } else if (next.y === current.y + 1) {
-          maze[current.y][current.x].bottom = false
-          maze[next.y][next.x].top = false
-        } else if (next.y === current.y - 1) {
-          maze[current.y][current.x].top = false
-          maze[next.y][next.x].bottom = false
-        }
-
-        maze[next.y][next.x].visited = true
-        stack.push(next)
-      } else {
-        stack.pop()
-      }
-    }
+    const { mazeSize, mazeShape } = get()
+    const { cols, rows } = getMazeDimensions(mazeShape, mazeSize)
+    console.log('🏗️ 生成迷宫, 大小:', `${cols}×${rows}`)
+    const maze = generateMazeGrid({ cols, rows })
 
     set({ maze })
     console.log('✅ 迷宫生成完成')
     console.log('🚪 起点(0,0)墙壁状态:', maze[0][0])
-    console.log('🎯 终点墙壁状态:', maze[mazeSize - 1][mazeSize - 1])
+    console.log('🎯 终点墙壁状态:', maze[rows - 1][cols - 1])
   },
 
   moveBall: (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -225,7 +202,8 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
       return
     }
 
-    const { ball, maze, mazeSize } = state
+    const { ball, maze } = state
+    const { cols, rows } = getMazeBounds(maze)
 
     // 使用网格坐标
     const gridX = ball.x
@@ -235,7 +213,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     console.log('🚪 当前位置墙壁状态:', maze[gridY] ? maze[gridY][gridX] : '位置无效')
 
     // 检查是否可以移动
-    const canMove = canMoveInDirection(gridX, gridY, direction, maze, mazeSize)
+    const canMove = canMoveInDirection(gridX, gridY, direction, maze)
     console.log('🚶 可以移动?', canMove)
 
     if (!canMove) {
@@ -258,7 +236,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     console.log('✅ 移动完成，新位置:', { x: nextPos.x, z: nextPos.y })
 
     // 检查是否到达终点
-    if (nextPos.x === mazeSize - 1 && nextPos.y === mazeSize - 1) {
+    if (nextPos.x === cols - 1 && nextPos.y === rows - 1) {
       console.log('🎉 到达终点!')
       set({ gameCompleted: true })
     }
@@ -281,7 +259,8 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
       return
     }
 
-    const { ball, maze, mazeSize } = state
+    const { ball, maze } = state
+    const { cols, rows } = getMazeBounds(maze)
 
     // console.log('🎯 moveToPosition 调用:', { targetX, targetY, currentBall: ball })
 
@@ -290,10 +269,10 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     const gridY = ball.z
 
     // 确保坐标在有效范围内
-    const startX = Math.max(0, Math.min(mazeSize - 1, gridX))
-    const startY = Math.max(0, Math.min(mazeSize - 1, gridY))
-    const endX = Math.max(0, Math.min(mazeSize - 1, targetX))
-    const endY = Math.max(0, Math.min(mazeSize - 1, targetY))
+    const startX = Math.max(0, Math.min(cols - 1, gridX))
+    const startY = Math.max(0, Math.min(rows - 1, gridY))
+    const endX = Math.max(0, Math.min(cols - 1, targetX))
+    const endY = Math.max(0, Math.min(rows - 1, targetY))
 
     // console.log('🎯 坐标处理:', {
     //   start: { x: startX, y: startY },
@@ -306,7 +285,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     }
 
     // 自动寻路
-    const path = findPath(startX, startY, endX, endY, maze, mazeSize)
+    const path = findPath(startX, startY, endX, endY, maze)
 
     if (path.length > 0) {
       console.log('🚗 自动寻路成功，路径长度:', path.length)
@@ -321,7 +300,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
           set({ isAutoMoving: false })
 
           // 如果目标是终点，确保游戏完成
-          if (endX === mazeSize - 1 && endY === mazeSize - 1) {
+          if (endX === cols - 1 && endY === rows - 1) {
             console.log('🏆 确认到达终点，游戏完成!')
             set({ gameCompleted: true })
           }
@@ -335,34 +314,14 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
   },
 }))
 
-// 辅助函数
-function getUnvisitedNeighbors(x: number, y: number, maze: MazeCell[][], size: number) {
-  const neighbors = []
-
-  if (x > 0 && !maze[y][x - 1].visited) {
-    neighbors.push({ x: x - 1, y })
-  }
-  if (x < size - 1 && !maze[y][x + 1].visited) {
-    neighbors.push({ x: x + 1, y })
-  }
-  if (y > 0 && !maze[y - 1][x].visited) {
-    neighbors.push({ x, y: y - 1 })
-  }
-  if (y < size - 1 && !maze[y + 1][x].visited) {
-    neighbors.push({ x, y: y + 1 })
-  }
-
-  return neighbors
-}
-
 function canMoveInDirection(
   x: number,
   y: number,
   direction: 'up' | 'down' | 'left' | 'right',
-  maze: MazeCell[][],
-  mazeSize: number
+  maze: MazeCell[][]
 ): boolean {
-  if (x < 0 || x >= mazeSize || y < 0 || y >= mazeSize) {
+  const { cols, rows } = getMazeBounds(maze)
+  if (x < 0 || x >= cols || y < 0 || y >= rows) {
     return false
   }
 
@@ -406,8 +365,7 @@ function findPath(
   startY: number,
   targetX: number,
   targetY: number,
-  maze: MazeCell[][],
-  mazeSize: number
+  maze: MazeCell[][]
 ): { x: number; y: number }[] {
   // A*寻路算法
   interface Node {
@@ -469,7 +427,7 @@ function findPath(
     const directions: ('up' | 'down' | 'left' | 'right')[] = ['up', 'down', 'left', 'right']
 
     for (const direction of directions) {
-      if (!canMoveInDirection(currentNode.x, currentNode.y, direction, maze, mazeSize)) {
+      if (!canMoveInDirection(currentNode.x, currentNode.y, direction, maze)) {
         continue
       }
 

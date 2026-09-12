@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { act } from '@testing-library/react'
+import { DEFAULT_MAZE_SHAPE, DEFAULT_MAZE_SIZE } from '../constants'
 import { useMazeStore, type MazeCell } from '../store'
 
 describe('maze game store', () => {
   beforeEach(() => {
+    useMazeStore.setState({ mazeSize: DEFAULT_MAZE_SIZE, mazeShape: DEFAULT_MAZE_SHAPE })
     useMazeStore.getState().resetGame()
   })
 
   afterEach(() => {
+    useMazeStore.setState({ mazeSize: DEFAULT_MAZE_SIZE, mazeShape: DEFAULT_MAZE_SHAPE })
     useMazeStore.getState().resetGame()
   })
 
@@ -19,6 +22,7 @@ describe('maze game store', () => {
       expect(state.gameTime).toBe(0)
       expect(state.moves).toBe(0)
       expect(state.mazeSize).toBe(15)
+      expect(state.mazeShape).toBe('square')
       expect(state.maze).toEqual([])
       expect(state.ball).toEqual({ x: 0, y: 0, z: 0 })
       expect(state.isMoving).toBe(false)
@@ -70,6 +74,18 @@ describe('maze game store', () => {
       expect(maze[0]).toHaveLength(mazeSize)
     })
 
+    it('should generate an A4 maze that is taller than it is wide', () => {
+      act(() => {
+        useMazeStore.getState().setMazeShape('a4')
+      })
+
+      const { maze, mazeSize, mazeShape } = useMazeStore.getState()
+      expect(mazeShape).toBe('a4')
+      expect(mazeSize).toBe(15)
+      expect(maze[0]).toHaveLength(15)
+      expect(maze).toHaveLength(21)
+    })
+
     it('should generate cells with all wall properties', () => {
       act(() => {
         useMazeStore.getState().generateMaze()
@@ -92,6 +108,21 @@ describe('maze game store', () => {
       const { maze } = useMazeStore.getState()
       const visitedCount = maze.flat().filter(cell => cell.visited).length
       expect(visitedCount).toBe(maze.length * maze[0].length)
+    })
+
+    it('should include dead-end cells', () => {
+      act(() => {
+        useMazeStore.getState().generateMaze()
+      })
+
+      const { maze } = useMazeStore.getState()
+      const deadEnds = maze.flat().filter(cell => {
+        const openings =
+          Number(!cell.top) + Number(!cell.right) + Number(!cell.bottom) + Number(!cell.left)
+        return openings === 1
+      }).length
+
+      expect(deadEnds).toBeGreaterThan(0)
     })
 
     it('should produce a valid maze (not all walls intact)', () => {
@@ -240,6 +271,35 @@ describe('maze game store', () => {
 
       expect(useMazeStore.getState().mazeSize).toBe(40)
       expect(useMazeStore.getState().maze).toBe(maze)
+    })
+  })
+
+  describe('setMazeShape', () => {
+    it('switches to an A4 rectangle without changing the slider size', () => {
+      act(() => {
+        useMazeStore.getState().setMazeSize(11)
+      })
+      act(() => {
+        useMazeStore.getState().setMazeShape('a4')
+      })
+
+      const { maze, mazeSize, mazeShape } = useMazeStore.getState()
+      expect(mazeShape).toBe('a4')
+      expect(mazeSize).toBe(11)
+      expect(maze[0]).toHaveLength(11)
+      expect(maze).toHaveLength(16)
+    })
+
+    it('keeps the selected shape after reset', () => {
+      act(() => {
+        useMazeStore.getState().setMazeShape('a4')
+      })
+      act(() => {
+        useMazeStore.getState().resetGame()
+      })
+
+      expect(useMazeStore.getState().mazeShape).toBe('a4')
+      expect(useMazeStore.getState().mazeSize).toBe(15)
     })
   })
 })

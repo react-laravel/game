@@ -18,10 +18,14 @@ Current prompt (2026-07-31): 改进代码并进行真实组件化提取；在保
 
 Current prompt (2026-09-12): 迷宫，之前有难度选择，现在界面上没看到了，你恢复，可以滑动调整大小，最主要加上打印机打印，我会用打印机打印出来玩的
 
-Current prompt (2026-09-12): 除了保龄球和迷宫，其他游戏也改版下
+Current prompt (2026-09-12): 迷宫，怎么一条路可以走到底？应该偶尔碰到死胡同，重新设计
+
+Current prompt (2026-09-12): 可以切换为正方形和适合A4纸的长方形尺寸
 
 ## Current work
 
+- Maze size can switch between a square and an A4-portrait rectangle (slider width × taller paper height, e.g. 15×21) so on-screen play and print both match the paper.
+- Replaced maze generation so it grows from a random cell with mixed branching: more dead ends and shorter unique solutions, instead of one DFS river from the start corner.
 - Restyled remaining games (except maze/bowling) onto a shared fullscreen `GameStage` HUD: arcade cabinets, felt tables, puzzle overlays, Monopoly lobby glass cards, and shooting-range true-fullscreen canvas.
 - Redesigned `/bowling` into a fullscreen 3D alley with a ten-frame scoresheet, charge-to-throw HUD, and working strike/spare scoring.
 - Restored maze difficulty as a 5–40 size slider, added a print-ready black-and-white maze sheet, and wired 「打印迷宫」 to the browser print dialog for paper play.

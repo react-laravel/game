@@ -176,6 +176,11 @@ function TargetComponent({
           <meshStandardMaterial color="#142738" metalness={0.8} roughness={0.28} />
         </mesh>
 
+        <mesh position={[0, 0, 0.095]}>
+          <ringGeometry args={[0.88, 0.98, 32]} />
+          <meshBasicMaterial color="#0a1520" toneMapped={false} />
+        </mesh>
+
         <mesh position={[0, 0, 0.1]}>
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial

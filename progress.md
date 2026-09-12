@@ -161,12 +161,19 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Shooting Range map visual polish (2026-09-12)
 
-- Refactored `RangeEnvironment` into dedicated indoor/outdoor/warehouse builders with map-specific props instead of one shared dark corridor.
-- **Indoor:** emissive ceiling plane (fixes black void above lanes), recessed light strips, lane rails, wall panels, and brighter fog/hemisphere fill.
-- **Outdoor:** sky hemisphere + layered hills/trees/berm backstop; fog color matched to sky background to remove the pale horizon stripe artifact.
-- **Warehouse:** steel truss ceiling, hanging fluorescents, pallet racks, offset crate stacks (no z-fighting with lane markers), and warmer industrial fill/rim lights.
-- `mapConfigs` tuned per map (background/fog/fill/rim) for readable targets and consistent art direction.
-- Playwright canvas screenshots (auth-mocked) compared before/after for all three maps; focused shooting-range tests: 82/82 passing.
+Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots after each major change.
+
+### Cycle 4 baseline issues
+- Indoor: black ceiling void, flat walls, no backstop detail.
+- Outdoor: flat sky/ground, sharp horizon, no props.
+- Warehouse: muddy-dark, minimal industrial identity.
+
+### Final state (cycle 8)
+- **Indoor:** emissive ceiling plane, ducting, 5 recessed light strips, wainscoting, corrugated rubber backstop, lane markers, booth number signs, wall sconces, wash lights.
+- **Outdoor:** layered gradient sky hemispheres, sun disc + clouds, distant fogged hills, grass patches, fence posts, shooting bench, range flag, trees; horizon haze plane removed after it caused a dark band (cycle 7 regression fixed in cycle 8).
+- **Warehouse:** steel truss ceiling, 4 hanging fluorescents, yellow lane lines, safety stripes on racks, loading-dock door, 7 crate stacks, wall sconces, brighter fill.
+- **Targets:** dark outer ring added for contrast on warm/industrial backgrounds.
+- `mapConfigs` tuned per map (background/fog/fill/rim); focused shooting-range tests: 82/82 passing.
 
 ## Shooting Range training upgrade (2026-09-12)
 

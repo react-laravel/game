@@ -6,6 +6,8 @@ type ShootingWindow = Window &
   typeof globalThis & {
     render_game_to_text?: () => string
     advanceTime?: (ms: number) => Promise<void>
+    endShootingSession?: () => void
+    debugShootingSession?: (patch: Partial<SessionStats>) => void
   }
 
 interface ShootingDebugBridgeOptions {
@@ -18,6 +20,8 @@ interface ShootingDebugBridgeOptions {
   gameStarted: boolean
   stats: SessionStats
   timeLeft: number
+  onEndSession: () => void
+  onInjectStats?: (patch: Partial<SessionStats>) => void
 }
 
 export function useShootingDebugBridge({
@@ -30,6 +34,8 @@ export function useShootingDebugBridge({
   gameStarted,
   stats,
   timeLeft,
+  onEndSession,
+  onInjectStats,
 }: ShootingDebugBridgeOptions) {
   useEffect(() => {
     const gameWindow = window as ShootingWindow
@@ -47,6 +53,16 @@ export function useShootingDebugBridge({
         targets: sceneSnapshot.current?.targets ?? [],
       })
 
+    gameWindow.endShootingSession = () => {
+      if (gameStarted && !gameOver) onEndSession()
+    }
+
+    if (onInjectStats) {
+      gameWindow.debugShootingSession = patch => onInjectStats(patch)
+    } else {
+      delete gameWindow.debugShootingSession
+    }
+
     const installedAdvanceTime = !gameWindow.advanceTime
     if (installedAdvanceTime) {
       gameWindow.advanceTime = (ms: number) =>
@@ -62,6 +78,8 @@ export function useShootingDebugBridge({
 
     return () => {
       delete gameWindow.render_game_to_text
+      delete gameWindow.endShootingSession
+      delete gameWindow.debugShootingSession
       if (installedAdvanceTime) delete gameWindow.advanceTime
     }
   }, [
@@ -71,6 +89,8 @@ export function useShootingDebugBridge({
     gameStarted,
     mapId,
     modeId,
+    onEndSession,
+    onInjectStats,
     sceneSnapshot,
     stats,
     timeLeft,

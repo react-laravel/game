@@ -5,9 +5,10 @@ import { toast } from 'sonner'
 import { isMobileDevice } from '@/lib/utils/userAgent'
 import { AutoPlayControls } from './components/AutoPlayControls'
 import { DirectionControls } from './components/DirectionControls'
-import { Game2048Header } from './components/Game2048Header'
+import { GAME_2048_RULES, Game2048Header } from './components/Game2048Header'
 import { GameBoard } from './components/GameBoard'
 import { GameStatus } from './components/GameStatus'
+import { GameStage } from '@/components/game'
 import { DEFAULT_AUTO_PLAY_SPEED } from './config'
 import {
   useAutoPlay,
@@ -204,42 +205,48 @@ export default function Game2048() {
   }, [bestScore, board, gameOver, gameWon, isAutoRunning, isClockwise, isDirectionalRunning, score])
 
   return (
-    <div className="container mx-auto max-w-md px-4 py-4" onContextMenu={e => e.preventDefault()}>
-      <Game2048Header
-        score={score}
-        bestScore={bestScore}
-        canUndo={history.length > 0}
-        gameOver={gameOver}
-        showGyroscope={isMobile && isGyroscopeSupported}
-        gyroscopeEnabled={isGyroscopeEnabled}
-        onUndo={undoMove}
-        onReset={resetGame}
-        onToggleGyroscope={() => void toggleGyroscope()}
-      />
+    <GameStage
+      title="2048"
+      rules={GAME_2048_RULES}
+      fill
+      onContextMenu={e => e.preventDefault()}
+      contentClassName="overflow-y-auto"
+    >
+      <div className="mx-auto flex w-full max-w-md flex-col">
+        <Game2048Header
+          score={score}
+          bestScore={bestScore}
+          canUndo={history.length > 0}
+          gameOver={gameOver}
+          showGyroscope={isMobile && isGyroscopeSupported}
+          gyroscopeEnabled={isGyroscopeEnabled}
+          onUndo={undoMove}
+          onReset={resetGame}
+          onToggleGyroscope={() => void toggleGyroscope()}
+        />
 
-      <GameBoard board={board} />
-      <GameStatus gameWon={gameWon} gameOver={gameOver} score={score} />
+        <GameBoard board={board} />
+        <GameStatus gameWon={gameWon} gameOver={gameOver} score={score} />
 
-      <DirectionControls
-        onMove={handleMove}
-        onRandomMove={randomMoveOnce}
-        disabled={gameOver || isAutoPlayRunning}
-        showRandomDirection={showRandomDirection}
-      />
+        <DirectionControls
+          onMove={handleMove}
+          onRandomMove={randomMoveOnce}
+          disabled={gameOver || isAutoPlayRunning}
+          showRandomDirection={showRandomDirection}
+        />
 
-      <div className="bg-border my-6 h-px w-full" />
-
-      <AutoPlayControls
-        speed={speed}
-        gameOver={gameOver}
-        randomRunning={isAutoRunning}
-        directionalRunning={isDirectionalRunning}
-        clockwise={isClockwise}
-        onSpeedChange={changeSpeed}
-        onToggleRandom={toggleRandom}
-        onToggleClockwise={toggleClockwise}
-        onToggleCounterClockwise={toggleCounterClockwise}
-      />
-    </div>
+        <AutoPlayControls
+          speed={speed}
+          gameOver={gameOver}
+          randomRunning={isAutoRunning}
+          directionalRunning={isDirectionalRunning}
+          clockwise={isClockwise}
+          onSpeedChange={changeSpeed}
+          onToggleRandom={toggleRandom}
+          onToggleClockwise={toggleClockwise}
+          onToggleCounterClockwise={toggleCounterClockwise}
+        />
+      </div>
+    </GameStage>
   )
 }

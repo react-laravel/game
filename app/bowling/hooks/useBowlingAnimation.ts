@@ -34,7 +34,7 @@ export function useBowlingAnimation({
           CAMERA_CONFIG.INITIAL_POSITION.y,
           CAMERA_CONFIG.INITIAL_POSITION.z
         )
-        camera.lookAt(0, 1, -20)
+        camera.lookAt(0, 0.8, -20)
         return
       }
 

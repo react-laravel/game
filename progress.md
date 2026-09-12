@@ -18,8 +18,12 @@ Current prompt (2026-07-31): 改进代码并进行真实组件化提取；在保
 
 Current prompt (2026-09-12): 迷宫，之前有难度选择，现在界面上没看到了，你恢复，可以滑动调整大小，最主要加上打印机打印，我会用打印机打印出来玩的
 
+Current prompt (2026-09-12): 除了保龄球和迷宫，其他游戏也改版下
+
 ## Current work
 
+- Restyled remaining games (except maze/bowling) onto a shared fullscreen `GameStage` HUD: arcade cabinets, felt tables, puzzle overlays, Monopoly lobby glass cards, and shooting-range true-fullscreen canvas.
+- Redesigned `/bowling` into a fullscreen 3D alley with a ten-frame scoresheet, charge-to-throw HUD, and working strike/spare scoring.
 - Restored maze difficulty as a 5–40 size slider, added a print-ready black-and-white maze sheet, and wired 「打印迷宫」 to the browser print dialog for paper play.
 
 
@@ -54,6 +58,7 @@ Current prompt (2026-09-12): 迷宫，之前有难度选择，现在界面上没
 
 ## Validation
 
+- The September game-wide redesign batch passes lint, TypeScript, 70/70 test files with 569/569 tests, and the production build for all 18 generated routes including `/blackjack`.
 - Shooting Range componentization validation passes 9/9 focused files and 69/69 tests. Browser flows confirm hard difficulty creates 16 moving targets, Canvas pointer lock rotates camera/weapon, one shot increments the counter, ending training returns to setup, and pointer-lock failure cleanly enters click-target fallback with no page errors.
 - Shooting Range pointer-control validation uses a Canvas-locked browser simulation through the real start flow: a 180/90 movement delta changes camera yaw/pitch from 0/0 to -0.354/-0.192, the weapon view rotates with it, target coordinates continue changing, and no console/page errors occur; the standard web-game client also returns a healthy ready state and full-scene screenshot.
 - Shooting Range height regression validation at a 2038x591 viewport confirms the page is 591px with no document scrolling, while the training wrapper, Three.js canvas, and ready overlay all match at 559px; the standard web-game client screenshot also shows the scene filling the complete game panel with a valid `ready` text state and no browser errors.
@@ -86,8 +91,16 @@ Current prompt (2026-09-12): 迷宫，之前有难度选择，现在界面上没
 - Browser checks: slider Home/End change 5×5 and 40×40, restart regenerates, print preview fills a white A4-like page, and the print button invokes `window.print()`.
 - Maze unit tests: 23 passing.
 
+## Bowling redesign notes (2026-09-12)
+
+- `/bowling` is now a fullscreen dark alley: wood lane, gutters, pin spotlight, ten-frame scoresheet, and a hold-to-throw control.
+- Scoring uses standard 10-frame strike/spare rules. Gyro aiming is mobile-only; desktop uses drag / A-D / Space.
+- Browser: first throw recorded 9 pins, leftover pins stayed for the spare attempt, frame 2 reset a full rack, `render_game_to_text` reported aiming / frame 2 / total 9.
+- Bowling tests: 13 passing.
+
 ## TODOs / suggestions for the next agent
 
-- Maze still auto-starts on mount and logs verbose console output from the original store; those logs are unrelated to print/size.
-- The on-screen canvas stays `h-96`; only the print sheet is sized for paper.
+- Bowling still logs some scene-reset console messages from the original physics loop.
+- The throw button sits over the ball; a dedicated run-up animation or side throw pad could free the view.
 - Physical printer output was verified via print-media emulation, not a real printer.
+- Maze still auto-starts on mount and logs verbose console output from the original store.

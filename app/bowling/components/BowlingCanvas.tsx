@@ -13,18 +13,23 @@ import { useBowlingGameState } from '../hooks/useBowlingGameState'
 export function BowlingCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // 获取store状态
-  const { aimAngle, power, lastKnockedDown, gyroSupported, gyroPermission } = useBowlingStore()
+  const { aimAngle, power, gyroSupported, gyroPermission, pinResetVersion, pinsStanding } =
+    useBowlingStore()
 
-  // 游戏状态管理
   const { refs, gameState, handleResultProcessed, resetProcessingState, setMounted } =
     useBowlingGameState()
 
-  // 场景管理
-  const { sceneRef, isMounted, resetBall, resetScene, throwBall, calculateKnockedDownPins } =
-    useBowlingScene(canvasRef)
+  const {
+    sceneRef,
+    isMounted,
+    resetBall,
+    resetPins,
+    resetScene,
+    throwBall,
+    calculateKnockedDownPins,
+    updateAimGuide,
+  } = useBowlingScene(canvasRef)
 
-  // 控制逻辑
   const {
     isCharging,
     chargePower,
@@ -35,13 +40,12 @@ export function BowlingCanvas() {
     updateManualAngle,
   } = useBowlingControls()
 
-  // 处理投球结果的回调
   const onResultProcessed = () => {
-    const knockedDownCount = calculateKnockedDownPins()
-    handleResultProcessed(knockedDownCount)
+    const totalDown = calculateKnockedDownPins()
+    const alreadyDown = 10 - useBowlingStore.getState().pinsStanding
+    handleResultProcessed(Math.max(0, totalDown - alreadyDown))
   }
 
-  // 动画循环
   useBowlingAnimation({
     sceneRef,
     showingResult: gameState.showingResult,
@@ -50,7 +54,10 @@ export function BowlingCanvas() {
     onResultProcessed,
   })
 
-  // 处理鼠标/触摸移动事件
+  useEffect(() => {
+    updateAimGuide(currentAimAngle, gameState.canThrow && !gameState.ballThrown)
+  }, [currentAimAngle, gameState.canThrow, gameState.ballThrown, updateAimGuide])
+
   useEffect(() => {
     if (!isDragging || !isCharging) return
 
@@ -85,44 +92,39 @@ export function BowlingCanvas() {
     }
   }, [isDragging, isCharging, gyroSupported, gyroPermission, updateManualAngle, endCharging])
 
-  // 重置效果 - 新一轮时完全重置
   useEffect(() => {
-    if (isMounted.current && !gameState.showingResult) {
-      console.log(`GAME: New frame detected (${gameState.currentFrame}). Performing full reset.`)
+    if (isMounted.current) {
       resetScene()
       resetProcessingState()
     }
-  }, [gameState.currentFrame, resetScene, resetProcessingState, gameState.showingResult, isMounted])
+  }, [gameState.currentFrame, resetScene, resetProcessingState, isMounted])
 
-  // 重置效果 - 第二次投球时只重置球
   useEffect(() => {
-    if (isMounted.current && gameState.currentThrow === 2 && !gameState.showingResult) {
-      console.log(
-        `GAME: Second throw detected in frame ${gameState.currentFrame}. Resetting ball only.`
-      )
+    if (isMounted.current && gameState.currentThrow >= 2 && !gameState.showingResult) {
       resetBall()
       resetProcessingState()
     }
   }, [
     gameState.currentThrow,
-    gameState.currentFrame,
     resetBall,
     resetProcessingState,
     gameState.showingResult,
     isMounted,
   ])
 
-  // 监听投球事件
+  useEffect(() => {
+    if (pinResetVersion > 0 && pinsStanding === 10) {
+      resetPins()
+    }
+  }, [pinResetVersion, pinsStanding, resetPins])
+
   useEffect(() => {
     if (!gameState.ballThrown || !sceneRef.current?.ball) return
 
     refs.ballThrownRef.current = true
-    console.log('🎳 Three.js 投球！', { aimAngle, power })
-
     throwBall(aimAngle, power)
   }, [gameState.ballThrown, aimAngle, power, throwBall, refs.ballThrownRef, sceneRef])
 
-  // 场景初始化完成后设置挂载状态
   useEffect(() => {
     if (sceneRef.current) {
       setMounted()
@@ -130,10 +132,10 @@ export function BowlingCanvas() {
   }, [sceneRef, setMounted])
 
   return (
-    <div className="relative h-[600px] w-full overflow-hidden rounded-lg bg-gradient-to-b from-sky-200 to-sky-100">
+    <div className="relative h-full min-h-0 w-full overflow-hidden bg-zinc-950">
       <canvas
         ref={canvasRef}
-        className="h-full w-full cursor-pointer"
+        className="h-full w-full touch-none"
         style={{ display: 'block' }}
         onMouseDown={e => startCharging(e, canvasRef.current || undefined)}
         onMouseUp={endCharging}
@@ -155,13 +157,12 @@ export function BowlingCanvas() {
       <GameControls
         canThrow={gameState.canThrow}
         ballThrown={gameState.ballThrown}
-        showingResult={gameState.showingResult}
         isCharging={isCharging}
         chargePower={chargePower}
         currentAimAngle={currentAimAngle}
-        gyroSupported={gyroSupported}
-        gyroPermission={gyroPermission}
-        lastKnockedDown={lastKnockedDown}
+        gyroEnabled={Boolean(gyroSupported && gyroPermission)}
+        onChargeStart={() => startCharging(undefined, canvasRef.current || undefined)}
+        onChargeEnd={endCharging}
       />
     </div>
   )

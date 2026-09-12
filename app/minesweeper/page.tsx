@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { toast } from 'sonner'
+import { GameResultOverlay, GameStage } from '@/components/game'
 import { getDynamicDifficulties } from './config'
 import { MinesweeperBoard } from './components/MinesweeperBoard'
-import { MinesweeperHeader } from './components/MinesweeperHeader'
+import { MINESWEEPER_RULES, MinesweeperHeader } from './components/MinesweeperHeader'
 import { MinesweeperStats } from './components/MinesweeperStats'
 import { useMinesweeperStore } from './store'
 import type { Cell, Difficulty, DifficultyConfig, MinesweeperGameState } from './types'
@@ -366,34 +367,50 @@ export default function MinesweeperGame() {
   }, [board, config.cols, config.rows, difficulty, gameStarted, gameState, mineCount, timer])
 
   return (
-    <div className="container mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-4">
-      <MinesweeperHeader
-        difficulty={difficulty}
-        timer={timer}
-        mineCount={mineCount}
-        gameState={gameState}
-        onDifficultyChange={nextDifficulty => {
-          setDifficulty(nextDifficulty)
-          resetGame(difficulties[nextDifficulty])
-        }}
-        onReset={() => resetGame()}
-      />
+    <GameStage title="扫雷" rules={MINESWEEPER_RULES} fill>
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col items-center">
+        <MinesweeperHeader
+          difficulty={difficulty}
+          timer={timer}
+          mineCount={mineCount}
+          gameState={gameState}
+          onDifficultyChange={nextDifficulty => {
+            setDifficulty(nextDifficulty)
+            resetGame(difficulties[nextDifficulty])
+          }}
+          onReset={() => resetGame()}
+        />
 
-      <div className="flex flex-1 flex-col items-center justify-center space-y-6 py-8">
-        <MinesweeperBoard
-          board={board}
-          config={config}
-          onCellClick={handleCellClick}
-          onCellRightClick={handleCellRightClick}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        />
-        <MinesweeperStats
-          gamesPlayed={stats[difficulty].gamesPlayed}
-          gamesWon={stats[difficulty].gamesWon}
-          bestTime={stats[difficulty].bestTime}
-        />
+        <div className="relative flex min-h-0 w-full flex-1 flex-col items-center justify-center space-y-6 py-6">
+          <MinesweeperBoard
+            board={board}
+            config={config}
+            onCellClick={handleCellClick}
+            onCellRightClick={handleCellRightClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          />
+          <MinesweeperStats
+            gamesPlayed={stats[difficulty].gamesPlayed}
+            gamesWon={stats[difficulty].gamesWon}
+            bestTime={stats[difficulty].bestTime}
+          />
+          <GameResultOverlay
+            open={gameState === 'won' || gameState === 'lost'}
+            eyebrow={gameState === 'won' ? 'Clear' : 'Boom'}
+            title={gameState === 'won' ? '扫雷成功' : '踩到地雷'}
+          >
+            <p className="mt-3 text-sm text-white/55">用时 {timer}s</p>
+            <button
+              type="button"
+              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-md bg-amber-400 px-4 font-bold text-zinc-950 hover:bg-amber-300"
+              onClick={() => resetGame()}
+            >
+              重新开始
+            </button>
+          </GameResultOverlay>
+        </div>
       </div>
-    </div>
+    </GameStage>
   )
 }

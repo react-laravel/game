@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { GameHud } from '@/components/game'
 import { asset } from '@/lib/helpers/assets'
+import { cn } from '@/lib/helpers'
 import {
   compareMoonDiceRank,
   getMoonDiceRankMeta,
@@ -187,9 +190,9 @@ export default function MoonDiceGame(_props: MoonDiceGameProps) {
         key={index}
         src={src}
         alt={value ? `骰子 ${value}` : '骰子'}
-        width={48}
-        height={48}
-        className="h-12 w-12 rounded-md border bg-white object-contain shadow-sm"
+        width={64}
+        height={64}
+        className="h-16 w-16 rounded-xl border-2 border-amber-200/30 bg-white object-contain shadow-md"
       />
     )
   }
@@ -204,106 +207,118 @@ export default function MoonDiceGame(_props: MoonDiceGameProps) {
           : '平局'
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border bg-background/60 p-4 shadow-sm backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div
+        className={cn(
+          'relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-emerald-900/25',
+          'bg-gradient-to-b from-emerald-800 via-emerald-900 to-emerald-950 shadow-inner'
+        )}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,rgba(255,255,255,0.14),transparent_55%)]" />
+
+        <div className="relative flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleReset}
-              className="rounded-md border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/80"
+              className="border-white/15 bg-black/20 text-emerald-50/80 hover:bg-black/30 hover:text-emerald-50"
             >
               重置
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="lg"
               onClick={handleRoll}
               disabled={rolling}
-              className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/50"
+              className="min-w-[12rem] px-6 text-base font-bold shadow-lg"
             >
               {rolling ? '摇骰子中…' : `轮到 ${currentPlayerState.name} 摇骰子`}
-            </button>
+            </Button>
           </div>
-        </div>
 
-        <p className="text-sm text-foreground">{message}</p>
+          <p className="rounded-full bg-black/25 px-4 py-2 text-center text-sm text-emerald-50/95">
+            {message}
+          </p>
 
-        <div className="flex flex-col gap-4 rounded-lg bg-muted/40 p-3">
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-6">
             {Array.from({ length: DICE_COUNT }).map((_, index) =>
               renderDieImage(dice[index], index)
             )}
           </div>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            { key: 'A', state: playerA },
-            { key: 'B', state: playerB },
-          ].map(({ key, state }) => (
-            <div
-              key={key}
-              className={`space-y-2 rounded-lg border p-3 ${
-                currentPlayer === key ? 'border-primary/60 bg-primary/5' : 'bg-muted/30'
-              }`}
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {key === 'A' ? '玩家一' : '玩家二'}
-                  </span>
-                  {currentPlayer === key && (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                      当前出手
+          <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-2">
+            {[
+              { key: 'A' as const, state: playerA },
+              { key: 'B' as const, state: playerB },
+            ].map(({ key, state }) => (
+              <GameHud
+                key={key}
+                className={cn(
+                  'flex min-h-0 flex-col border-white/10 bg-black/25 p-4',
+                  currentPlayer === key && 'ring-2 ring-primary/50'
+                )}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold tracking-wide text-emerald-100/70 uppercase">
+                      {key === 'A' ? '玩家一' : '玩家二'}
                     </span>
+                    {currentPlayer === key && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        当前出手
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-emerald-100/70">
+                    总额：
+                    <span className="font-bold tabular-nums text-emerald-50">{state.score}</span>
+                  </div>
+                </div>
+                <div className="mt-3 max-h-40 min-h-0 space-y-1 overflow-y-auto text-xs">
+                  {state.rounds.length === 0 ? (
+                    <p className="text-emerald-100/50">暂时还没有记录</p>
+                  ) : (
+                    state.rounds
+                      .slice()
+                      .reverse()
+                      .map(round => (
+                        <div
+                          key={`${state.name}-${round.round}`}
+                          className="flex items-center justify-between gap-2 rounded-xl bg-black/20 px-2 py-1.5"
+                        >
+                          <span className="text-[11px] text-emerald-100/60">
+                            第 {round.round} 轮
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs text-emerald-50">
+                              {round.dice.join(' ')}
+                            </span>
+                            <span className="text-[11px] text-emerald-100/60">
+                              {round.meta.name}
+                            </span>
+                          </div>
+                        </div>
+                      ))
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  总额：<span className="font-semibold text-foreground">{state.score}</span>
-                </div>
-              </div>
-              <div className="max-h-40 space-y-1 overflow-y-auto text-xs">
-                {state.rounds.length === 0 ? (
-                  <p className="text-muted-foreground/80">暂时还没有记录</p>
-                ) : (
-                  state.rounds
-                    .slice()
-                    .reverse()
-                    .map(round => (
-                      <div
-                        key={`${state.name}-${round.round}`}
-                        className="flex items-center justify-between gap-2 rounded-md bg-background/60 px-2 py-1"
-                      >
-                        <span className="text-[11px] text-muted-foreground">
-                          第 {round.round} 轮
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs text-foreground">
-                            {round.dice.join(' ')}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            {round.meta.name}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </GameHud>
+            ))}
+          </div>
 
-        <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          {leadingPlayer == null ? (
-            <span>还没有分出高下，多摇几轮试试～</span>
-          ) : leadingPlayer === '平局' ? (
-            <span>双方总分目前打平。</span>
-          ) : (
-            <span>
-              目前整体更旺的是：
-              <span className="font-semibold text-foreground">{leadingPlayer}</span>
-            </span>
-          )}
+          <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 text-center text-xs text-emerald-100/70">
+            {leadingPlayer == null ? (
+              <span>还没有分出高下，多摇几轮试试～</span>
+            ) : leadingPlayer === '平局' ? (
+              <span>双方总分目前打平。</span>
+            ) : (
+              <span>
+                目前整体更旺的是：
+                <span className="font-semibold text-emerald-50">{leadingPlayer}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -3,13 +3,14 @@
 import { Suspense, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
+import { cn } from '@/lib/helpers'
 import { ShootingSetup } from './components/ShootingSetup'
 import type { ShootingDifficulty } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center rounded-2xl bg-slate-950 text-cyan-100">
+    <div className="flex h-full items-center justify-center bg-slate-950 text-cyan-100">
       正在装载射击场…
     </div>
   ),
@@ -21,9 +22,10 @@ export default function ShootingRangePage() {
 
   return (
     <main
-      className={`relative flex flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)] p-3 sm:p-4 ${
-        isStarted ? 'h-dvh' : 'min-h-dvh'
-      }`}
+      className={cn(
+        'relative flex flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)]',
+        isStarted ? 'h-dvh p-0' : 'min-h-dvh p-3 sm:p-4'
+      )}
     >
       <div className="absolute top-3 right-3 z-40 sm:top-4 sm:right-4">
         <GameRulesDialog
@@ -45,10 +47,10 @@ export default function ShootingRangePage() {
           onStart={() => setIsStarted(true)}
         />
       ) : (
-        <div className="relative h-full min-h-0 w-full max-w-[1600px] flex-1">
+        <div className="relative h-full min-h-0 w-full flex-1">
           <Suspense
             fallback={
-              <div className="flex h-full items-center justify-center rounded-2xl bg-slate-950 text-cyan-100">
+              <div className="flex h-full items-center justify-center bg-slate-950 text-cyan-100">
                 加载游戏中…
               </div>
             }

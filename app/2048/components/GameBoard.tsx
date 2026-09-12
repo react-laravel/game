@@ -45,7 +45,7 @@ const TileCell = memo(function TileCell({
 
 export const GameBoard = memo(function GameBoard({ board }: GameBoardProps) {
   return (
-    <Card className="mb-4 p-4">
+    <Card className="mb-4 rounded-3xl border-border/60 bg-card/80 p-4 shadow-sm backdrop-blur-md">
       <div className="grid grid-cols-4 gap-2" style={{ touchAction: 'none' }} data-game-board>
         {board.map((row, i) =>
           row.map((cell, j) => (

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { GameHud } from '@/components/game'
 import { SPEED_OPTIONS } from '../config'
 
 interface AutoPlayControlsProps {
@@ -30,7 +31,7 @@ export function AutoPlayControls({
   )
 
   return (
-    <div className="mb-6 space-y-3">
+    <GameHud className="mb-6 space-y-3">
       <div className="text-center">
         <div className="flex items-center justify-center space-x-2">
           <Button
@@ -81,7 +82,7 @@ export function AutoPlayControls({
               className="w-full"
               aria-label="自动运行速度"
             />
-            <div className="mt-2 grid grid-cols-4 text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-muted-foreground mt-2 grid grid-cols-4 text-xs">
               {SPEED_OPTIONS.map((option, index) => (
                 <span
                   key={option.value}
@@ -94,6 +95,6 @@ export function AutoPlayControls({
           </div>
         </div>
       </div>
-    </div>
+    </GameHud>
   )
 }

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/immutability -- Three.js scene nodes are intentionally mutable and live outside React state */
+
 import { useRef, useEffect, useCallback } from 'react'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
@@ -10,6 +12,7 @@ import {
   createPins,
   createWalls,
   createLighting,
+  createAimGuide,
 } from '../utils/scene'
 
 export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
@@ -22,9 +25,9 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
 
     const canvas = canvasRef.current
     const scene = new THREE.Scene()
-    const bgColor = new THREE.Color(0x2c2c54)
+    const bgColor = new THREE.Color(0x07070d)
     scene.background = bgColor
-    scene.fog = new THREE.Fog(bgColor, 50, 90)
+    scene.fog = new THREE.Fog(bgColor, 26, 72)
 
     // 相机设置
     const camera = new THREE.PerspectiveCamera(
@@ -50,10 +53,10 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     renderer.setSize(canvas.clientWidth, canvas.clientHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.2
+    renderer.toneMappingExposure = 1.05
 
     // 物理世界
     const world = new CANNON.World()
@@ -71,6 +74,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
 
     createWalls(scene, world)
     createLighting(scene)
+    const aimLine = createAimGuide(scene)
 
     return {
       scene,
@@ -82,6 +86,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
       lane: { mesh: laneMesh, body: laneBody },
       animationId: null,
       materials,
+      aimLine,
     } as SceneRef
   }, [canvasRef])
 
@@ -128,7 +133,26 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     sceneRef.current.renderer.setSize(width, height)
   }, [canvasRef])
 
-  // 投球逻辑
+  const updateAimGuide = useCallback((angle: number, visible: boolean) => {
+    const line = sceneRef.current?.aimLine
+    if (!line) return
+
+    line.visible = visible
+    const geometry = line.geometry
+    const angleRad = (angle * Math.PI) / 180
+    const positions = new Float32Array([
+      0,
+      0.08,
+      10,
+      Math.sin(angleRad) * 26,
+      0.08,
+      10 - Math.cos(angleRad) * 26,
+    ])
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.computeBoundingSphere()
+    line.computeLineDistances()
+  }, [])
+
   const throwBall = useCallback((aimAngle: number, power: number) => {
     if (!sceneRef.current?.ball) return
 
@@ -184,8 +208,8 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     if (scene) {
       sceneRef.current = scene
       isMounted.current = true
-
-      // 添加窗口大小变化监听
+      handleResize()
+      requestAnimationFrame(() => handleResize())
       window.addEventListener('resize', handleResize)
     }
 
@@ -206,5 +230,6 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     resetScene,
     throwBall,
     calculateKnockedDownPins,
+    updateAimGuide,
   }
 }

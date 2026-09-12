@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
+import { GameHud, GameStat } from '@/components/game'
 
 interface Game2048HeaderProps {
   score: number
@@ -13,7 +13,7 @@ interface Game2048HeaderProps {
   onToggleGyroscope: () => void
 }
 
-const GAME_RULES = [
+export const GAME_2048_RULES = [
   '滑动屏幕或使用方向键移动方块',
   '移动设备可启用陀螺仪，倾斜设备来控制',
   '相同数字的方块会合并成更大的数字',
@@ -35,24 +35,13 @@ export function Game2048Header({
   onToggleGyroscope,
 }: Game2048HeaderProps) {
   return (
-    <div className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="text-xl font-bold">2048</h1>
-        <GameRulesDialog title="2048游戏规则" rules={GAME_RULES} />
+    <GameHud className="mb-4">
+      <div className="mb-3 grid grid-cols-2 gap-4">
+        <GameStat label="当前分数" value={score} />
+        <GameStat label="最高分" value={bestScore} />
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div className="text-center">
-          <div className="text-sm text-gray-600 dark:text-gray-400">当前分数</div>
-          <div className="text-xl font-bold">{score}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-gray-600 dark:text-gray-400">最高分</div>
-          <div className="text-xl font-bold">{bestScore}</div>
-        </div>
-      </div>
-
-      <div className="mb-4 flex items-center justify-end space-x-2">
+      <div className="flex items-center justify-end space-x-2">
         {showGyroscope && (
           <Button
             variant={gyroscopeEnabled ? 'default' : 'outline'}
@@ -69,10 +58,10 @@ export function Game2048Header({
         <Button onClick={onUndo} variant="outline" size="sm" disabled={!canUndo}>
           撤销
         </Button>
-        <Button onClick={onReset} variant="outline" size="sm">
+        <Button onClick={onReset} size="sm">
           重新开始
         </Button>
       </div>
-    </div>
+    </GameHud>
   )
 }

@@ -32,10 +32,10 @@ export function SetupScreen() {
   const broke = accountChips < MIN_BET
 
   return (
-    <Card className="mx-auto max-w-lg border-emerald-900/10 shadow-lg">
+    <Card className="mx-auto max-w-lg border-white/15 bg-black/20 text-emerald-50 shadow-lg backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-xl">开设牌桌</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-emerald-100/70">
           选择坐庄或做闲家。账号筹码持久保存，只靠对局输赢变动。
         </CardDescription>
       </CardHeader>

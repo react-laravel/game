@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
+import { GameHud, GameStat } from '@/components/game'
 import { DIFFICULTY_LABELS } from '../config'
 import type { Difficulty, MinesweeperGameState } from '../types'
 
@@ -12,7 +12,7 @@ interface MinesweeperHeaderProps {
   onReset: () => void
 }
 
-const GAME_RULES = [
+export const MINESWEEPER_RULES = [
   '找出所有地雷位置而不踩雷',
   '数字表示周围8个格子的地雷数量',
   '左键点击揭示格子，右键标记地雷',
@@ -30,12 +30,7 @@ export function MinesweeperHeader({
   onReset,
 }: MinesweeperHeaderProps) {
   return (
-    <div className="flex flex-col items-center space-y-6 text-center">
-      <div className="flex w-full items-center justify-between">
-        <h1 className="text-xl font-bold">扫雷</h1>
-        <GameRulesDialog title="扫雷游戏规则" rules={GAME_RULES} />
-      </div>
-
+    <GameHud className="w-full max-w-xl">
       <div className="flex flex-wrap justify-center gap-2">
         {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map(option => (
           <Button
@@ -50,26 +45,20 @@ export function MinesweeperHeader({
         ))}
       </div>
 
-      <div className="flex items-center justify-center space-x-8">
-        <div className="text-center">
-          <div className="text-sm text-gray-600 dark:text-gray-400">时间</div>
-          <div className="text-xl font-bold">{timer}s</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-gray-600 dark:text-gray-400">地雷</div>
-          <div className="text-xl font-bold">{mineCount}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-gray-600 dark:text-gray-400">状态</div>
-          <div className="text-xl">
-            {gameState === 'playing' ? '🙂' : gameState === 'won' ? '😎' : '😵'}
-          </div>
-        </div>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <GameStat label="时间" value={`${timer}s`} />
+        <GameStat label="地雷" value={mineCount} />
+        <GameStat
+          label="状态"
+          value={gameState === 'playing' ? '🙂' : gameState === 'won' ? '😎' : '😵'}
+        />
       </div>
 
-      <Button onClick={onReset} variant="outline" size="sm">
-        重新开始
-      </Button>
-    </div>
+      <div className="mt-4 flex justify-center">
+        <Button onClick={onReset} variant="outline" size="sm">
+          重新开始
+        </Button>
+      </div>
+    </GameHud>
   )
 }

@@ -26,14 +26,14 @@ export const MATERIALS_CONFIG = {
 
 // 相机配置
 export const CAMERA_CONFIG = {
-  FOV: 60, // 调整FOV，获得更自然、更聚焦的视野
-  NEAR: 0.1, // 近裁剪面
-  FAR: 1000, // 远裁剪面
-  INITIAL_POSITION: { x: 0, y: 4, z: 16 }, // 更低的玩家视角，更具沉浸感
-  FOLLOW_HEIGHT: 8, // 跟随时相机的高度
-  FIXED_VIEW: { x: 0, y: 8, z: -12 }, // 调整固定观看位置
-  LERP_SPEED: 0.1, // 线性插值速度
-  SLOW_LERP_SPEED: 0.05, // 慢速线性插值速度
+  FOV: 52,
+  NEAR: 0.1,
+  FAR: 1000,
+  INITIAL_POSITION: { x: 0, y: 3.35, z: 15.2 },
+  FOLLOW_HEIGHT: 6.5,
+  FIXED_VIEW: { x: 0, y: 8, z: -12 },
+  LERP_SPEED: 0.1,
+  SLOW_LERP_SPEED: 0.06,
 } as const
 
 // 球瓶位置配置

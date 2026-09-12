@@ -4,9 +4,8 @@ import React, { useMemo, useState, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
+import { GameHud, GameResultOverlay, GameStage } from '@/components/game'
 
-// 使用动态导入的滑块拼图游戏组件
 const SlidingPuzzle = dynamic(() => import('./components/SlidingPuzzle'), {
   ssr: false,
   loading: () => <div className="p-4 text-center">加载游戏中...</div>,
@@ -21,7 +20,6 @@ const GAME_RULES = [
   '移动次数越少分数越高',
 ]
 
-// 内部组件，使用 useSearchParams
 function SlidingPuzzleGame() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,7 +33,6 @@ function SlidingPuzzleGame() {
   const [gameKey, setGameKey] = useState(0)
   const [completionMessage, setCompletionMessage] = useState('')
 
-  // 更新URL参数
   const updateUrlParams = (level: 3 | 4 | 5) => {
     const params = new URLSearchParams()
     params.set('difficulty', level.toString())
@@ -43,76 +40,81 @@ function SlidingPuzzleGame() {
   }
 
   const startGame = (level: 3 | 4 | 5) => {
-    console.log('开始游戏，难度:', level)
     setCompletionMessage('')
-    setGameKey(prev => prev + 1) // 重置游戏实例
+    setGameKey(prev => prev + 1)
     updateUrlParams(level)
   }
 
   const restartGame = () => {
     setCompletionMessage('')
-    setGameKey(prev => prev + 1) // 重置游戏实例
+    setGameKey(prev => prev + 1)
   }
 
-  // 处理游戏完成
   const handleGameComplete = () => {
-    console.log('游戏完成！')
     setCompletionMessage(`恭喜！你完成了 ${difficulty}×${difficulty} 的拼图！`)
   }
 
   return (
-    <div className="flex flex-col items-center px-2 py-4">
-      <div className="mb-4 flex w-full max-w-md items-center justify-between">
-        <h1 className="text-xl font-bold">滑块拼图</h1>
-        <GameRulesDialog title="滑块拼图游戏规则" rules={GAME_RULES} />
-      </div>
-
-      <div className="w-full max-w-md">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={difficulty === 3 ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => startGame(3)}
-            >
-              3×3
-            </Button>
-            <Button
-              variant={difficulty === 4 ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => startGame(4)}
-            >
-              4×4
-            </Button>
-            <Button
-              variant={difficulty === 5 ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => startGame(5)}
-            >
-              5×5
+    <GameStage title="滑块拼图" rules={GAME_RULES} contentClassName="items-center">
+      <div className="mx-auto flex w-full max-w-md flex-col">
+        <GameHud className="mb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={difficulty === 3 ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => startGame(3)}
+              >
+                3×3
+              </Button>
+              <Button
+                variant={difficulty === 4 ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => startGame(4)}
+              >
+                4×4
+              </Button>
+              <Button
+                variant={difficulty === 5 ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => startGame(5)}
+              >
+                5×5
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={restartGame}>
+              重新开始
             </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={restartGame}>
-            重新开始
-          </Button>
-        </div>
+        </GameHud>
 
-        {completionMessage && (
-          <p className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-300">
-            {completionMessage}
-          </p>
-        )}
+        <div className="relative">
+          {completionMessage && (
+            <p className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-300">
+              {completionMessage}
+            </p>
+          )}
 
-        {/* 使用key强制重新渲染 */}
-        <div key={`game-${difficulty}-${gameKey}`}>
-          <SlidingPuzzle size={difficulty} onComplete={handleGameComplete} />
+          <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/50 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+            <div key={`game-${difficulty}-${gameKey}`}>
+              <SlidingPuzzle size={difficulty} onComplete={handleGameComplete} />
+            </div>
+          </div>
+
+          <GameResultOverlay open={!!completionMessage} eyebrow="完成" title={completionMessage}>
+            <Button
+              className="mt-6 w-full bg-amber-400 py-5 font-bold text-zinc-950 hover:bg-amber-300"
+              onClick={restartGame}
+            >
+              再玩一次
+            </Button>
+          </GameResultOverlay>
         </div>
       </div>
-    </div>
+    </GameStage>
   )
 }
 
-// 主页面组件，使用 Suspense 包裹
 export default function SlidingPuzzlePage() {
   return (
     <Suspense fallback={<div className="p-4 text-center">加载中...</div>}>

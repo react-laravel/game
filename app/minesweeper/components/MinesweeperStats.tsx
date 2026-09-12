@@ -8,8 +8,8 @@ export function MinesweeperStats({ gamesPlayed, gamesWon, bestTime }: Minesweepe
   const winRate = gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0
 
   return (
-    <div className="text-xs text-gray-500 dark:text-gray-400">
-      <div className="flex justify-center space-x-8">
+    <div className="text-muted-foreground text-xs">
+      <div className="flex justify-center gap-8">
         <div className="text-center">
           <div>游戏: {gamesPlayed}</div>
           <div>胜利: {gamesWon}</div>

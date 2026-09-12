@@ -1,11 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { GameHud, GameResultOverlay, GameStage, GameStat } from '@/components/game'
 import { useSnakeGameStore } from './store'
-import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
+
+const SNAKE_RULES = [
+  '控制蛇移动吃食物',
+  '每个食物+10分',
+  '不能撞墙或撞自己',
+  '使用方向键或滑动控制',
+  '按空格键暂停/开始游戏',
+  '游戏结束后可以重新开始',
+]
 
 type Position = { x: number; y: number }
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
@@ -314,13 +322,12 @@ export default function SnakeGame() {
       const isSnakeBody = snake.slice(1).some(segment => segment.x === x && segment.y === y)
       const isFood = food.x === x && food.y === y
 
-      let cellClass =
-        'aspect-square transition-all duration-100 bg-gray-200/50 dark:bg-gray-800/50 '
+      let cellClass = 'aspect-square transition-all duration-100 bg-zinc-800/70 '
 
       if (isSnakeHead) {
         cellClass += 'relative'
       } else if (isSnakeBody) {
-        cellClass += 'bg-green-500/80'
+        cellClass += 'rounded-[3px] bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.35)]'
       } else if (isFood) {
         cellClass += 'relative'
       }
@@ -328,8 +335,8 @@ export default function SnakeGame() {
       return (
         <div key={index} className={cellClass}>
           {isFood && (
-            <div className="flex h-full w-full items-center justify-center text-lg leading-none">
-              🍎
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="block size-[62%] rounded-full bg-rose-400 shadow-[0_0_12px_rgba(251,113,133,0.7)]" />
             </div>
           )}
           {isSnakeHead && (
@@ -375,83 +382,85 @@ export default function SnakeGame() {
     [snake, food, getSnakeHeadDirection]
   )
 
-  // 渲染控制按钮
   const renderControlButton = useCallback(
-    (direction: Direction, emoji: string, className?: string) => (
+    (direction: Direction, symbol: string, className?: string) => (
       <Button
         variant="outline"
         size="sm"
         onClick={() => changeDirection(direction)}
         disabled={!gameStarted || gameOver}
-        className={`h-12 w-12 ${className || ''}`}
+        className={`h-12 w-12 rounded-xl border-white/15 bg-white/5 text-lg font-black text-white hover:bg-white/10 ${className || ''}`}
       >
-        {emoji}
+        {symbol}
       </Button>
     ),
     [changeDirection, gameStarted, gameOver]
   )
 
   return (
-    <div className="container mx-auto max-w-md px-4 py-4" onContextMenu={e => e.preventDefault()}>
-      <div className="mb-6 text-center">
-        <div className="mb-2 flex items-center justify-between">
-          <h1 className="text-xl font-bold">贪吃蛇</h1>
-          <GameRulesDialog
-            title="贪吃蛇游戏规则"
-            rules={[
-              '控制蛇移动吃食物',
-              '每个食物+10分',
-              '不能撞墙或撞自己',
-              '使用方向键或滑动控制',
-              '按空格键暂停/开始游戏',
-              '游戏结束后可以重新开始',
-            ]}
-          />
+    <GameStage
+      title="贪吃蛇"
+      rules={SNAKE_RULES}
+      fill
+      className="bg-zinc-950 text-white"
+      onContextMenu={e => e.preventDefault()}
+    >
+      <div className="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col">
+        <GameHud className="mb-3 border-white/10 bg-white/5 text-white [&_.uppercase]:text-white/50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-1 justify-around">
+              <GameStat label="当前分数" value={score} />
+              <GameStat label="最高分" value={bestScore} />
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button onClick={toggleGame} size="sm" className="bg-amber-400 font-bold text-zinc-950 hover:bg-amber-300">
+                {gameOver ? '重新开始' : gameStarted ? '暂停' : '开始'}
+              </Button>
+              <Button
+                onClick={resetGame}
+                variant="outline"
+                size="sm"
+                className="border-white/20 bg-transparent text-white hover:bg-white/10"
+              >
+                重置
+              </Button>
+            </div>
+          </div>
+        </GameHud>
+
+        <div className="relative mx-auto flex min-h-0 w-full max-w-[min(100%,calc(100dvh-15rem))] flex-1 items-center">
+          <div className="w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+            <div
+              className="grid gap-px rounded-2xl bg-zinc-950"
+              style={{
+                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
+                aspectRatio: '1',
+                touchAction: 'none',
+              }}
+            >
+              {Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, index) => renderGameCell(index))}
+            </div>
+          </div>
+          <GameResultOverlay open={gameOver} title="游戏结束">
+            <p className="mt-3 text-sm text-white/55">本局分数 {score}</p>
+            <Button
+              className="mt-6 w-full bg-amber-400 py-5 font-bold text-zinc-950 hover:bg-amber-300"
+              onClick={resetGame}
+            >
+              重新开始
+            </Button>
+          </GameResultOverlay>
         </div>
 
-        <div className="mb-4 flex justify-center gap-8">
-          <div className="text-center">
-            <div className="text-sm text-gray-600 dark:text-gray-400">当前分数</div>
-            <div className="text-xl font-bold">{score}</div>
+        <div className="mt-3 shrink-0 pb-1">
+          <div className="mb-2 flex justify-center">{renderControlButton('UP', '↑')}</div>
+          <div className="mb-2 flex justify-center space-x-4">
+            {renderControlButton('LEFT', '←')}
+            {renderControlButton('RIGHT', '→')}
           </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-600 dark:text-gray-400">最高分</div>
-            <div className="text-xl font-bold">{bestScore}</div>
-          </div>
-        </div>
-
-        <div className="mb-4 flex justify-center space-x-2">
-          <Button onClick={toggleGame} variant="outline" size="sm">
-            {gameOver ? '重新开始' : gameStarted ? '暂停' : '开始'}
-          </Button>
-          <Button onClick={resetGame} variant="outline" size="sm">
-            重置
-          </Button>
+          <div className="flex justify-center">{renderControlButton('DOWN', '↓')}</div>
         </div>
       </div>
-
-      <Card className="mb-4 overflow-hidden p-0">
-        <div
-          className="grid rounded-lg bg-gray-100 dark:bg-gray-900"
-          style={{
-            gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-            aspectRatio: '1',
-            touchAction: 'none',
-          }}
-        >
-          {Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, index) => renderGameCell(index))}
-        </div>
-      </Card>
-
-      {/* 移动端控制按钮 */}
-      <div className="mb-4">
-        <div className="mb-2 flex justify-center">{renderControlButton('UP', '⬆️')}</div>
-        <div className="mb-2 flex justify-center space-x-4">
-          {renderControlButton('LEFT', '⬅️')}
-          {renderControlButton('RIGHT', '➡️')}
-        </div>
-        <div className="flex justify-center">{renderControlButton('DOWN', '⬇️')}</div>
-      </div>
-    </div>
+    </GameStage>
   )
 }

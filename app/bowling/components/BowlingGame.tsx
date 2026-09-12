@@ -1,139 +1,155 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { GameRulesDialog } from '@/components/ui/game-rules-dialog'
 import { useBowlingStore } from '../store'
+import { buildScorecard } from '../utils/scoring'
 import { BowlingCanvas } from './BowlingCanvas'
-import { GameStats } from './GameStats'
+import { BowlingScorecard } from './BowlingScorecard'
+import { GameOverOverlay, GyroPermissionDialog, ThrowResultOverlay } from './BowlingOverlays'
+import { useBowlingSounds } from '../hooks/useBowlingSounds'
 
 export function BowlingGame() {
-  const gameRef = useRef<HTMLDivElement>(null)
   const {
     gameStarted,
+    gameFinished,
     gyroSupported,
     gyroPermission,
     startGame,
     detectGyroSupport,
     requestGyroPermission,
+    showingResult,
+    lastResultKind,
+    lastKnockedDown,
+    frames,
+    currentFrame,
+    totalScore,
+    ballThrown,
   } = useBowlingStore()
 
-  // 客户端挂载检测：服务端快照为 false，水合后为 true，避免在 effect 中 setState
   const isMounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   )
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
+  const { play } = useBowlingSounds()
 
-  // 自动检测陀螺仪支持并启动游戏
   useEffect(() => {
     const init = async () => {
       await detectGyroSupport()
-      if (!gameStarted) {
+      if (!useBowlingStore.getState().gameStarted) {
         startGame()
       }
     }
-    init()
-  }, [detectGyroSupport, gameStarted, startGame])
+    void init()
+  }, [detectGyroSupport, startGame])
 
-  // 检查是否需要显示权限对话框
   useEffect(() => {
     if (isMounted && gyroSupported && !gyroPermission) {
-      // 检测是否为移动设备
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       )
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-
-      if (isMobile || isIOS) {
-        console.log('📱 检测到移动设备，立即显示权限对话框')
-        // 稍微延迟显示，让页面完全加载
-        setTimeout(() => {
-          setShowPermissionDialog(true)
-        }, 500)
+      if (isMobile) {
+        const timer = window.setTimeout(() => setShowPermissionDialog(true), 400)
+        return () => window.clearTimeout(timer)
       }
     }
   }, [isMounted, gyroSupported, gyroPermission])
 
-  // 处理权限请求
-  const handleRequestPermission = async () => {
-    console.log('🔐 用户点击申请权限')
-    await requestGyroPermission()
-    setShowPermissionDialog(false)
-  }
-
-  // 陀螺仪监听
   useEffect(() => {
-    if (!isMounted || !gyroSupported || !gyroPermission) {
-      console.log('⚠️ 陀螺仪不可用:', { isMounted, gyroSupported, gyroPermission })
-      return
-    }
-
-    console.log('🎯 启动陀螺仪监听')
+    if (!isMounted || !gyroSupported || !gyroPermission) return
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const { beta, gamma } = event
       if (beta !== null && gamma !== null) {
-        // beta: 前后倾斜 (-180 到 180)
-        // gamma: 左右倾斜 (-90 到 90)
-        const normalizedX = Math.max(-1, Math.min(1, gamma / 45)) // 左右倾斜
-        const normalizedY = Math.max(-1, Math.min(1, beta / 45)) // 前后倾斜
-
+        const normalizedX = Math.max(-1, Math.min(1, gamma / 45))
+        const normalizedY = Math.max(-1, Math.min(1, beta / 45))
         useBowlingStore.getState().updateTilt(normalizedX, normalizedY)
       }
     }
 
     window.addEventListener('deviceorientation', handleOrientation)
-    console.log('✅ 陀螺仪监听器已添加')
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation)
-      console.log('🔄 陀螺仪监听器已移除')
-    }
+    return () => window.removeEventListener('deviceorientation', handleOrientation)
   }, [gyroSupported, gyroPermission, isMounted])
 
-  return (
-    <div ref={gameRef} className="flex flex-col items-center space-y-6">
-      {/* 权限请求对话框 */}
-      {showPermissionDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-2xl border-2 border-blue-100 bg-white p-8 text-center shadow-2xl">
-            <div className="mb-6 animate-bounce text-8xl">🎳</div>
-            <h3 className="mb-3 text-xl font-bold text-gray-800">🔓 启用陀螺仪控制</h3>
-            <div className="mb-6 rounded-lg bg-blue-50 p-4">
-              <p className="text-sm leading-relaxed text-gray-700">
-                保龄球游戏使用<span className="font-semibold text-blue-600">陀螺仪</span>
-                来控制投球方向
-                <br />
-                <span className="text-lg">📱➡️🎯</span>
-                <br />
-                <span className="font-medium">左右倾斜手机来瞄准球瓶！</span>
-              </p>
-            </div>
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={handleRequestPermission}
-                className="transform rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-4 text-lg font-bold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-600 hover:to-blue-700"
-              >
-                🚀 立即启用
-              </button>
-              <button
-                onClick={() => setShowPermissionDialog(false)}
-                className="rounded-xl px-6 py-3 text-sm text-gray-500 transition-colors hover:text-gray-700"
-              >
-                稍后再说
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  useEffect(() => {
+    if (ballThrown) play('throw')
+  }, [ballThrown, play])
 
-      {/* 游戏画布 */}
-      <div className="relative">
-        <BowlingCanvas />
+  useEffect(() => {
+    if (!showingResult || !lastResultKind) return
+    if (lastResultKind === 'strike') play('strike')
+    else if (lastResultKind === 'spare') play('spare')
+    else if (lastResultKind === 'gutter') play('gutter')
+    else play('pins')
+  }, [showingResult, lastResultKind, play])
+
+  useEffect(() => {
+    const gameWindow = window as Window & { render_game_to_text?: () => string }
+    gameWindow.render_game_to_text = () =>
+      JSON.stringify({
+        coordinateSystem: 'lane origin center; +x right, +y up, -z toward pins',
+        mode: gameFinished ? 'gameOver' : showingResult ? 'result' : ballThrown ? 'rolling' : 'aiming',
+        currentFrame,
+        currentThrow: useBowlingStore.getState().currentThrow,
+        totalScore,
+        pinsStanding: useBowlingStore.getState().pinsStanding,
+        frames,
+        lastResultKind,
+      })
+    return () => {
+      delete gameWindow.render_game_to_text
+    }
+  }, [gameFinished, showingResult, ballThrown, currentFrame, totalScore, frames, lastResultKind])
+
+  const scorecard = buildScorecard(frames)
+
+  return (
+    <div className="relative flex h-dvh min-h-0 flex-col overflow-hidden bg-zinc-950 text-white">
+      <div className="absolute top-3 right-3 z-40 sm:top-4 sm:right-4">
+        <GameRulesDialog
+          title="保龄球规则"
+          rules={[
+            '一共十局，每局最多两球；第十局全中或补中可加投',
+            '按住投球键蓄力，松手出球',
+            '手机可倾斜瞄准；桌面用拖动、A / D 或方向键瞄准，空格蓄力',
+            '全中（Strike）得 10 分加后面两球，补中（Spare）加下一球',
+            '打完十局后可再来一局',
+          ]}
+        />
       </div>
 
-      {/* 游戏统计 */}
-      <GameStats />
+      {showPermissionDialog && (
+        <GyroPermissionDialog
+          onEnable={() => {
+            void requestGyroPermission()
+            setShowPermissionDialog(false)
+          }}
+          onSkip={() => setShowPermissionDialog(false)}
+        />
+      )}
+
+      <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
+        <BowlingScorecard
+          frames={scorecard}
+          currentFrame={currentFrame}
+          totalScore={totalScore}
+          gameFinished={gameFinished}
+        />
+      </div>
+
+      <div className="min-h-0 flex-1">
+        {gameStarted && <BowlingCanvas />}
+      </div>
+
+      {showingResult && lastResultKind && (
+        <ThrowResultOverlay kind={lastResultKind} knockedDown={lastKnockedDown} />
+      )}
+
+      {gameFinished && (
+        <GameOverOverlay totalScore={totalScore} onReplay={startGame} />
+      )}
     </div>
   )
 }

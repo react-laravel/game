@@ -29,7 +29,7 @@ export const MobileControls = memo<MobileControlsProps>(
           <Button
             variant="outline"
             size="lg"
-            className="h-12 w-16 text-xl font-bold"
+            className="h-12 w-16 border-white/20 bg-white/5 text-xl font-bold text-white hover:bg-white/10"
             onTouchStart={handleTouchStart(rotatePiece)}
             onClick={rotatePiece}
           >
@@ -42,7 +42,7 @@ export const MobileControls = memo<MobileControlsProps>(
           <Button
             variant="outline"
             size="lg"
-            className="h-12 w-full text-xl font-bold"
+            className="h-12 w-full border-white/20 bg-white/5 text-xl font-bold text-white hover:bg-white/10"
             onTouchStart={handleTouchStart(() => movePiece('left'))}
             onClick={() => movePiece('left')}
           >
@@ -50,8 +50,8 @@ export const MobileControls = memo<MobileControlsProps>(
           </Button>
           <Button
             variant="outline"
-            className={`h-12 w-full text-sm font-medium ${
-              isSoftDropping ? 'bg-amber-500/15 text-amber-700 dark:text-amber-200' : ''
+            className={`h-12 w-full border-white/20 bg-white/5 text-sm font-medium text-white hover:bg-white/10 ${
+              isSoftDropping ? 'bg-amber-500/15 text-amber-200' : ''
             }`}
             onTouchStart={handleTouchStart(startSoftDrop)}
             onTouchEnd={handleTouchEnd(stopSoftDrop)}
@@ -64,7 +64,7 @@ export const MobileControls = memo<MobileControlsProps>(
           <Button
             variant="outline"
             size="lg"
-            className="h-12 w-full text-xl font-bold"
+            className="h-12 w-full border-white/20 bg-white/5 text-xl font-bold text-white hover:bg-white/10"
             onTouchStart={handleTouchStart(() => movePiece('right'))}
             onClick={() => movePiece('right')}
           >
@@ -77,7 +77,7 @@ export const MobileControls = memo<MobileControlsProps>(
           <Button
             variant="outline"
             size="lg"
-            className="h-12 w-20 text-xl font-bold"
+            className="h-12 w-20 border-white/20 bg-white/5 text-xl font-bold text-white hover:bg-white/10"
             onTouchStart={handleTouchStart(hardDrop)}
             onClick={hardDrop}
           >

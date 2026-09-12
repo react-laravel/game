@@ -31,19 +31,19 @@ function getCellContent(cell: Cell): string {
 
 function getCellStyle(cell: Cell): string {
   const baseStyle =
-    'flex size-8 cursor-pointer select-none items-center justify-center border border-gray-400 text-sm font-bold'
+    'flex size-8 cursor-pointer select-none items-center justify-center rounded-md border border-border/80 text-sm font-bold transition-colors'
 
   if (cell.state === 'hidden') {
-    return `${baseStyle} bg-gray-300 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500`
+    return `${baseStyle} bg-muted hover:bg-muted/70`
   }
   if (cell.state === 'flagged') {
-    return `${baseStyle} bg-yellow-200 dark:bg-yellow-700`
+    return `${baseStyle} bg-amber-200 dark:bg-amber-700`
   }
   if (cell.isMine) {
     return `${baseStyle} bg-red-500 text-white`
   }
 
-  return `${baseStyle} bg-gray-100 dark:bg-gray-700 ${NUMBER_COLORS[cell.neighborCount] ?? ''}`
+  return `${baseStyle} bg-card ${NUMBER_COLORS[cell.neighborCount] ?? ''}`
 }
 
 const MinesweeperCell = memo(function MinesweeperCell({
@@ -88,14 +88,16 @@ export function MinesweeperBoard({
 }: MinesweeperBoardProps) {
   if (board.length === 0 || !board[0]?.length) {
     return (
-      <div className="flex h-32 items-center justify-center text-gray-500">正在初始化游戏...</div>
+      <div className="text-muted-foreground flex h-32 items-center justify-center">
+        正在初始化游戏...
+      </div>
     )
   }
 
   return (
     <div
       data-testid="minesweeper-board"
-      className="grid gap-0"
+      className="grid gap-0.5 rounded-2xl border border-border/60 bg-card/80 p-2 shadow-sm backdrop-blur-md"
       style={{
         gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
         maxWidth: `${config.cols * 32}px`,

@@ -3,77 +3,207 @@ import * as CANNON from 'cannon-es'
 import { PHYSICS_CONFIG, PIN_POSITIONS } from '../config/constants'
 import type { PhysicsMaterials, SceneElements, BallObject, PinObject } from '../types/scene'
 
-// 创建场景元素（球道、地面等）
+function createWoodTexture() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 1024
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.fillStyle = '#c28a4b'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  for (let y = 0; y < canvas.height; y++) {
+    const shade = 0.88 + Math.sin(y * 0.09) * 0.06 + Math.sin(y * 0.31) * 0.03
+    ctx.fillStyle = `rgba(90, 48, 18, ${0.08 + (1 - shade) * 0.12})`
+    ctx.fillRect(0, y, canvas.width, 1)
+  }
+
+  ctx.strokeStyle = 'rgba(70, 36, 12, 0.22)'
+  ctx.lineWidth = 2
+  for (let x = 18; x < canvas.width; x += 36) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x + 4, canvas.height)
+    ctx.stroke()
+  }
+
+  ctx.fillStyle = '#1f140c'
+  ctx.fillRect(0, canvas.height * 0.31, canvas.width, 5)
+
+  ctx.fillStyle = '#111111'
+  const arrowY = canvas.height * 0.42
+  for (const x of [48, 88, 128, 168, 208]) {
+    ctx.beginPath()
+    ctx.moveTo(x, arrowY)
+    ctx.lineTo(x - 8, arrowY + 18)
+    ctx.lineTo(x + 8, arrowY + 18)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  ctx.fillStyle = '#2a1810'
+  for (const y of [0.78, 0.84, 0.9]) {
+    ctx.beginPath()
+    ctx.arc(canvas.width / 2, canvas.height * y, 4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.anisotropy = 8
+  texture.needsUpdate = true
+  return texture
+}
+
+function createBallTexture() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const gradient = ctx.createLinearGradient(0, 0, 256, 256)
+  gradient.addColorStop(0, '#102445')
+  gradient.addColorStop(0.45, '#1d4ed8')
+  gradient.addColorStop(1, '#0f172a')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, 256, 256)
+
+  ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)'
+  ctx.lineWidth = 10
+  ctx.beginPath()
+  ctx.ellipse(128, 128, 86, 36, 0.5, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.ellipse(128, 128, 36, 90, -0.4, 0, Math.PI * 2)
+  ctx.stroke()
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  return texture
+}
+
+function createPinTexture() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.fillStyle = '#f6f3ea'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#dc2626'
+  ctx.fillRect(0, canvas.height * 0.58, canvas.width, canvas.height * 0.12)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  return texture
+}
+
+export function createAimGuide(scene: THREE.Scene): THREE.Line {
+  const geometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0.08, 10),
+    new THREE.Vector3(0, 0.08, -16),
+  ])
+  const material = new THREE.LineDashedMaterial({
+    color: 0xfbbf24,
+    dashSize: 0.55,
+    gapSize: 0.32,
+    transparent: true,
+    opacity: 0.85,
+  })
+  const line = new THREE.Line(geometry, material)
+  line.computeLineDistances()
+  scene.add(line)
+  return line
+}
+
 export function createSceneElements(
   scene: THREE.Scene,
   world: CANNON.World,
   materials: PhysicsMaterials
 ): SceneElements {
   const { groundMaterial } = materials
+  const woodTexture = createWoodTexture()
 
-  // 创建一个视觉上的"坑底"地面，放置在较低位置
-  const pitFloorGeometry = new THREE.PlaneGeometry(200, 200)
-  const pitFloorMesh = new THREE.Mesh(
-    pitFloorGeometry,
-    new THREE.MeshPhongMaterial({ color: 0x2c2c54 })
+  const carpet = new THREE.Mesh(
+    new THREE.PlaneGeometry(80, 90),
+    new THREE.MeshStandardMaterial({ color: 0x140e18, roughness: 0.95 })
   )
-  pitFloorMesh.rotation.x = -Math.PI / 2
-  pitFloorMesh.position.y = -10
-  pitFloorMesh.receiveShadow = true
-  scene.add(pitFloorMesh)
+  carpet.rotation.x = -Math.PI / 2
+  carpet.position.y = -0.2
+  carpet.receiveShadow = true
+  scene.add(carpet)
 
-  // 创建有限长度的物理球道和视觉球道
+  const pit = new THREE.Mesh(
+    new THREE.BoxGeometry(12, 2.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9 })
+  )
+  pit.position.set(0, -1.3, -24)
+  scene.add(pit)
+
   const laneLength = 32
   const laneWidth = PHYSICS_CONFIG.LANE_WIDTH
-
-  // 视觉球道
-  const laneMaterial = new THREE.MeshPhongMaterial({
-    color: 0xdeb887,
-    shininess: 80,
-    specular: 0x444444,
+  const laneMaterial = new THREE.MeshStandardMaterial({
+    map: woodTexture,
+    color: woodTexture ? 0xffffff : 0xc28a4b,
+    roughness: 0.42,
+    metalness: 0.04,
   })
-  const laneGeometry = new THREE.PlaneGeometry(laneWidth, laneLength)
-  const laneMesh = new THREE.Mesh(laneGeometry, laneMaterial)
+  const laneMesh = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), laneMaterial)
   laneMesh.rotation.x = -Math.PI / 2
-  laneMesh.position.set(0, 0.01, -6)
+  laneMesh.position.set(0, 0.02, -6)
   laneMesh.receiveShadow = true
   scene.add(laneMesh)
 
-  // 物理球道
   const laneShape = new CANNON.Box(new CANNON.Vec3(laneWidth / 2, 0.1, laneLength / 2))
   const laneBody = new CANNON.Body({ mass: 0, material: groundMaterial })
   laneBody.addShape(laneShape)
   laneBody.position.set(0, -0.1, -6)
   world.addBody(laneBody)
 
-  // 添加投球助跑区
-  const approachLength = 5
-  const approachGeometry = new THREE.PlaneGeometry(laneWidth, approachLength)
-  const approachMesh = new THREE.Mesh(approachGeometry, laneMaterial)
-  approachMesh.rotation.x = -Math.PI / 2
-  approachMesh.position.y = 0.01
-  approachMesh.position.z = 10 + approachLength / 2
-  approachMesh.receiveShadow = true
-  scene.add(approachMesh)
+  const approach = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, 5), laneMaterial)
+  approach.rotation.x = -Math.PI / 2
+  approach.position.set(0, 0.02, 12.5)
+  approach.receiveShadow = true
+  scene.add(approach)
+
+  const neighborMaterial = new THREE.MeshStandardMaterial({
+    color: 0x6b4423,
+    roughness: 0.7,
+  })
+  ;[-1, 1].forEach(side => {
+    const neighbor = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), neighborMaterial)
+    neighbor.rotation.x = -Math.PI / 2
+    neighbor.position.set(side * (laneWidth + 1.6), -0.04, -6)
+    neighbor.receiveShadow = true
+    scene.add(neighbor)
+  })
+
+  const pinDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(laneWidth + 0.4, 0.08, 5),
+    new THREE.MeshStandardMaterial({ color: 0xa56b34, roughness: 0.5 })
+  )
+  pinDeck.position.set(0, 0.03, -19.6)
+  pinDeck.receiveShadow = true
+  scene.add(pinDeck)
 
   return { laneMesh, laneBody }
 }
 
-// 创建球
 export function createBall(
   scene: THREE.Scene,
   world: CANNON.World,
   ballMaterial: CANNON.Material
 ): BallObject {
-  const ballGeometry = new THREE.SphereGeometry(PHYSICS_CONFIG.BALL_RADIUS, 32, 32)
+  const ballTexture = createBallTexture()
   const ballMesh = new THREE.Mesh(
-    ballGeometry,
-    new THREE.MeshPhongMaterial({
-      color: 0xcc0000,
-      shininess: 100,
-      specular: 0x666666,
-      emissive: 0x220000,
-      transparent: false,
+    new THREE.SphereGeometry(PHYSICS_CONFIG.BALL_RADIUS, 48, 48),
+    new THREE.MeshStandardMaterial({
+      map: ballTexture,
+      color: ballTexture ? 0xffffff : 0x1d4ed8,
+      roughness: 0.28,
+      metalness: 0.22,
     })
   )
   ballMesh.position.set(0, 1, 10)
@@ -81,101 +211,73 @@ export function createBall(
   ballMesh.receiveShadow = true
   scene.add(ballMesh)
 
-  const ballShape = new CANNON.Sphere(PHYSICS_CONFIG.BALL_RADIUS)
   const ballBody = new CANNON.Body({
     mass: PHYSICS_CONFIG.BALL_MASS,
     material: ballMaterial,
     linearDamping: 0.1,
     angularDamping: 0.05,
-    fixedRotation: false,
     type: CANNON.Body.DYNAMIC,
   })
-  ballBody.addShape(ballShape)
+  ballBody.addShape(new CANNON.Sphere(PHYSICS_CONFIG.BALL_RADIUS))
   ballBody.position.set(0, 1, 10)
   world.addBody(ballBody)
 
   return { mesh: ballMesh, body: ballBody }
 }
 
-// 创建球瓶
 export function createPins(
   scene: THREE.Scene,
   world: CANNON.World,
   pinMaterial: CANNON.Material
 ): PinObject[] {
   const pinHeight = PHYSICS_CONFIG.PIN_HEIGHT
-  const pinPoints = [
-    new THREE.Vector2(0, -pinHeight / 2),
-    new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM, -pinHeight / 2),
-    new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM * 1.2, -pinHeight * 0.4),
-    new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM * 1.3, -pinHeight * 0.1),
-    new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_TOP * 0.9, pinHeight * 0.4),
-    new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_TOP, pinHeight / 2),
-    new THREE.Vector2(0, pinHeight / 2),
-  ]
-  const pinGeometry = new THREE.LatheGeometry(pinPoints, 24)
+  const pinGeometry = new THREE.LatheGeometry(
+    [
+      new THREE.Vector2(0, -pinHeight / 2),
+      new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM, -pinHeight / 2),
+      new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM * 1.2, -pinHeight * 0.4),
+      new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_BOTTOM * 1.3, -pinHeight * 0.1),
+      new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_TOP * 0.9, pinHeight * 0.4),
+      new THREE.Vector2(PHYSICS_CONFIG.PIN_RADIUS_TOP, pinHeight / 2),
+      new THREE.Vector2(0, pinHeight / 2),
+    ],
+    24
+  )
 
-  // 创建球瓶贴图
-  const createPinTexture = () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 64
-    canvas.height = 128
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    ctx.fillStyle = '#e60028'
-    const stripeHeight = canvas.height * 0.1
-    const stripeY = canvas.height * 0.6
-    ctx.fillRect(0, stripeY, canvas.width, stripeHeight)
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.needsUpdate = true
-    return texture
-  }
-
-  const pinTexture = createPinTexture()
-  const pinMaterial3D = new THREE.MeshPhongMaterial({
-    map: pinTexture,
-    shininess: 120,
-    specular: 0x444444,
-    emissive: 0x111111,
+  const pinMaterial3D = new THREE.MeshStandardMaterial({
+    map: createPinTexture(),
+    roughness: 0.35,
+    metalness: 0.05,
   })
 
-  const pins: PinObject[] = []
-
-  PIN_POSITIONS.forEach(pos => {
+  return PIN_POSITIONS.map(pos => {
     const pinMesh = new THREE.Mesh(pinGeometry, pinMaterial3D)
     pinMesh.position.set(pos[0], pos[1], pos[2])
     pinMesh.castShadow = true
     pinMesh.receiveShadow = true
     scene.add(pinMesh)
 
-    const pinShape = new CANNON.Cylinder(
-      PHYSICS_CONFIG.PIN_RADIUS_TOP,
-      PHYSICS_CONFIG.PIN_RADIUS_BOTTOM,
-      PHYSICS_CONFIG.PIN_HEIGHT,
-      8
-    )
     const pinBody = new CANNON.Body({
       mass: PHYSICS_CONFIG.PIN_MASS,
       material: pinMaterial,
       linearDamping: 0.2,
       angularDamping: 0.3,
     })
-    pinBody.addShape(pinShape)
+    pinBody.addShape(
+      new CANNON.Cylinder(
+        PHYSICS_CONFIG.PIN_RADIUS_TOP,
+        PHYSICS_CONFIG.PIN_RADIUS_BOTTOM,
+        PHYSICS_CONFIG.PIN_HEIGHT,
+        8
+      )
+    )
     pinBody.position.set(pos[0], pos[1], pos[2])
     world.addBody(pinBody)
 
-    pins.push({ mesh: pinMesh, body: pinBody })
+    return { mesh: pinMesh, body: pinBody }
   })
-
-  return pins
 }
 
-// 创建边界墙
 export function createWalls(scene: THREE.Scene, world: CANNON.World) {
   const wallLength = 37
   const wallPositionZ = -3.5
@@ -183,39 +285,53 @@ export function createWalls(scene: THREE.Scene, world: CANNON.World) {
     PHYSICS_CONFIG.LANE_WIDTH / 2 + PHYSICS_CONFIG.GUTTER_WIDTH + PHYSICS_CONFIG.WALL_THICKNESS / 2
 
   const createWall = (x: number) => {
-    const wallGeometry = new THREE.BoxGeometry(
-      PHYSICS_CONFIG.WALL_THICKNESS,
-      PHYSICS_CONFIG.WALL_HEIGHT,
-      wallLength
-    )
     const wallMesh = new THREE.Mesh(
-      wallGeometry,
-      new THREE.MeshLambertMaterial({ color: 0x666666 })
+      new THREE.BoxGeometry(
+        PHYSICS_CONFIG.WALL_THICKNESS,
+        PHYSICS_CONFIG.WALL_HEIGHT,
+        wallLength
+      ),
+      new THREE.MeshStandardMaterial({ color: 0x2a1c16, roughness: 0.8 })
     )
     wallMesh.position.set(x, PHYSICS_CONFIG.WALL_HEIGHT / 2, wallPositionZ)
     scene.add(wallMesh)
 
-    const wallShape = new CANNON.Box(
-      new CANNON.Vec3(
-        PHYSICS_CONFIG.WALL_THICKNESS / 2,
-        PHYSICS_CONFIG.WALL_HEIGHT / 2,
-        wallLength / 2
+    const neon = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 0.08, wallLength),
+      new THREE.MeshStandardMaterial({
+        color: 0x67e8f9,
+        emissive: 0x22d3ee,
+        emissiveIntensity: 2.4,
+      })
+    )
+    neon.position.set(x > 0 ? x - 0.22 : x + 0.22, 0.18, wallPositionZ)
+    scene.add(neon)
+
+    const wallBody = new CANNON.Body({ mass: 0 })
+    wallBody.addShape(
+      new CANNON.Box(
+        new CANNON.Vec3(
+          PHYSICS_CONFIG.WALL_THICKNESS / 2,
+          PHYSICS_CONFIG.WALL_HEIGHT / 2,
+          wallLength / 2
+        )
       )
     )
-    const wallBody = new CANNON.Body({ mass: 0 })
-    wallBody.addShape(wallShape)
     wallBody.position.set(x, PHYSICS_CONFIG.WALL_HEIGHT / 2, wallPositionZ)
     world.addBody(wallBody)
   }
 
-  createWall(-wallCenterX) // 左墙
-  createWall(wallCenterX) // 右墙
+  createWall(-wallCenterX)
+  createWall(wallCenterX)
 
-  // 创建视觉上的边沟
-  const gutterGeometry = new THREE.BoxGeometry(PHYSICS_CONFIG.GUTTER_WIDTH, 0.1, wallLength)
-  const gutterMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a1a })
-  const gutterY = -0.05
+  const gutterMaterial = new THREE.MeshStandardMaterial({
+    color: 0x111827,
+    metalness: 0.35,
+    roughness: 0.45,
+  })
+  const gutterY = -0.08
   const gutterCenterX = PHYSICS_CONFIG.LANE_WIDTH / 2 + PHYSICS_CONFIG.GUTTER_WIDTH / 2
+  const gutterGeometry = new THREE.BoxGeometry(PHYSICS_CONFIG.GUTTER_WIDTH, 0.16, wallLength)
 
   const rightGutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
   rightGutter.position.set(gutterCenterX, gutterY, wallPositionZ)
@@ -224,64 +340,58 @@ export function createWalls(scene: THREE.Scene, world: CANNON.World) {
   const leftGutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
   leftGutter.position.set(-gutterCenterX, gutterY, wallPositionZ)
   scene.add(leftGutter)
+
+  const backWall = new THREE.Mesh(
+    new THREE.BoxGeometry(18, 8, 0.6),
+    new THREE.MeshStandardMaterial({ color: 0x0b0b12, roughness: 0.9 })
+  )
+  backWall.position.set(0, 3, -28)
+  scene.add(backWall)
+
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(8, 1.2),
+    new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 1.6,
+    })
+  )
+  sign.position.set(0, 5.2, -27.6)
+  scene.add(sign)
 }
 
-// 添加照明
 export function createLighting(scene: THREE.Scene) {
-  // 使用半球光代替环境光
-  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x2c2c54, 0.6)
-  scene.add(hemisphereLight)
+  scene.add(new THREE.HemisphereLight(0xffe4c8, 0x0b1020, 0.55))
 
-  // 主要方向光
-  const mainLight = new THREE.DirectionalLight(0xffffff, 0.7)
-  mainLight.position.set(0, 15, -5)
-  mainLight.target.position.set(0, 0, -15)
+  const mainLight = new THREE.DirectionalLight(0xfff4e5, 0.85)
+  mainLight.position.set(4, 16, 8)
+  mainLight.target.position.set(0, 0, -14)
   mainLight.castShadow = true
-  mainLight.shadow.mapSize.width = 4096
-  mainLight.shadow.mapSize.height = 4096
+  mainLight.shadow.mapSize.set(2048, 2048)
   mainLight.shadow.camera.near = 0.1
-  mainLight.shadow.camera.far = 50
-  mainLight.shadow.camera.left = -20
-  mainLight.shadow.camera.right = 20
-  mainLight.shadow.camera.top = 20
-  mainLight.shadow.camera.bottom = -20
+  mainLight.shadow.camera.far = 60
+  mainLight.shadow.camera.left = -16
+  mainLight.shadow.camera.right = 16
+  mainLight.shadow.camera.top = 16
+  mainLight.shadow.camera.bottom = -16
   scene.add(mainLight)
+  scene.add(mainLight.target)
 
-  // 球道聚光灯
-  const laneSpotLight = new THREE.SpotLight(0xffffff, 1.2)
-  laneSpotLight.position.set(0, 12, 0)
-  laneSpotLight.target.position.set(0, 0, -10)
-  laneSpotLight.angle = Math.PI / 6
-  laneSpotLight.penumbra = 0.3
-  laneSpotLight.decay = 2
-  laneSpotLight.distance = 30
-  laneSpotLight.castShadow = true
-  scene.add(laneSpotLight)
+  const laneSpot = new THREE.SpotLight(0xfff7ed, 1.4, 36, Math.PI / 7, 0.45, 1.4)
+  laneSpot.position.set(0, 11, 4)
+  laneSpot.target.position.set(0, 0, -8)
+  laneSpot.castShadow = true
+  scene.add(laneSpot)
+  scene.add(laneSpot.target)
 
-  // 球瓶区聚光灯
-  const pinSpotLight = new THREE.SpotLight(0xffffff, 1.0)
-  pinSpotLight.position.set(0, 10, -15)
-  pinSpotLight.target.position.set(0, 0, -19)
-  pinSpotLight.angle = Math.PI / 8
-  pinSpotLight.penumbra = 0.2
-  pinSpotLight.decay = 2
-  pinSpotLight.distance = 20
-  pinSpotLight.castShadow = true
-  scene.add(pinSpotLight)
+  const pinSpot = new THREE.SpotLight(0xffffff, 2.1, 24, Math.PI / 9, 0.25, 1.2)
+  pinSpot.position.set(0, 9, -12)
+  pinSpot.target.position.set(0, 0.8, -20)
+  pinSpot.castShadow = true
+  scene.add(pinSpot)
+  scene.add(pinSpot.target)
 
-  // 侧面补光灯
-  const sideLight1 = new THREE.DirectionalLight(0xffffff, 0.6)
-  sideLight1.position.set(-10, 8, -10)
-  sideLight1.target.position.set(0, 0, -15)
-  scene.add(sideLight1)
-
-  const sideLight2 = new THREE.DirectionalLight(0xffffff, 0.6)
-  sideLight2.position.set(10, 8, -10)
-  sideLight2.target.position.set(0, 0, -15)
-  scene.add(sideLight2)
-
-  // 背景点光源
-  const backLight = new THREE.PointLight(0x444444, 0.5, 30)
-  backLight.position.set(0, 5, -25)
-  scene.add(backLight)
+  const fill = new THREE.PointLight(0x38bdf8, 0.35, 28)
+  fill.position.set(0, 4, -6)
+  scene.add(fill)
 }

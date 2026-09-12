@@ -125,6 +125,49 @@ export function useBowlingControls() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return
+      if (event.code === 'Space') {
+        event.preventDefault()
+        startCharging()
+        return
+      }
+      if (gyroSupported && gyroPermission) return
+      if (event.key === 'a' || event.key === 'A' || event.key === 'ArrowLeft') {
+        const next = Math.max(-30, currentAimAngle - 3)
+        setCurrentAimAngle(next)
+        setAimAngle(next)
+      }
+      if (event.key === 'd' || event.key === 'D' || event.key === 'ArrowRight') {
+        const next = Math.min(30, currentAimAngle + 3)
+        setCurrentAimAngle(next)
+        setAimAngle(next)
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault()
+        endCharging()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [
+    startCharging,
+    endCharging,
+    gyroSupported,
+    gyroPermission,
+    currentAimAngle,
+    setAimAngle,
+  ])
+
   return {
     isCharging,
     chargePower,

@@ -34,11 +34,14 @@ Current prompt (2026-09-12): Improve Shooting Range — FPS HUD, richer stats, m
 
 Current prompt (2026-09-13): 射击音效不好，重新设计
 
+Current prompt (2026-09-12): 修复 `/bowling` 穿模（球/瓶/边沟/助跑区物理碰撞体与网格对齐）
+
 ## Current work
 
 - Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
 - In-game HUD shows live FPS (250ms throttled), hits/misses, accuracy, shots/min, streak, and reaction time; sessions persist to `localStorage` and surface in the end-of-run summary.
 - Hit path keeps pooled ImpactFX, cached raycast object lists, ref-stable callbacks, and in-place respawns to avoid render-loop allocations and light churn.
+- Bowling clipping fix: added shared `layout.ts` + `colliders.ts`, approach/gutter/back-wall physics, ball/pin rest heights on the lane surface, taller side walls, and lower default restitution.
 - Shooting Range gun and hit sounds are now synthesized with Web Audio (crack/thump vs metallic ping) instead of pitching the same `shot.mp3`.
 - Shooting Range hits no longer mount lights or particle geometries: one pooled ImpactFX, persistent muzzle meshes, and in-place target respawns keep the Three.js light count stable.
 - Snake body is now a round-join SVG path so corners follow the turn, and the head faces away from the next segment instead of toward the body.
@@ -118,6 +121,12 @@ Current prompt (2026-09-13): 射击音效不好，重新设计
 - 「打印迷宫」 calls `window.print()` and uses a print-only SVG: black walls, start circle + 起, end square + 终. No solution path is printed.
 - Browser checks: slider Home/End change 5×5 and 40×40, restart regenerates, print preview fills a white A4-like page, and the print button invokes `window.print()`.
 - Maze unit tests: 23 passing.
+
+## Bowling clipping fix (2026-09-12)
+
+- Root causes: pins/ball spawned above the lane collider, gutters and approach were visual-only, and lane mesh/physics Y values diverged.
+- `layout.ts` centralizes play-surface Y, ball/pin rest poses, and gutter depth; `scene.ts` now adds approach, gutter-floor, and back-wall Cannon bodies aligned to the meshes.
+- Bowling tests: 18 passing (includes new `layout.test.ts`).
 
 ## Bowling alley scenery (2026-09-13)
 

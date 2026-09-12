@@ -1,7 +1,33 @@
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-import { PHYSICS_CONFIG, PIN_POSITIONS } from '../config/constants'
+import { PHYSICS_CONFIG } from '../config/constants'
 import type { PhysicsMaterials, SceneElements, BallObject, PinObject } from '../types/scene'
+import { addStaticBox } from './colliders'
+import {
+  APPROACH_CENTER_Z,
+  APPROACH_LENGTH,
+  BACK_WALL_CENTER_Z,
+  BACK_WALL_THICKNESS,
+  GUTTER_DEPTH,
+  LANE_CENTER_Z,
+  LANE_LENGTH,
+  LANE_MESH_SURFACE_Y,
+  LANE_PHYSICS_HALF_HEIGHT,
+  LANE_SURFACE_Y,
+  PIN_DECK_CENTER_Z,
+  PIN_DECK_THICKNESS,
+  WALL_CENTER_Z,
+  WALL_LENGTH,
+  ballRestPosition,
+  gutterCenterX,
+  gutterFloorBodyY,
+  gutterFloorHalfHeight,
+  gutterMeshCenterY,
+  lanePhysicsBodyY,
+  pinDeckSurfaceY,
+  pinRestPosition,
+  wallCenterX,
+} from './layout'
 
 function createWoodTexture() {
   const canvas = document.createElement('canvas')
@@ -101,9 +127,10 @@ function createPinTexture() {
 }
 
 export function createAimGuide(scene: THREE.Scene): THREE.Line {
+  const guideY = LANE_SURFACE_Y + 0.08
   const geometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0.08, 10),
-    new THREE.Vector3(0, 0.08, -16),
+    new THREE.Vector3(0, guideY, 10),
+    new THREE.Vector3(0, guideY, -16),
   ])
   const material = new THREE.LineDashedMaterial({
     color: 0xfbbf24,
@@ -126,33 +153,45 @@ export function createSceneElements(
   const { groundMaterial } = materials
   const woodTexture = createWoodTexture()
 
-  const laneLength = 32
   const laneWidth = PHYSICS_CONFIG.LANE_WIDTH
+  const laneHalfExtents = new CANNON.Vec3(
+    laneWidth / 2,
+    LANE_PHYSICS_HALF_HEIGHT,
+    LANE_LENGTH / 2
+  )
   const laneMaterial = new THREE.MeshStandardMaterial({
     map: woodTexture,
     color: woodTexture ? 0xffffff : 0xc28a4b,
     roughness: 0.42,
     metalness: 0.04,
   })
-  const laneMesh = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), laneMaterial)
+  const laneMesh = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, LANE_LENGTH), laneMaterial)
   laneMesh.name = 'bowling-lane'
   laneMesh.rotation.x = -Math.PI / 2
-  laneMesh.position.set(0, 0.02, -6)
+  laneMesh.position.set(0, LANE_MESH_SURFACE_Y, LANE_CENTER_Z)
   laneMesh.receiveShadow = true
   scene.add(laneMesh)
 
-  const laneShape = new CANNON.Box(new CANNON.Vec3(laneWidth / 2, 0.1, laneLength / 2))
-  const laneBody = new CANNON.Body({ mass: 0, material: groundMaterial })
-  laneBody.addShape(laneShape)
-  laneBody.position.set(0, -0.1, -6)
-  world.addBody(laneBody)
+  const laneBody = addStaticBox(
+    world,
+    laneHalfExtents,
+    new CANNON.Vec3(0, lanePhysicsBodyY(), LANE_CENTER_Z),
+    groundMaterial
+  )
 
-  const approach = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, 8), laneMaterial)
+  const approach = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, APPROACH_LENGTH), laneMaterial)
   approach.name = 'bowling-approach'
   approach.rotation.x = -Math.PI / 2
-  approach.position.set(0, 0.02, 13.8)
+  approach.position.set(0, LANE_MESH_SURFACE_Y, APPROACH_CENTER_Z)
   approach.receiveShadow = true
   scene.add(approach)
+
+  addStaticBox(
+    world,
+    new CANNON.Vec3(laneWidth / 2, LANE_PHYSICS_HALF_HEIGHT, APPROACH_LENGTH / 2),
+    new CANNON.Vec3(0, lanePhysicsBodyY(), APPROACH_CENTER_Z),
+    groundMaterial
+  )
 
   const neighborMaterial = new THREE.MeshStandardMaterial({
     map: woodTexture,
@@ -161,19 +200,19 @@ export function createSceneElements(
     metalness: 0.03,
   })
   ;[-2, -1, 1, 2].forEach((side, index) => {
-    const neighbor = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, laneLength), neighborMaterial)
+    const neighbor = new THREE.Mesh(new THREE.PlaneGeometry(laneWidth, LANE_LENGTH), neighborMaterial)
     neighbor.name = `bowling-neighbor-lane-${index}`
     neighbor.rotation.x = -Math.PI / 2
-    neighbor.position.set(side * (laneWidth + 1.7), -0.03, -6)
+    neighbor.position.set(side * (laneWidth + 1.7), LANE_MESH_SURFACE_Y - 0.05, LANE_CENTER_Z)
     neighbor.receiveShadow = true
     scene.add(neighbor)
   })
 
   const pinDeck = new THREE.Mesh(
-    new THREE.BoxGeometry(laneWidth + 0.4, 0.08, 5),
+    new THREE.BoxGeometry(laneWidth + 0.4, PIN_DECK_THICKNESS, 5),
     new THREE.MeshStandardMaterial({ color: 0xa56b34, roughness: 0.5 })
   )
-  pinDeck.position.set(0, 0.03, -19.6)
+  pinDeck.position.set(0, pinDeckSurfaceY(), PIN_DECK_CENTER_Z)
   pinDeck.receiveShadow = true
   scene.add(pinDeck)
 
@@ -195,7 +234,8 @@ export function createBall(
       metalness: 0.22,
     })
   )
-  ballMesh.position.set(0, 1, 10)
+  const [ballX, ballY, ballZ] = ballRestPosition()
+  ballMesh.position.set(ballX, ballY, ballZ)
   ballMesh.castShadow = true
   ballMesh.receiveShadow = true
   scene.add(ballMesh)
@@ -208,7 +248,7 @@ export function createBall(
     type: CANNON.Body.DYNAMIC,
   })
   ballBody.addShape(new CANNON.Sphere(PHYSICS_CONFIG.BALL_RADIUS))
-  ballBody.position.set(0, 1, 10)
+  ballBody.position.set(ballX, ballY, ballZ)
   world.addBody(ballBody)
 
   return { mesh: ballMesh, body: ballBody }
@@ -239,9 +279,10 @@ export function createPins(
     metalness: 0.05,
   })
 
-  return PIN_POSITIONS.map(pos => {
+  return Array.from({ length: 10 }, (_, index) => {
+    const [x, y, z] = pinRestPosition(index)
     const pinMesh = new THREE.Mesh(pinGeometry, pinMaterial3D)
-    pinMesh.position.set(pos[0], pos[1], pos[2])
+    pinMesh.position.set(x, y, z)
     pinMesh.castShadow = true
     pinMesh.receiveShadow = true
     scene.add(pinMesh)
@@ -260,7 +301,7 @@ export function createPins(
         8
       )
     )
-    pinBody.position.set(pos[0], pos[1], pos[2])
+    pinBody.position.set(x, y, z)
     world.addBody(pinBody)
 
     return { mesh: pinMesh, body: pinBody }
@@ -268,67 +309,81 @@ export function createPins(
 }
 
 export function createWalls(scene: THREE.Scene, world: CANNON.World) {
-  const wallLength = 37
-  const wallPositionZ = -3.5
-  const wallCenterX =
-    PHYSICS_CONFIG.LANE_WIDTH / 2 + PHYSICS_CONFIG.GUTTER_WIDTH + PHYSICS_CONFIG.WALL_THICKNESS / 2
+  const sideWallX = wallCenterX()
+  const gutterX = gutterCenterX()
+  const wallHalfHeight = PHYSICS_CONFIG.WALL_HEIGHT / 2
+  const wallHalfExtents = new CANNON.Vec3(
+    PHYSICS_CONFIG.WALL_THICKNESS / 2,
+    wallHalfHeight,
+    WALL_LENGTH / 2
+  )
 
   const createWall = (x: number) => {
     const wallMesh = new THREE.Mesh(
       new THREE.BoxGeometry(
         PHYSICS_CONFIG.WALL_THICKNESS,
         PHYSICS_CONFIG.WALL_HEIGHT,
-        wallLength
+        WALL_LENGTH
       ),
       new THREE.MeshStandardMaterial({ color: 0x2a1c16, roughness: 0.8 })
     )
-    wallMesh.position.set(x, PHYSICS_CONFIG.WALL_HEIGHT / 2, wallPositionZ)
+    wallMesh.position.set(x, wallHalfHeight, WALL_CENTER_Z)
     scene.add(wallMesh)
 
     const neon = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 0.08, wallLength),
+      new THREE.BoxGeometry(0.04, 0.08, WALL_LENGTH),
       new THREE.MeshStandardMaterial({
         color: 0x67e8f9,
         emissive: 0x22d3ee,
         emissiveIntensity: 2.4,
       })
     )
-    neon.position.set(x > 0 ? x - 0.22 : x + 0.22, 0.18, wallPositionZ)
+    neon.position.set(x > 0 ? x - 0.22 : x + 0.22, LANE_SURFACE_Y + 0.18, WALL_CENTER_Z)
     scene.add(neon)
 
-    const wallBody = new CANNON.Body({ mass: 0 })
-    wallBody.addShape(
-      new CANNON.Box(
-        new CANNON.Vec3(
-          PHYSICS_CONFIG.WALL_THICKNESS / 2,
-          PHYSICS_CONFIG.WALL_HEIGHT / 2,
-          wallLength / 2
-        )
-      )
-    )
-    wallBody.position.set(x, PHYSICS_CONFIG.WALL_HEIGHT / 2, wallPositionZ)
-    world.addBody(wallBody)
+    addStaticBox(world, wallHalfExtents, new CANNON.Vec3(x, wallHalfHeight, WALL_CENTER_Z))
   }
 
-  createWall(-wallCenterX)
-  createWall(wallCenterX)
+  createWall(-sideWallX)
+  createWall(sideWallX)
 
   const gutterMaterial = new THREE.MeshStandardMaterial({
     color: 0x111827,
     metalness: 0.35,
     roughness: 0.45,
   })
-  const gutterY = -0.08
-  const gutterCenterX = PHYSICS_CONFIG.LANE_WIDTH / 2 + PHYSICS_CONFIG.GUTTER_WIDTH / 2
-  const gutterGeometry = new THREE.BoxGeometry(PHYSICS_CONFIG.GUTTER_WIDTH, 0.16, wallLength)
+  const gutterGeometry = new THREE.BoxGeometry(
+    PHYSICS_CONFIG.GUTTER_WIDTH,
+    GUTTER_DEPTH,
+    WALL_LENGTH
+  )
+  const gutterHalfExtents = new CANNON.Vec3(
+    PHYSICS_CONFIG.GUTTER_WIDTH / 2,
+    gutterFloorHalfHeight(),
+    WALL_LENGTH / 2
+  )
+  const gutterBodyY = gutterFloorBodyY()
 
-  const rightGutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
-  rightGutter.position.set(gutterCenterX, gutterY, wallPositionZ)
-  scene.add(rightGutter)
+  const createGutter = (x: number) => {
+    const gutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
+    gutter.position.set(x, gutterMeshCenterY(), WALL_CENTER_Z)
+    scene.add(gutter)
 
-  const leftGutter = new THREE.Mesh(gutterGeometry, gutterMaterial)
-  leftGutter.position.set(-gutterCenterX, gutterY, wallPositionZ)
-  scene.add(leftGutter)
+    addStaticBox(world, gutterHalfExtents, new CANNON.Vec3(x, gutterBodyY, WALL_CENTER_Z))
+  }
+
+  createGutter(gutterX)
+  createGutter(-gutterX)
+
+  addStaticBox(
+    world,
+    new CANNON.Vec3(
+      PHYSICS_CONFIG.LANE_WIDTH / 2 + PHYSICS_CONFIG.GUTTER_WIDTH + 0.5,
+      wallHalfHeight,
+      BACK_WALL_THICKNESS / 2
+    ),
+    new CANNON.Vec3(0, wallHalfHeight, BACK_WALL_CENTER_Z)
+  )
 }
 
 export function createLighting(scene: THREE.Scene) {

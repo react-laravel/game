@@ -9,7 +9,7 @@ export const PHYSICS_CONFIG = {
   PIN_RADIUS_BOTTOM: 0.2, // 球瓶底部半径
   LANE_WIDTH: 5.0, // 增加球道宽度，给玩家更多操作空间
   LANE_LENGTH: 19.2, // 标准球道长度19.152米
-  WALL_HEIGHT: 1.0, // 降低墙壁高度
+  WALL_HEIGHT: 1.35, // 略高于球直径，防止球越过边墙
   WALL_THICKNESS: 0.5, // 墙壁厚度
   GUTTER_WIDTH: 0.25, // 边沟宽度
   THROW_TIMEOUT: 15000, // 增加到15秒，给球更多时间滚到球瓶

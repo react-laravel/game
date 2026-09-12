@@ -159,6 +159,31 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range visual polish cycle 16 (2026-09-13)
+
+Follow-up after cycle 15 screenshot review: outdoor sky still washed out, indoor backstop dim, warehouse aisle muddy, HUD FPS read 0–6 in headless captures.
+
+### Outdoor
+- Tuned drei `Sky` (lower rayleigh, higher turbidity) and softened sun glow halos.
+- Lower tone-mapping exposure (1.06); slightly cooler background/fog in `mapConfigs`.
+- Brighter gravel/dirt lane with dark edge borders, center chalk line, and stronger lane contrast vs grass.
+
+### Indoor
+- Brighter ambient + ceiling/backstop point lights; backstop wash plane at trap end.
+- Tone-mapping exposure 1.52; fill light intensity bump in `mapConfigs`.
+
+### Warehouse
+- Brighter ambient, ceiling wash plane, stronger fluorescent emissive/point lights.
+- Wider center concrete lane stripe; lighter fog/background in `mapConfigs`.
+
+### HUD FPS capture
+- `useFpsMeter` honors `window.__SHOOTING_QA_FPS__` for screenshot docs; capture script sets 60 and waits for HUD before shot.
+- Live FPS display floors at 1 (no misleading `0` between samples).
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests green.
+
 ## Shooting Range visual polish cycle 15 (2026-09-13)
 
 Follow-up after merging PR stack #9–#14 into `main`; addresses coordinator review that outdoor still read as a large flat green void.

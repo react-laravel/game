@@ -575,18 +575,18 @@ function OutdoorSky() {
       <Sky
         distance={450000}
         sunPosition={[85, 28, -45]}
-        mieCoefficient={0.004}
-        mieDirectionalG={0.82}
-        rayleigh={1.8}
-        turbidity={4.5}
+        mieCoefficient={0.003}
+        mieDirectionalG={0.78}
+        rayleigh={1.35}
+        turbidity={5.5}
       />
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[5.5, 12, 12]} />
-        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.18} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.1} toneMapped={false} depthWrite={false} />
       </mesh>
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[2.2, 10, 10]} />
-        <meshBasicMaterial color="#fff4e8" transparent opacity={0.55} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color="#fff4e8" transparent opacity={0.35} toneMapped={false} depthWrite={false} />
       </mesh>
       {cloudBanks.map((bank, i) => (
         <group key={i} position={bank.pos} rotation={[0.04, i * 0.7, 0.02]}>
@@ -682,7 +682,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <CeilingLightStrip key={z} z={z} accent={config.accent} intensity={1.95} />
       ))}
 
-      <ambientLight intensity={0.52} color="#e8f4ff" />
+      <ambientLight intensity={0.58} color="#eef6ff" />
 
       <mesh position={[-18, 6, -24]}>
         <boxGeometry args={[0.55, 12.2, 56]} />
@@ -817,12 +817,18 @@ function IndoorRange({ config }: { config: MapConfig }) {
       ))}
 
       {[-15, -30, -44].map(z => (
-        <pointLight key={z} position={[0, 6.5, z]} intensity={0.55} color="#e8f8ff" distance={16} decay={2} />
+        <pointLight key={z} position={[0, 6.5, z]} intensity={0.68} color="#e8f8ff" distance={16} decay={2} />
       ))}
 
       {[-12, -24, -36].map(z => (
-        <pointLight key={`ceiling-${z}`} position={[0, INDOOR_CEILING_Y - 0.52, z]} intensity={0.65} color="#eef8ff" distance={22} decay={2} />
+        <pointLight key={`ceiling-${z}`} position={[0, INDOOR_CEILING_Y - 0.52, z]} intensity={0.78} color="#eef8ff" distance={22} decay={2} />
       ))}
+
+      <pointLight position={[0, 5.5, -46]} intensity={0.85} color="#dff4ff" distance={18} decay={2} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 5.85, -46]}>
+        <planeGeometry args={[32, 4]} />
+        <meshBasicMaterial color="#d8f4ff" transparent opacity={0.22} toneMapped={false} depthWrite={false} />
+      </mesh>
     </>
   )
 }
@@ -947,20 +953,26 @@ function OutdoorRange() {
       {/* Main gravel shooting lane — firing line to berm */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, -24]} receiveShadow>
         <planeGeometry args={[12, 50]} />
-        <meshStandardMaterial map={gravelTexture} color="#8a7a62" roughness={0.9} />
+        <meshStandardMaterial map={gravelTexture} color="#9a8a72" roughness={0.88} />
       </mesh>
 
       {/* Inner packed-dirt center strip */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.967, -24]}>
         <planeGeometry args={[5.5, 48]} />
-        <meshStandardMaterial map={earthTexture} color="#6a5840" roughness={0.92} />
+        <meshStandardMaterial map={earthTexture} color="#756048" roughness={0.9} />
+      </mesh>
+
+      {/* Center chalk line for lane alignment */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.966, -24]}>
+        <planeGeometry args={[0.14, 48]} />
+        <meshStandardMaterial color="#e8e4d8" emissive="#d8d4c8" emissiveIntensity={0.08} roughness={0.82} />
       </mesh>
 
       {/* Lane edge borders */}
       {[-6.2, 6.2].map(x => (
         <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.966, -24]}>
-          <planeGeometry args={[0.35, 50]} />
-          <meshStandardMaterial color="#5a5048" roughness={0.88} />
+          <planeGeometry args={[0.45, 50]} />
+          <meshStandardMaterial color="#4a4038" roughness={0.9} />
         </mesh>
       ))}
 
@@ -1092,7 +1104,12 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         />
       </mesh>
 
-      <ambientLight intensity={0.35} color="#ffe8c8" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.95, -24]}>
+        <planeGeometry args={[14, 58]} />
+        <meshBasicMaterial color="#fff0d8" transparent opacity={0.08} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+
+      <ambientLight intensity={0.42} color="#ffe8c8" />
 
       {[-16, -4, 8, 20].map(x => (
         <mesh key={x} position={[x, 11.2, -24]} rotation={[0, 0, Math.PI / 2]}>
@@ -1115,11 +1132,11 @@ function WarehouseRange({ config }: { config: MapConfig }) {
             <meshStandardMaterial
               color="#fff0d0"
               emissive="#ffb347"
-              emissiveIntensity={0.85}
+              emissiveIntensity={1.05}
               toneMapped={false}
             />
           </mesh>
-          <pointLight intensity={1.75} distance={22} color={config.accent} decay={2} position={[0, -0.15, 0]} />
+          <pointLight intensity={2.05} distance={24} color={config.accent} decay={2} position={[0, -0.15, 0]} />
         </group>
       ))}
 
@@ -1226,8 +1243,8 @@ function WarehouseRange({ config }: { config: MapConfig }) {
 
       {/* Center shooting lane stripe */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.963, -21]}>
-        <planeGeometry args={[1.8, 44]} />
-        <meshStandardMaterial color="#8a8078" metalness={0.22} roughness={0.68} />
+        <planeGeometry args={[2.4, 44]} />
+        <meshStandardMaterial color="#9a9088" metalness={0.24} roughness={0.62} />
       </mesh>
       {[-6, -18, -30, -42].map(z => (
         <mesh key={`wh-marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.962, z]}>

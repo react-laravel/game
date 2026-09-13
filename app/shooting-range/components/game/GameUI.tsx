@@ -6,6 +6,7 @@ import {
   gradeLabel,
 } from '../../utils/sessionInsights'
 import type { SessionStats, TrainingModeId } from '../../types'
+import { hitZoneLabel } from '../../utils/hitZoneScoring'
 import { trainingModes } from '../../utils/trainingModes'
 
 interface GameUIProps {
@@ -39,7 +40,8 @@ export function GameUI({
   onViewHistory,
   onChangeDrill,
 }: GameUIProps) {
-  const { score, hits, misses, shots, accuracy, shotsPerMinute, bestStreak, avgReactionMs } = stats
+  const { score, hits, misses, shots, accuracy, shotsPerMinute, bestStreak, avgReactionMs, zoneHits } = stats
+  const hasZoneHits = zoneHits.head + zoneHits.body + zoneHits.limb > 0
   const timePercent = Math.max(0, Math.min(100, (timeLeft / durationSeconds) * 100))
   const mode = trainingModes[modeId]
   const showReaction = modeId === 'flick' || modeId === 'precision'
@@ -223,6 +225,19 @@ export function GameUI({
                 <PerformanceBar key={item.label} {...item} />
               ))}
             </div>
+
+            {hasZoneHits && (
+              <div className="mt-4 rounded-xl border border-white/8 bg-white/4 px-4 py-3">
+                <div className="text-[10px] font-semibold tracking-[0.14em] text-white/45 uppercase">
+                  命中部位
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                  <SummaryItem label={hitZoneLabel('head')} value={`${zoneHits.head}`} />
+                  <SummaryItem label={hitZoneLabel('body')} value={`${zoneHits.body}`} />
+                  <SummaryItem label={hitZoneLabel('limb')} value={`${zoneHits.limb}`} />
+                </div>
+              </div>
+            )}
 
             <div className="mt-5 grid grid-cols-2 gap-2 text-left text-sm sm:grid-cols-3">
               <SummaryItem label="命中" value={`${hits}`} />

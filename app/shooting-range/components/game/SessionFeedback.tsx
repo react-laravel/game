@@ -23,14 +23,21 @@ export function SessionFeedback({
           }`}
           aria-hidden="true"
         >
-          <span
-            className={`font-mono font-black tracking-tight text-amber-200 tabular-nums drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)] ${
-              reducedMotion ? 'text-xl' : 'text-2xl'
-            }`}
-            style={{ textShadow: reducedMotion ? 'none' : '0 0 12px rgba(251, 191, 36, 0.45)' }}
-          >
-            +{hitPulse.points}
-          </span>
+          <div className="flex flex-col items-center">
+            <span
+              className={`font-mono font-black tracking-tight text-amber-200 tabular-nums drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)] ${
+                reducedMotion ? 'text-xl' : 'text-2xl'
+              }`}
+              style={{ textShadow: reducedMotion ? 'none' : '0 0 12px rgba(251, 191, 36, 0.45)' }}
+            >
+              +{hitPulse.points}
+            </span>
+            {hitPulse.zoneLabel && (
+              <span className="mt-0.5 text-[11px] font-semibold tracking-wide text-cyan-100/85">
+                {hitPulse.zoneLabel}
+              </span>
+            )}
+          </div>
         </div>
       )}
 

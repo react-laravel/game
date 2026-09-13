@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 30 (2026-09-13, window ending ~10:30 Asia/Shanghai): **configurable humanoid targets** — setup custom + pause「其他」tab **圆形靶 / 人形靶** (`targetShape` persisted in `lastConfigStorage`); original low-poly training-bot silhouette with **头 2× / 躯干 1× / 四肢 0.5×** zone scoring, HUD float「命中部位」label, results **命中部位** breakdown; mode-tied bot motion (strafe / advance / retreat / jump / crouch / hover) via `humanoidMotion.ts`. Circle drills unchanged. ESC compact pause + tabbed settings (#26–#28) preserved. Focused 152/152; full 711/711; eslint 0 errors; `humanoid-training-hud.png` + screenshots refreshed.
 - Shooting Range cycle 29 (2026-09-13, window ending ~10:30 Asia/Shanghai): **training feel / maps** — mode-specific target accents (flick orange / track green / strafe magenta / grid cyan), spawn flash rings, corner brackets for single-target modes, orbit path hint for tracking; indoor meshBasic depth (ceiling beams, lane guides, distance plaques, backstop layers). Pause/settings (#26–#28) unchanged. Focused 141/141; full 700/700; eslint 0 errors; map/drill HUD screenshots refreshed.
 - Shooting Range cycle 28 (2026-09-13, window ending ~10:30 Asia/Shanghai): pause settings **灵敏度 / 音量 / 其他** tab content parity with crosshair (live previews, preset hints, framed cards); lighter home **准星设置** sheet (sticky footer, bottom-sheet mobile); results hit/miss legend dots; `pause-settings-sensitivity.png` added. Focused 138/138; full 697/697; eslint 0 errors.
 - Shooting Range cycle 27 (2026-09-13): pause settings tabs stronger active contrast (amber ring 4-col grid); ESC → 设置 → back arrow or Escape returns to compact pause dialog with resume focus; Enter/Space resume only from pause menu; history recent table grade badges; `pause-settings-tabs.png` screenshot. Focused 137/137; full 696/696; eslint 0 errors.
@@ -206,6 +207,26 @@ Follow-up after #27 coordinator review (`pause-settings-tabs.png`); Aimlabs-insp
 ### Screenshots & QA
 - `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`; added `pause-settings-sensitivity.png`.
 - Focused shooting-range tests: **138/138**; full suite **697/697**; `npm run lint` **0 errors**.
+
+## Shooting Range overnight polish cycle 30 (2026-09-13)
+
+Pivot from warehouse depth to **configurable humanoid training bots** (Aimlabs/Overwatch-training-bot *feel*, original low-poly silhouettes only).
+
+### Target shape setting
+- `targetShape.ts` + `TargetShapeControl`: **圆形靶** vs **人形靶** in setup custom panel and pause settings「其他」tab.
+- Persisted via `lastConfigStorage`; canvas remounts on shape change mid-session.
+
+### Humanoid hit zones
+- `hitZoneScoring.ts`: head **2×**, body **1×**, limb **0.5×** base mode score.
+- Raycast resolves `userData.hitZone` per mesh; `SessionFeedback` shows zone label; results card adds **命中部位** grid.
+
+### Humanoid bot motion
+- `humanoidMotion.ts`: per-mode motion profiles cycling strafe, advance, retreat, jump, crouch, hover — applied as offsets on top of existing linear/orbit/static movement.
+- `HumanoidVisual.tsx`: meshBasic low-poly bot (head/torso/limbs) with crouch scale in `useFrame`.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`; added `humanoid-training-hud.png`.
+- Focused shooting-range tests: **152/152**; full suite **711/711**; `npm run lint` **0 errors**.
 
 ## Shooting Range overnight polish cycle 29 (2026-09-13)
 

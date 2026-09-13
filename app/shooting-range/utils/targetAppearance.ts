@@ -11,6 +11,10 @@ export interface TargetAppearance {
   showSpawnBrackets: boolean
   /** Tracking mode shows orbit path hint */
   showOrbitHint: boolean
+  /** Static aim mode shows thin center cross guides */
+  showAimCross: boolean
+  /** Timed speed mode shows outer urgency ring */
+  showSpeedRing: boolean
 }
 
 const appearances: Record<TrainingModeId, TargetAppearance> = {
@@ -22,6 +26,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     spawnFlashColor: '#ffc080',
     showSpawnBrackets: true,
     showOrbitHint: false,
+    showAimCross: false,
+    showSpeedRing: false,
   },
   tracking: {
     ringColor: '#4de8a0',
@@ -31,6 +37,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     spawnFlashColor: '#80f0c0',
     showSpawnBrackets: false,
     showOrbitHint: true,
+    showAimCross: false,
+    showSpeedRing: false,
   },
   moving: {
     ringColor: '#d96cff',
@@ -40,6 +48,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     spawnFlashColor: '#e8a0ff',
     showSpawnBrackets: false,
     showOrbitHint: false,
+    showAimCross: false,
+    showSpeedRing: false,
   },
   precision: {
     ringColor: '#4dc8ff',
@@ -49,24 +59,30 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     spawnFlashColor: '#90e8ff',
     showSpawnBrackets: true,
     showOrbitHint: false,
+    showAimCross: false,
+    showSpeedRing: false,
   },
   timed: {
     ringColor: '#ff6b6b',
-    spawnPop: 1.1,
-    pulseAmplitude: 0.03,
-    pulseSpeed: 6.5,
-    spawnFlashColor: '#ffa0a0',
+    spawnPop: 1.15,
+    pulseAmplitude: 0.05,
+    pulseSpeed: 8.5,
+    spawnFlashColor: '#ffb8b8',
     showSpawnBrackets: false,
     showOrbitHint: false,
+    showAimCross: false,
+    showSpeedRing: true,
   },
   static: {
     ringColor: '#2ab0ff',
-    spawnPop: 1.25,
+    spawnPop: 1.2,
     pulseAmplitude: 0,
     pulseSpeed: 0,
-    spawnFlashColor: '#80d0ff',
+    spawnFlashColor: '#90d8ff',
     showSpawnBrackets: false,
     showOrbitHint: false,
+    showAimCross: true,
+    showSpeedRing: false,
   },
 }
 

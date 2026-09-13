@@ -18,6 +18,7 @@ const baseStats = {
   shotsPerMinute: 42,
   bestStreak: 3,
   avgReactionMs: null,
+  zoneHits: { head: 0, body: 0, limb: 0 },
 }
 
 describe('ShootingHistory', () => {

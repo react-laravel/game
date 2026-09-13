@@ -11,6 +11,7 @@ const baseStats = {
   shotsPerMinute: 0,
   bestStreak: 0,
   avgReactionMs: null,
+  zoneHits: { head: 0, body: 0, limb: 0 },
 }
 
 const baseProps = {

@@ -19,6 +19,7 @@ const baseStats: SessionStats = {
   shotsPerMinute: 48,
   bestStreak: 9,
   avgReactionMs: 310,
+  zoneHits: { head: 0, body: 0, limb: 0 },
 }
 
 function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {

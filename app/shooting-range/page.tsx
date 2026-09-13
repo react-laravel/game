@@ -12,7 +12,8 @@ import { setShootingSfxSettings } from './utils/audioUtils'
 import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
 import { DEFAULT_LOOK_SENSITIVITY } from './utils/lookSensitivity'
 import { DEFAULT_SFX_VOLUME } from './utils/sfxVolume'
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
+import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from './types'
+import { DEFAULT_TARGET_SHAPE, normalizeTargetShape } from './utils/targetShape'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
   ssr: false,
@@ -41,6 +42,9 @@ export default function ShootingRangePage() {
     () => loadLastConfig()?.sfxVolume ?? DEFAULT_SFX_VOLUME
   )
   const [sfxMuted, setSfxMuted] = useState(() => loadLastConfig()?.sfxMuted ?? false)
+  const [targetShape, setTargetShape] = useState<TargetShape>(
+    () => normalizeTargetShape(loadLastConfig()?.targetShape ?? DEFAULT_TARGET_SHAPE)
+  )
   const {
     config: crosshairConfig,
     updateConfig: updateCrosshair,
@@ -61,6 +65,7 @@ export default function ShootingRangePage() {
         lookSensitivity: number
         sfxVolume: number
         sfxMuted: boolean
+        targetShape: TargetShape
       },
       drillId?: string
     ) => {
@@ -72,6 +77,7 @@ export default function ShootingRangePage() {
           lookSensitivity: next.lookSensitivity,
           sfxVolume: next.sfxVolume,
           sfxMuted: next.sfxMuted,
+          targetShape: next.targetShape,
         },
         drillId
       )
@@ -83,8 +89,8 @@ export default function ShootingRangePage() {
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted }, preset.id)
-  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume])
+    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted, targetShape }, preset.id)
+  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape])
 
   const handleQuickStart = useCallback(
     (preset: DrillPreset) => {
@@ -97,31 +103,39 @@ export default function ShootingRangePage() {
   const handleLookSensitivityChange = useCallback(
     (value: number) => {
       setLookSensitivity(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted, targetShape })
     },
-    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume]
+    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape]
   )
 
   const handleSfxVolumeChange = useCallback(
     (value: number) => {
       setSfxVolume(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted, targetShape })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, targetShape]
   )
 
   const handleSfxMutedChange = useCallback(
     (muted: boolean) => {
       setSfxMuted(muted)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted, targetShape })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume, targetShape]
+  )
+
+  const handleTargetShapeChange = useCallback(
+    (value: TargetShape) => {
+      setTargetShape(value)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape: value })
+    },
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume]
   )
 
   const handleStart = useCallback(() => {
-    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted })
+    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape })
     setIsStarted(true)
-  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume])
+  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape])
 
   const handleReturnToSetup = useCallback(() => {
     setIsStarted(false)
@@ -170,6 +184,8 @@ export default function ShootingRangePage() {
             onLookSensitivityChange={handleLookSensitivityChange}
             onSfxVolumeChange={handleSfxVolumeChange}
             onSfxMutedChange={handleSfxMutedChange}
+            targetShape={targetShape}
+            onTargetShapeChange={handleTargetShapeChange}
             onStart={handleStart}
             onQuickStart={handleQuickStart}
             onViewHistory={() => {
@@ -193,6 +209,8 @@ export default function ShootingRangePage() {
               difficulty={difficulty}
               mapId={mapId}
               modeId={modeId}
+              targetShape={targetShape}
+              onTargetShapeChange={handleTargetShapeChange}
               lookSensitivity={lookSensitivity}
               sfxVolume={sfxVolume}
               sfxMuted={sfxMuted}

@@ -25,6 +25,22 @@ describe('humanoidMotion', () => {
     expect(Number.isFinite(sample.offsetZ)).toBe(true)
     expect(sample.crouchScale).toBeGreaterThan(0.5)
     expect(sample.crouchScale).toBeLessThanOrEqual(1)
+    expect(sample.phaseT).toBeGreaterThanOrEqual(0)
+    expect(sample.phaseT).toBeLessThanOrEqual(1)
+    expect(Number.isFinite(sample.leanX)).toBe(true)
+    expect(Number.isFinite(sample.armSwing)).toBe(true)
+  })
+
+  it('crouch phase lowers crouchScale below standing', () => {
+    const state = createBotMotionState(5)
+    const profile = getBotMotionProfile('precision')
+    state.phase = 'crouch'
+    state.phaseElapsed = 0.5
+    state.phaseDuration = 1
+
+    const sample = stepBotMotion(state, 0, profile, 3)
+    expect(sample.crouchScale).toBeLessThan(0.9)
+    expect(sample.legSpread).toBeGreaterThan(0.2)
   })
 
   it('advances to a new phase after duration elapses', () => {

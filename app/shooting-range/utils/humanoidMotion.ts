@@ -32,74 +32,98 @@ export interface BotMotionSample {
   offsetY: number
   offsetZ: number
   crouchScale: number
+  /** 0–1 progress within the current phase — drives limb pose. */
+  phaseT: number
+  phase: BotMotionPhase
+  /** Lateral lean for strafe readability (-1..1). */
+  leanX: number
+  /** Forward/back lean for advance/retreat (-1..1). */
+  leanZ: number
+  /** Leg spread for crouch/jump (0 = standing, 1 = wide). */
+  legSpread: number
+  /** Arm swing offset for gait (-1..1). */
+  armSwing: number
 }
 
 const profiles: Record<TrainingModeId, BotMotionProfile> = {
   static: {
     phases: ['strafe', 'crouch'],
-    strafeSpeed: 0.55,
+    strafeSpeed: 0.72,
     advanceSpeed: 0.2,
-    jumpHeight: 0.15,
-    crouchDepth: 0.22,
+    jumpHeight: 0.18,
+    crouchDepth: 0.28,
     hoverAmplitude: 0.05,
-    phaseMinSec: 1.4,
-    phaseMaxSec: 2.8,
+    phaseMinSec: 1.5,
+    phaseMaxSec: 2.6,
   },
   moving: {
     phases: ['strafe', 'advance', 'retreat', 'jump'],
-    strafeSpeed: 1.15,
-    advanceSpeed: 0.85,
-    jumpHeight: 0.55,
-    crouchDepth: 0.28,
+    strafeSpeed: 1.35,
+    advanceSpeed: 0.95,
+    jumpHeight: 0.68,
+    crouchDepth: 0.32,
     hoverAmplitude: 0.08,
-    phaseMinSec: 0.85,
-    phaseMaxSec: 1.6,
+    phaseMinSec: 0.9,
+    phaseMaxSec: 1.5,
   },
   flick: {
     phases: ['strafe', 'crouch'],
-    strafeSpeed: 0.65,
+    strafeSpeed: 0.82,
     advanceSpeed: 0.25,
-    jumpHeight: 0.2,
-    crouchDepth: 0.2,
+    jumpHeight: 0.22,
+    crouchDepth: 0.26,
     hoverAmplitude: 0.04,
-    phaseMinSec: 1.1,
-    phaseMaxSec: 2.2,
+    phaseMinSec: 1.2,
+    phaseMaxSec: 2.0,
   },
   tracking: {
     phases: ['strafe', 'hover', 'advance'],
-    strafeSpeed: 0.95,
-    advanceSpeed: 0.45,
-    jumpHeight: 0.25,
-    crouchDepth: 0.18,
+    strafeSpeed: 1.1,
+    advanceSpeed: 0.52,
+    jumpHeight: 0.28,
+    crouchDepth: 0.22,
     hoverAmplitude: 0.42,
-    phaseMinSec: 1.0,
-    phaseMaxSec: 2.0,
+    phaseMinSec: 1.1,
+    phaseMaxSec: 1.9,
   },
   timed: {
     phases: ['strafe', 'advance', 'jump', 'retreat'],
-    strafeSpeed: 1.35,
-    advanceSpeed: 1.05,
-    jumpHeight: 0.62,
-    crouchDepth: 0.3,
+    strafeSpeed: 1.55,
+    advanceSpeed: 1.15,
+    jumpHeight: 0.75,
+    crouchDepth: 0.34,
     hoverAmplitude: 0.1,
-    phaseMinSec: 0.65,
-    phaseMaxSec: 1.25,
+    phaseMinSec: 0.7,
+    phaseMaxSec: 1.2,
   },
   precision: {
     phases: ['strafe', 'crouch'],
-    strafeSpeed: 0.5,
+    strafeSpeed: 0.62,
     advanceSpeed: 0.18,
-    jumpHeight: 0.12,
-    crouchDepth: 0.2,
+    jumpHeight: 0.14,
+    crouchDepth: 0.24,
     hoverAmplitude: 0.04,
-    phaseMinSec: 1.3,
-    phaseMaxSec: 2.5,
+    phaseMinSec: 1.4,
+    phaseMaxSec: 2.4,
   },
 }
 
 function pseudoRandom(seed: number): number {
   const value = Math.sin(seed * 12.9898) * 43758.5453
   return value - Math.floor(value)
+}
+
+/** Smooth 0→1→0 with a brief hold at the peak for screenshot-friendly poses. */
+function pulseEase(t: number): number {
+  if (t < 0.12) return t / 0.12
+  if (t > 0.88) return (1 - t) / 0.12
+  return 1
+}
+
+/** Strafe uses a triangle wave so the bot visibly pauses at each side. */
+function strafeEase(t: number): number {
+  if (t < 0.5) return t * 2
+  return 2 - t * 2
 }
 
 export function getBotMotionProfile(modeId: TrainingModeId): BotMotionProfile {
@@ -150,37 +174,69 @@ export function stepBotMotion(
 
   const t = state.phaseElapsed / Math.max(0.001, state.phaseDuration)
   const wave = Math.sin(t * Math.PI)
+  const pulse = pulseEase(t)
+  const strafeWave = strafeEase(t)
   let offsetX = 0
   let offsetY = 0
   let offsetZ = 0
   let crouchScale = 1
+  let leanX = 0
+  let leanZ = 0
+  let legSpread = 0
+  let armSwing = 0
 
   switch (state.phase) {
     case 'strafe':
-      offsetX = state.strafeDir * profile.strafeSpeed * wave
+      offsetX = state.strafeDir * profile.strafeSpeed * strafeWave
+      leanX = state.strafeDir * strafeWave * 0.35
+      armSwing = Math.sin(t * Math.PI * 2) * 0.55
       break
     case 'advance':
-      offsetZ = -profile.advanceSpeed * wave
+      offsetZ = -profile.advanceSpeed * pulse
+      leanZ = -pulse * 0.4
+      armSwing = pulse * 0.45
       break
     case 'retreat':
-      offsetZ = profile.advanceSpeed * wave * 0.85
+      offsetZ = profile.advanceSpeed * pulse * 0.85
+      leanZ = pulse * 0.32
+      armSwing = -pulse * 0.35
       break
-    case 'jump':
-      offsetY = profile.jumpHeight * Math.sin(t * Math.PI)
+    case 'jump': {
+      const jumpArc = Math.sin(t * Math.PI)
+      const squat = t < 0.18 ? (0.18 - t) / 0.18 : 0
+      offsetY = profile.jumpHeight * jumpArc
+      crouchScale = 1 - squat * 0.12
+      legSpread = squat * 0.35 + jumpArc * 0.15
+      armSwing = jumpArc > 0.4 ? -0.5 : 0.35
       break
+    }
     case 'crouch':
-      crouchScale = 1 - profile.crouchDepth * wave
-      offsetY = -profile.crouchDepth * 0.35 * wave
+      crouchScale = 1 - profile.crouchDepth * pulse
+      offsetY = -profile.crouchDepth * 0.42 * pulse
+      legSpread = pulse * 0.55
+      leanZ = pulse * 0.12
       break
     case 'hover':
       offsetY =
         profile.hoverAmplitude * Math.sin(timeSec * 2.4 + state.seed) +
         profile.hoverAmplitude * 0.35
       offsetX = Math.sin(timeSec * 1.6 + state.seed) * profile.strafeSpeed * 0.35
+      armSwing = Math.sin(timeSec * 3.2 + state.seed) * 0.25
       break
     default:
       break
   }
 
-  return { offsetX, offsetY, offsetZ, crouchScale }
+  return {
+    offsetX,
+    offsetY,
+    offsetZ,
+    crouchScale,
+    phaseT: t,
+    phase: state.phase,
+    leanX,
+    leanZ,
+    legSpread,
+    armSwing,
+  }
 }

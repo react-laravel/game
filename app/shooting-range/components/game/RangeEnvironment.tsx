@@ -231,31 +231,6 @@ function CeilingSoffitRow({
   )
 }
 
-function IndoorLaneLightBars({ accent }: { accent: string }) {
-  const rowZs = useMemo(() => Array.from({ length: 9 }, (_, i) => -8 - i * 5), [])
-
-  return (
-    <>
-      {rowZs.map(z => (
-        <group key={`lane-bar-${z}`} position={[0, 5.85, z]}>
-          <mesh>
-            <boxGeometry args={[36, 0.28, 2.5]} />
-            <meshBasicMaterial color="#ffffff" toneMapped={false} fog={false} />
-          </mesh>
-          <mesh position={[0, -0.13, 0]}>
-            <boxGeometry args={[32, 0.1, 1.85]} />
-            <meshBasicMaterial color={accent} toneMapped={false} fog={false} />
-          </mesh>
-          <mesh position={[0, -0.2, 0]}>
-            <boxGeometry args={[26, 0.05, 1.2]} />
-            <meshBasicMaterial color="#f4fcff" toneMapped={false} fog={false} />
-          </mesh>
-        </group>
-      ))}
-    </>
-  )
-}
-
 function IndoorUpperWallLights({ accent }: { accent: string }) {
   const rowZs = useMemo(() => Array.from({ length: 12 }, (_, i) => -4 - i * 4), [])
 
@@ -737,12 +712,12 @@ function ChainLinkFence({ x }: { x: number }) {
         <group key={z} position={[x, 1.25, z]}>
           <mesh>
             <planeGeometry args={[0.02, 1.55]} />
-            <meshStandardMaterial color="#9a9488" metalness={0.72} roughness={0.32} transparent opacity={0.55} />
+            <meshStandardMaterial color="#6a6458" metalness={0.72} roughness={0.32} />
           </mesh>
           {[-0.55, 0, 0.55].map(yOff => (
             <mesh key={yOff} position={[0, yOff, 0]} rotation={[0, 0, Math.PI / 4]}>
               <planeGeometry args={[0.02, 1.4]} />
-              <meshStandardMaterial color="#a8a298" metalness={0.7} roughness={0.35} transparent opacity={0.45} />
+              <meshStandardMaterial color="#7a7468" metalness={0.7} roughness={0.35} />
             </mesh>
           ))}
         </group>
@@ -757,7 +732,6 @@ function IndoorRange({ config }: { config: MapConfig }) {
 
   return (
     <>
-      <IndoorLaneLightBars accent={config.accent} />
       <IndoorUpperWallLights accent={config.accent} />
       <IndoorHangingFixtures accent={config.accent} />
       <IndoorOverheadLightRows accent={config.accent} />
@@ -809,31 +783,6 @@ function IndoorRange({ config }: { config: MapConfig }) {
         </group>
       ))}
 
-      {[-17.58, 17.58].map(x => (
-        <mesh key={`side-wash-${x}`} position={[x, 6.4, -24]} rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}>
-          <planeGeometry args={[48, 9.5]} />
-          <meshBasicMaterial
-            color="#d8f4ff"
-            transparent
-            opacity={0.14}
-            toneMapped={false}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
-
-      <mesh position={[0, 6.8, -47.95]}>
-        <planeGeometry args={[34, 10]} />
-        <meshBasicMaterial
-          color="#e8f8ff"
-          transparent
-          opacity={0.18}
-          toneMapped={false}
-          depthWrite={false}
-        />
-      </mesh>
-
       <AcousticFoamGrid x={-17.75} z={-24} facing="left" />
       <AcousticFoamGrid x={17.75} z={-24} facing="right" />
 
@@ -851,24 +800,21 @@ function IndoorRange({ config }: { config: MapConfig }) {
         </mesh>
       ))}
 
-      {[-9, 9].map(x => (
-        <mesh key={`divider-${x}`} position={[x, 2.8, -24]}>
-          <boxGeometry args={[0.08, 5.6, 50]} />
-          <meshStandardMaterial color="#4a6878" metalness={0.35} roughness={0.48} transparent opacity={0.85} />
-        </mesh>
+      {/* Lane edge curbs — solid low posts and painted floor lines outside the bullet path */}
+      {[-15.2, 15.2].map(x => (
+        <group key={`lane-curb-${x}`}>
+          {[-6, -18, -30, -42].map(z => (
+            <mesh key={z} position={[x, 0.18, z]}>
+              <boxGeometry args={[0.1, 0.36, 0.1]} />
+              <meshStandardMaterial color="#5a7080" metalness={0.55} roughness={0.42} />
+            </mesh>
+          ))}
+          <mesh position={[x, -1.971, -24]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.12, 48]} />
+            <meshStandardMaterial color={config.accent} metalness={0.2} roughness={0.75} />
+          </mesh>
+        </group>
       ))}
-
-      {[-12, 0, 12].map(x => (
-        <mesh key={x} position={[x, 5.8, -24]}>
-          <boxGeometry args={[0.08, 0.08, 52]} />
-          <meshStandardMaterial color="#7ce8ff" emissive="#4ec8e8" emissiveIntensity={0.85} toneMapped={false} />
-        </mesh>
-      ))}
-
-      <mesh position={[0, 5.75, -24]}>
-        <boxGeometry args={[34, 0.1, 52]} />
-        <meshStandardMaterial color="#6a8a9a" metalness={0.5} roughness={0.32} />
-      </mesh>
 
       {laneZs.map(z => (
         <mesh key={z} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, z]}>
@@ -897,13 +843,6 @@ function IndoorRange({ config }: { config: MapConfig }) {
           toneMapped={false}
         />
       </mesh>
-
-      {[-6, 6].map(x => (
-        <mesh key={x} position={[x, -1.05, -21]}>
-          <boxGeometry args={[0.14, 1.45, 48]} />
-          <meshStandardMaterial color="#5f7f90" metalness={0.48} roughness={0.38} />
-        </mesh>
-      ))}
 
       {[-10, -24, -38].map(z => (
         <group key={z} position={[0, 0.02, z]}>
@@ -934,18 +873,15 @@ function IndoorRange({ config }: { config: MapConfig }) {
         </mesh>
       </group>
 
-      <group position={[15, 3.5, -14]}>
+      {/* Wall-mounted equipment panel — solid metal on side wall, outside lane */}
+      <group position={[17.2, 3.5, -14]} rotation={[0, -Math.PI / 2, 0]}>
         <mesh>
-          <boxGeometry args={[2.2, 2.8, 0.12]} />
-          <meshStandardMaterial
-            color="#88b8d0"
-            emissive="#5090b0"
-            emissiveIntensity={0.25}
-            metalness={0.2}
-            roughness={0.35}
-            transparent
-            opacity={0.75}
-          />
+          <boxGeometry args={[1.6, 2.2, 0.08]} />
+          <meshStandardMaterial color="#5a7080" metalness={0.35} roughness={0.55} />
+        </mesh>
+        <mesh position={[0, 0.35, 0.05]}>
+          <boxGeometry args={[1.2, 0.8, 0.02]} />
+          <meshStandardMaterial color="#3a5060" metalness={0.25} roughness={0.65} />
         </mesh>
       </group>
 
@@ -953,24 +889,11 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <WallSconce key={x} x={x} z={-16} color={config.accent} />
       ))}
 
-      {/* meshBasic depth pass — ceiling beams, lane guides, distance plaques, backstop layers */}
+      {/* meshBasic depth pass — ceiling beams and solid wall distance plaques */}
       {[-10, 0, 10].map(x => (
         <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y - 0.42, -24]}>
           <boxGeometry args={[0.65, 0.22, 52]} />
           <meshBasicMaterial color="#1a2838" toneMapped={false} />
-        </mesh>
-      ))}
-
-      {[-15.5, 15.5].map(x => (
-        <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.972, -24]}>
-          <planeGeometry args={[0.1, 50]} />
-          <meshBasicMaterial
-            color={config.accent}
-            transparent
-            opacity={0.28}
-            toneMapped={false}
-            depthWrite={false}
-          />
         </mesh>
       ))}
 
@@ -979,28 +902,9 @@ function IndoorRange({ config }: { config: MapConfig }) {
         { z: -26, label: '15M' },
         { z: -40, label: '25M' },
       ].map(marker => (
-        <group key={marker.label} position={[-15.2, 3.4, marker.z]}>
-          <mesh>
-            <boxGeometry args={[0.04, 0.9, 1.4]} />
-            <meshBasicMaterial color="#1e3040" toneMapped={false} />
-          </mesh>
-          <mesh position={[0.03, 0, 0]}>
-            <planeGeometry args={[1.1, 0.55]} />
-            <meshBasicMaterial color={config.accent} transparent opacity={0.35} toneMapped={false} depthWrite={false} />
-          </mesh>
-        </group>
-      ))}
-
-      {[0, 1, 2].map(layer => (
-        <mesh key={`backstop-layer-${layer}`} position={[0, 2.2 + layer * 1.6, -47.88 - layer * 0.06]}>
-          <planeGeometry args={[33 - layer * 2.5, 7.5 - layer * 0.8]} />
-          <meshBasicMaterial
-            color="#0a1824"
-            transparent
-            opacity={0.12 + layer * 0.07}
-            toneMapped={false}
-            depthWrite={false}
-          />
+        <mesh key={marker.label} position={[-15.2, 3.4, marker.z]}>
+          <boxGeometry args={[0.06, 0.9, 1.4]} />
+          <meshBasicMaterial color="#1e3040" toneMapped={false} />
         </mesh>
       ))}
 
@@ -1020,10 +924,6 @@ function IndoorRange({ config }: { config: MapConfig }) {
       ))}
 
       <pointLight position={[0, 5.5, -46]} intensity={0.85} color="#dff4ff" distance={18} decay={2} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 5.85, -46]}>
-        <planeGeometry args={[32, 4]} />
-        <meshBasicMaterial color="#d8f4ff" transparent opacity={0.22} toneMapped={false} depthWrite={false} />
-      </mesh>
     </>
   )
 }
@@ -1173,7 +1073,7 @@ function OutdoorRange() {
       {[-8.4, 8.4].map(x => (
         <mesh key={`lane-shoulder-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.967, -24]}>
           <planeGeometry args={[2.8, 50]} />
-          <meshStandardMaterial map={gravelTexture} color="#8a7a64" roughness={0.9} transparent opacity={0.72} />
+          <meshStandardMaterial map={gravelTexture} color="#8a7a64" roughness={0.9} />
         </mesh>
       ))}
 
@@ -1185,7 +1085,7 @@ function OutdoorRange() {
       {[-8, -16, -24, -32, -40].map(z => (
         <mesh key={`marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, z]}>
           <planeGeometry args={[12.5, 0.12]} />
-          <meshStandardMaterial color="#7a7068" roughness={0.85} transparent opacity={0.65} />
+          <meshStandardMaterial color="#7a7068" roughness={0.85} />
         </mesh>
       ))}
 
@@ -1228,8 +1128,8 @@ function OutdoorRange() {
             <meshStandardMaterial color="#7a6858" roughness={0.86} />
           </mesh>
           <mesh position={[0, 1.35, 0.03]}>
-            <planeGeometry args={[0.82, 0.62]} />
-            <meshBasicMaterial color="#f2eee6" transparent opacity={0.14} toneMapped={false} />
+            <boxGeometry args={[0.82, 0.62, 0.02]} />
+            <meshStandardMaterial color="#e8e4dc" roughness={0.92} />
           </mesh>
         </group>
       ))}
@@ -1327,6 +1227,26 @@ function WarehouseRange({ config }: { config: MapConfig }) {
 
   return (
     <>
+      {/* meshBasic depth pass — ceiling trusses and solid wall plaques (no glass in lane) */}
+      {[-16, -4, 8, 20].map(x => (
+        <mesh key={`wh-truss-${x}`} position={[x, 11.35, -24]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[54, 0.38, 0.55]} />
+          <meshBasicMaterial color="#1a1410" toneMapped={false} />
+        </mesh>
+      ))}
+
+      {[
+        { z: -10, label: '5M' },
+        { z: -22, label: '12M' },
+        { z: -34, label: '20M' },
+        { z: -46, label: '30M' },
+      ].map(marker => (
+        <mesh key={marker.label} position={[-15.4, 3.2, marker.z]}>
+          <boxGeometry args={[0.06, 0.85, 1.3]} />
+          <meshBasicMaterial color="#1e1814" toneMapped={false} />
+        </mesh>
+      ))}
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 12.02, -18]}>
         <planeGeometry args={[42, 72]} />
         <meshStandardMaterial
@@ -1337,11 +1257,6 @@ function WarehouseRange({ config }: { config: MapConfig }) {
           roughness={0.72}
           side={THREE.DoubleSide}
         />
-      </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 11.95, -24]}>
-        <planeGeometry args={[14, 58]} />
-        <meshBasicMaterial color="#fff0d8" transparent opacity={0.08} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
       <ambientLight intensity={0.42} color="#ffe8c8" />
@@ -1388,45 +1303,35 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial color="#3a3028" metalness={0.3} roughness={0.68} />
       </mesh>
 
-      {/* Back-wall window silhouettes + warm wash for rear depth */}
+      {/* Back-wall solid window recesses — opaque frames only, no glass panes */}
       {[-8, -2.5, 2.5, 8].map(x => (
-        <group key={`wh-window-${x}`}>
-          <mesh position={[x, 5.2, -47.55]}>
-            <planeGeometry args={[3.2, 2.4]} />
-            <meshBasicMaterial color="#0c1018" transparent opacity={0.55} toneMapped={false} />
-          </mesh>
-          <mesh position={[x, 5.2, -47.48]}>
-            <planeGeometry args={[2.6, 1.8]} />
-            <meshBasicMaterial color="#ffe8c0" transparent opacity={0.08} toneMapped={false} depthWrite={false} />
-          </mesh>
-        </group>
+        <mesh key={`wh-window-${x}`} position={[x, 5.2, -47.55]}>
+          <boxGeometry args={[3.2, 2.4, 0.12]} />
+          <meshStandardMaterial color="#1a1410" metalness={0.2} roughness={0.85} />
+        </mesh>
       ))}
 
-      {/* Distant rack + forklift silhouettes — cheap depth read without new lights */}
+      {/* Distant rack + forklift — solid silhouettes on back wall */}
       {[-12, -4, 4, 12].map(x => (
         <mesh key={`rear-rack-${x}`} position={[x, 3.8, -47.35]}>
           <boxGeometry args={[2.8, 6.8, 0.35]} />
-          <meshBasicMaterial color="#14100c" transparent opacity={0.72} toneMapped={false} />
+          <meshBasicMaterial color="#14100c" toneMapped={false} />
         </mesh>
       ))}
       <group position={[-10, -1.2, -46.8]}>
         <mesh>
           <boxGeometry args={[2.4, 0.9, 1.4]} />
-          <meshBasicMaterial color="#181410" transparent opacity={0.78} toneMapped={false} />
+          <meshBasicMaterial color="#181410" toneMapped={false} />
         </mesh>
         <mesh position={[0.35, 1.35, 0]}>
           <boxGeometry args={[0.18, 1.6, 0.18]} />
-          <meshBasicMaterial color="#1a1612" transparent opacity={0.75} toneMapped={false} />
+          <meshBasicMaterial color="#1a1612" toneMapped={false} />
         </mesh>
         <mesh position={[0.35, 2.15, 0.35]} rotation={[-0.35, 0, 0]}>
           <boxGeometry args={[1.1, 0.12, 0.55]} />
-          <meshBasicMaterial color="#1c1814" transparent opacity={0.72} toneMapped={false} />
+          <meshBasicMaterial color="#1c1814" toneMapped={false} />
         </mesh>
       </group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 6.2, -47.2]}>
-        <planeGeometry args={[30, 5.5]} />
-        <meshBasicMaterial color="#ffe0b0" transparent opacity={0.07} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
 
       <group position={[0, 4.5, -47.85]}>
         <mesh>
@@ -1439,19 +1344,11 @@ function WarehouseRange({ config }: { config: MapConfig }) {
             <meshStandardMaterial color="#7a6a58" metalness={0.55} roughness={0.5} />
           </mesh>
         ))}
-        <mesh position={[0, 0.2, 0.16]}>
-          <planeGeometry args={[26, 7.2]} />
-          <meshBasicMaterial color="#ffe8c0" transparent opacity={0.06} toneMapped={false} depthWrite={false} />
-        </mesh>
       </group>
 
       <mesh position={[0, 3.5, -47.9]}>
         <boxGeometry args={[32, 6.5, 0.35]} />
         <meshStandardMaterial color="#4a4030" metalness={0.4} roughness={0.75} />
-      </mesh>
-      <mesh position={[0, 5.8, -47.75]}>
-        <planeGeometry args={[30, 5.5]} />
-        <meshBasicMaterial color="#fff0d8" transparent opacity={0.1} toneMapped={false} depthWrite={false} />
       </mesh>
       {[2.2, 3.8, 5.4].map(y => (
         <mesh key={y} position={[0, y, -47.7]}>
@@ -1506,28 +1403,15 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         </group>
       ))}
 
-      {[-6, 6].map(x => (
-        <group key={x}>
-          <mesh position={[x, -1.03, -21]}>
-            <boxGeometry args={[0.14, 1.4, 48]} />
-            <meshStandardMaterial color="#4a3d30" metalness={0.5} roughness={0.45} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.965, -21]}>
-            <planeGeometry args={[0.22, 46]} />
-            <meshStandardMaterial color="#c8a020" emissive="#a88018" emissiveIntensity={0.18} roughness={0.8} />
-          </mesh>
-        </group>
-      ))}
-
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.964, -21]}>
         <planeGeometry args={[10, 46]} />
         <meshStandardMaterial color="#6a6058" metalness={0.15} roughness={0.75} />
       </mesh>
 
       {[-10, -22, -34, -46].map(z => (
-        <mesh key={`aisle-shadow-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9645, z]}>
+        <mesh key={`aisle-marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9645, z]}>
           <planeGeometry args={[8.5, 0.35]} />
-          <meshStandardMaterial color="#3a342c" roughness={0.92} transparent opacity={0.22} depthWrite={false} />
+          <meshStandardMaterial color="#3a342c" roughness={0.92} />
         </mesh>
       ))}
 
@@ -1545,12 +1429,20 @@ function WarehouseRange({ config }: { config: MapConfig }) {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-11, -1.963, -30]}>
         <planeGeometry args={[4, 18]} />
-        <meshStandardMaterial color="#4a4840" roughness={0.88} transparent opacity={0.35} />
+        <meshStandardMaterial color="#4a4840" roughness={0.88} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[11, -1.963, -35]}>
         <planeGeometry args={[3.5, 14]} />
-        <meshStandardMaterial color="#4a4840" roughness={0.88} transparent opacity={0.3} />
+        <meshStandardMaterial color="#4a4840" roughness={0.88} />
       </mesh>
+
+      {/* Lane edge curbs — painted floor lines outside bullet path */}
+      {[-15.2, 15.2].map(x => (
+        <mesh key={`wh-lane-curb-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.971, -24]}>
+          <planeGeometry args={[0.12, 48]} />
+          <meshStandardMaterial color={config.accent} metalness={0.2} roughness={0.75} />
+        </mesh>
+      ))}
 
       {[-16, 16].map(x => (
         <WallSconce key={x} x={x} z={-14} color={config.accent} />

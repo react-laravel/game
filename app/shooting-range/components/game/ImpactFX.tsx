@@ -9,13 +9,22 @@ import {
   resetBurst,
   stepBurst,
 } from '../../utils/impactFx'
+import { motionParticleScale } from '../../utils/motionPrefs'
 
 export type ImpactFXHandle = {
   trigger: (position: THREE.Vector3) => void
 }
 
+interface ImpactFXProps {
+  reducedMotion?: boolean
+}
+
 /** Prewarmed particle bursts. Triggering never mounts lights or geometries. */
-export const ImpactFX = forwardRef<ImpactFXHandle>(function ImpactFX(_, ref) {
+export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function ImpactFX(
+  { reducedMotion = false },
+  ref
+) {
+  const particleScale = motionParticleScale(reducedMotion)
   const pointsRefs = useRef<Array<THREE.Points | null>>(Array(IMPACT_SLOT_COUNT).fill(null))
   const materialRefs = useRef<Array<THREE.PointsMaterial | null>>(
     Array(IMPACT_SLOT_COUNT).fill(null)
@@ -43,7 +52,8 @@ export const ImpactFX = forwardRef<ImpactFXHandle>(function ImpactFX(_, ref) {
       positionAttribute.needsUpdate = true
       points.position.copy(position)
       points.visible = true
-      material.opacity = 1
+      material.opacity = particleScale
+      material.size = 0.11 * particleScale
       elapsed.current[index] = 0
       active.current[index] = true
     },
@@ -62,7 +72,7 @@ export const ImpactFX = forwardRef<ImpactFXHandle>(function ImpactFX(_, ref) {
       stepBurst(burst.positions, burst.velocities, delta)
       const positionAttribute = points.geometry.getAttribute('position')
       positionAttribute.needsUpdate = true
-      material.opacity = Math.max(0, 1 - elapsed.current[index] / IMPACT_DURATION)
+      material.opacity = Math.max(0, particleScale * (1 - elapsed.current[index] / IMPACT_DURATION))
 
       if (elapsed.current[index] >= IMPACT_DURATION) {
         active.current[index] = false

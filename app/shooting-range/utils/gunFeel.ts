@@ -7,12 +7,17 @@ export const RECOIL_KICK_YAW = 0.0032
 export const RECOIL_RECOVERY_SPEED = 13.5
 
 /** Snappy peak-then-decay curve for muzzle flash intensity (0–1). */
-export function muzzleFlashIntensity(elapsed: number): number {
+export function muzzleFlashIntensity(elapsed: number, motionScale = 1): number {
   if (elapsed < 0 || elapsed >= MUZZLE_FLASH_DURATION) return 0
   const t = elapsed / MUZZLE_FLASH_DURATION
-  if (t < 0.12) return 0.55 + (t / 0.12) * 0.45
-  const decay = (t - 0.12) / 0.88
-  return Math.max(0, (1 - decay) ** 2.1)
+  let intensity = 0
+  if (t < 0.12) intensity = 0.55 + (t / 0.12) * 0.45
+  else {
+    const decay = (t - 0.12) / 0.88
+    intensity = Math.max(0, (1 - decay) ** 2.1)
+  }
+  const scale = Math.max(0, Math.min(1, motionScale))
+  return intensity * scale
 }
 
 /** Exponential recoil recovery — returns 0 when settled. */

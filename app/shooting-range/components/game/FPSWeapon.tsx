@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { muzzleFlashIntensity } from '../../utils/gunFeel'
+import { motionFlashScale } from '../../utils/motionPrefs'
 import { GunModel } from './GunModel'
 
 interface FPSWeaponProps {
@@ -10,13 +11,19 @@ interface FPSWeaponProps {
   muzzleFlashElapsedRef: MutableRefObject<number>
   /** Current pitch recoil offset applied to the view (radians). */
   recoilPitchRef: MutableRefObject<number>
+  reducedMotion?: boolean
 }
 
 const IDLE_LIGHT_COLOR = new THREE.Color('#c7efff')
 const FLASH_LIGHT_COLOR = new THREE.Color('#ffd080')
 
 /** First-person weapon with allocation-free camera following and readable recoil kick. */
-export function FPSWeapon({ muzzleFlashElapsedRef, recoilPitchRef }: FPSWeaponProps) {
+export function FPSWeapon({
+  muzzleFlashElapsedRef,
+  recoilPitchRef,
+  reducedMotion = false,
+}: FPSWeaponProps) {
+  const flashScale = motionFlashScale(reducedMotion)
   const { camera } = useThree()
   const gunRef = useRef<THREE.Group>(null)
   const flashRef = useRef<THREE.Group>(null)
@@ -34,7 +41,7 @@ export function FPSWeapon({ muzzleFlashElapsedRef, recoilPitchRef }: FPSWeaponPr
     if (!gun) return
 
     const flashElapsed = muzzleFlashElapsedRef.current
-    const intensity = flashElapsed >= 0 ? muzzleFlashIntensity(flashElapsed) : 0
+    const intensity = flashElapsed >= 0 ? muzzleFlashIntensity(flashElapsed, flashScale) : 0
     const recoilKick = recoilPitchRef.current
     const time = clock.getElapsedTime()
 

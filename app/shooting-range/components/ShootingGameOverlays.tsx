@@ -1,7 +1,9 @@
-import { Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-react'
+import { CircleHelp, Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LookSensitivityControl } from './LookSensitivityControl'
+import { ReducedMotionControl } from './ReducedMotionControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
+import type { MotionPreference } from '../utils/motionPrefs'
 
 export function UnsupportedShootingDevice({ message }: { message: string }) {
   return (
@@ -61,13 +63,16 @@ interface ShootingPauseOverlayProps {
   lookSensitivity: number
   sfxVolume: number
   sfxMuted: boolean
+  motionPreference: MotionPreference
   onResume: () => void
   onRestart: () => void
   onChangeDrill?: () => void
   onCrosshairSettings?: () => void
+  onOpenHelp?: () => void
   onSensitivityChange: (value: number) => void
   onSfxVolumeChange: (value: number) => void
   onSfxMutedChange: (muted: boolean) => void
+  onMotionPreferenceChange: (value: MotionPreference) => void
 }
 
 export function ShootingPauseOverlay({
@@ -75,13 +80,16 @@ export function ShootingPauseOverlay({
   lookSensitivity,
   sfxVolume,
   sfxMuted,
+  motionPreference,
   onResume,
   onRestart,
   onChangeDrill,
   onCrosshairSettings,
+  onOpenHelp,
   onSensitivityChange,
   onSfxVolumeChange,
   onSfxMutedChange,
+  onMotionPreferenceChange,
 }: ShootingPauseOverlayProps) {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm">
@@ -97,7 +105,7 @@ export function ShootingPauseOverlay({
             <h2 className="mt-1 text-xl font-black">已释放鼠标</h2>
             <p className="mt-1 text-sm leading-6 text-white/55">{drillLabel}</p>
             <p className="mt-2 text-xs leading-5 text-white/45">
-              按 ESC 或点击「继续训练」可重新锁定鼠标。下方可调整灵敏度或返回设置。
+              按 ESC 或点击「继续训练」可重新锁定鼠标。按 ? 查看操作说明，下方可调整灵敏度与音量。
             </p>
           </div>
         </div>
@@ -149,6 +157,16 @@ export function ShootingPauseOverlay({
               准星设置
             </Button>
           )}
+          {onOpenHelp && (
+            <Button
+              variant="ghost"
+              className="w-full border border-white/10 text-white/75 hover:bg-white/5 hover:text-white"
+              onClick={onOpenHelp}
+            >
+              <CircleHelp className="h-4 w-4" />
+              操作说明
+            </Button>
+          )}
         </div>
 
         <div className="mt-5 space-y-4 rounded-2xl border border-white/10 bg-slate-950/55 p-4">
@@ -165,6 +183,12 @@ export function ShootingPauseOverlay({
             muted={sfxMuted}
             onVolumeChange={onSfxVolumeChange}
             onMutedChange={onSfxMutedChange}
+          />
+          <ReducedMotionControl
+            compact
+            variant="dark"
+            value={motionPreference}
+            onChange={onMotionPreferenceChange}
           />
         </div>
       </div>

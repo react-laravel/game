@@ -59,6 +59,7 @@ interface GameSceneProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity: number
+  reducedMotion?: boolean
   onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback?: () => void
   gameStarted: boolean
@@ -73,6 +74,7 @@ export function GameScene({
   mapId,
   modeId,
   lookSensitivity,
+  reducedMotion = false,
   onShotResult,
   onHitFeedback,
   gameStarted,
@@ -338,10 +340,11 @@ export function GameScene({
         />
       ))}
 
-      <ImpactFX ref={impactFXRef} />
+      <ImpactFX ref={impactFXRef} reducedMotion={reducedMotion} />
       <FPSWeapon
         muzzleFlashElapsedRef={muzzleFlashElapsed}
         recoilPitchRef={recoilPitch}
+        reducedMotion={reducedMotion}
       />
     </>
   )

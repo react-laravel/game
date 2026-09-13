@@ -701,6 +701,10 @@ function ChainLinkFence({ x }: { x: number }) {
     <group>
       {posts.map(z => (
         <group key={z} position={[x, 0, z]}>
+          <mesh position={[0, 0.08, 0]} receiveShadow>
+            <cylinderGeometry args={[0.42, 0.46, 0.16, 8]} />
+            <meshStandardMaterial color="#8a8478" roughness={0.92} metalness={0.04} />
+          </mesh>
           <mesh position={[0, 0.18, 0]} castShadow>
             <boxGeometry args={[0.35, 0.36, 0.35]} />
             <meshStandardMaterial color="#6a6458" roughness={0.88} />
@@ -1097,11 +1101,17 @@ function OutdoorRange() {
         <meshStandardMaterial color="#e8e4d8" emissive="#d8d4c8" emissiveIntensity={0.08} roughness={0.82} />
       </mesh>
 
-      {/* Lane edge borders */}
+      {/* Lane edge borders + gravel shoulders */}
       {[-6.2, 6.2].map(x => (
         <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.966, -24]}>
           <planeGeometry args={[0.45, 50]} />
           <meshStandardMaterial color="#4a4038" roughness={0.9} />
+        </mesh>
+      ))}
+      {[-8.4, 8.4].map(x => (
+        <mesh key={`lane-shoulder-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.967, -24]}>
+          <planeGeometry args={[2.8, 50]} />
+          <meshStandardMaterial map={gravelTexture} color="#8a7a64" roughness={0.9} transparent opacity={0.72} />
         </mesh>
       ))}
 

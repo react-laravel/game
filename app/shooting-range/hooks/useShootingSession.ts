@@ -7,6 +7,8 @@ import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
 
 export const STREAK_MILESTONES = [3, 5, 8, 10, 15, 20] as const
+export const HIT_PULSE_DURATION_MS = 520
+export const HEADSHOT_PULSE_DURATION_MS = 680
 
 export interface HitPulse {
   id: number
@@ -148,7 +150,10 @@ export function useShootingSession(
         zoneLabel: zone ? hitZoneLabel(zone) : undefined,
       })
       if (hitPulseTimer.current) window.clearTimeout(hitPulseTimer.current)
-      hitPulseTimer.current = window.setTimeout(() => setHitPulse(null), 520)
+      hitPulseTimer.current = window.setTimeout(
+        () => setHitPulse(null),
+        zone === 'head' ? HEADSHOT_PULSE_DURATION_MS : HIT_PULSE_DURATION_MS
+      )
 
       if ((STREAK_MILESTONES as readonly number[]).includes(nextStreak)) {
         feedbackSeq.current += 1

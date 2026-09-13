@@ -138,6 +138,25 @@
   }
 }
 
+@keyframes headshot-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.72);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.14);
+  }
+  28% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -36px) scale(0.94);
+  }
+}
+
 @keyframes streak-toast {
   0% {
     opacity: 0;
@@ -161,6 +180,10 @@
   animation: score-pop 0.52s ease-out forwards;
 }
 
+.animate-headshot-pop {
+  animation: headshot-pop 0.68s ease-out forwards;
+}
+
 .animate-streak-toast {
   animation: streak-toast 1.1s ease-out forwards;
 }
@@ -168,6 +191,11 @@
 .score-pop-static {
   transform: translate(-50%, -8px);
   opacity: 0.92;
+}
+
+.headshot-pop-static {
+  transform: translate(-50%, -12px);
+  opacity: 0.96;
 }
 
 .streak-toast-static {
@@ -198,6 +226,7 @@
   .animate-float-up,
   .animate-pulse,
   .animate-score-pop,
+  .animate-headshot-pop,
   .animate-streak-toast,
   .shooting-session-highlight {
     animation: none;

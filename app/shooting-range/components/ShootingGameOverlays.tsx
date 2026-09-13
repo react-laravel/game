@@ -1,5 +1,6 @@
-import { Crosshair, MousePointer2 } from 'lucide-react'
+import { Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LookSensitivityControl } from './LookSensitivityControl'
 
 export function UnsupportedShootingDevice({ message }: { message: string }) {
   return (
@@ -52,6 +53,106 @@ interface ShootingPointerLockErrorProps {
   message: string
   onRetry: () => void
   onFallback: () => void
+}
+
+interface ShootingPauseOverlayProps {
+  drillLabel: string
+  lookSensitivity: number
+  onResume: () => void
+  onRestart: () => void
+  onChangeDrill?: () => void
+  onCrosshairSettings?: () => void
+  onSensitivityChange: (value: number) => void
+}
+
+export function ShootingPauseOverlay({
+  drillLabel,
+  lookSensitivity,
+  onResume,
+  onRestart,
+  onChangeDrill,
+  onCrosshairSettings,
+  onSensitivityChange,
+}: ShootingPauseOverlayProps) {
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm">
+      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-slate-900/96 p-6 text-white shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-300/10 ring-1 ring-amber-200/20">
+            <Crosshair className="h-6 w-6 text-amber-200" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold tracking-[0.2em] text-cyan-200/70 uppercase">
+              训练暂停
+            </div>
+            <h2 className="mt-1 text-xl font-black">已释放鼠标</h2>
+            <p className="mt-1 text-sm leading-6 text-white/55">{drillLabel}</p>
+            <p className="mt-2 text-xs leading-5 text-white/45">
+              按 ESC 或点击「继续训练」可重新锁定鼠标。下方可调整灵敏度或返回设置。
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <Button
+            className="w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
+            onClick={onResume}
+          >
+            <MousePointer2 className="h-4 w-4" />
+            继续训练
+          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              onClick={onRestart}
+            >
+              <RotateCcw className="h-4 w-4" />
+              重新开始
+            </Button>
+            {onChangeDrill ? (
+              <Button
+                variant="outline"
+                className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                onClick={onChangeDrill}
+              >
+                <LogOut className="h-4 w-4" />
+                换训练项
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                onClick={onCrosshairSettings}
+              >
+                <Settings2 className="h-4 w-4" />
+                准星设置
+              </Button>
+            )}
+          </div>
+          {onChangeDrill && onCrosshairSettings && (
+            <Button
+              variant="ghost"
+              className="w-full border border-white/10 text-white/75 hover:bg-white/5 hover:text-white"
+              onClick={onCrosshairSettings}
+            >
+              <Settings2 className="h-4 w-4" />
+              准星设置
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+          <LookSensitivityControl
+            compact
+            variant="dark"
+            value={lookSensitivity}
+            onChange={onSensitivityChange}
+          />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function ShootingPointerLockError({

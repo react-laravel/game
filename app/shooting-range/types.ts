@@ -43,4 +43,5 @@ export interface ShootingSetupConfig {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  lookSensitivity?: number
 }

@@ -9,6 +9,7 @@ import { ShootingSetup } from './components/ShootingSetup'
 import { useCrosshairSettings } from './hooks/useCrosshairSettings'
 import type { DrillPreset } from './utils/drillPresets'
 import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
+import { DEFAULT_LOOK_SENSITIVITY } from './utils/lookSensitivity'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
@@ -26,6 +27,7 @@ export default function ShootingRangePage() {
   const [difficulty, setDifficulty] = useState<ShootingDifficulty>('medium')
   const [mapId, setMapId] = useState<ShootingMapId>('indoor')
   const [modeId, setModeId] = useState<TrainingModeId>('moving')
+  const [lookSensitivity, setLookSensitivity] = useState(DEFAULT_LOOK_SENSITIVITY)
   const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
     useCrosshairSettings()
 
@@ -35,12 +37,26 @@ export default function ShootingRangePage() {
     setDifficulty(last.difficulty)
     setMapId(last.mapId)
     setModeId(last.modeId)
+    if (last.lookSensitivity !== undefined) setLookSensitivity(last.lookSensitivity)
   }, [])
 
   const persistConfig = useCallback(
-    (next: { difficulty: ShootingDifficulty; mapId: ShootingMapId; modeId: TrainingModeId }, drillId?: string) => {
+    (
+      next: {
+        difficulty: ShootingDifficulty
+        mapId: ShootingMapId
+        modeId: TrainingModeId
+        lookSensitivity: number
+      },
+      drillId?: string
+    ) => {
       saveLastConfig(
-        { difficulty: next.difficulty, mapId: next.mapId, modeId: next.modeId },
+        {
+          difficulty: next.difficulty,
+          mapId: next.mapId,
+          modeId: next.modeId,
+          lookSensitivity: next.lookSensitivity,
+        },
         drillId
       )
     },
@@ -51,8 +67,8 @@ export default function ShootingRangePage() {
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    persistConfig(preset, preset.id)
-  }, [persistConfig])
+    persistConfig({ ...preset, lookSensitivity }, preset.id)
+  }, [lookSensitivity, persistConfig])
 
   const handleQuickStart = useCallback(
     (preset: DrillPreset) => {
@@ -62,10 +78,18 @@ export default function ShootingRangePage() {
     [applyPreset]
   )
 
+  const handleLookSensitivityChange = useCallback(
+    (value: number) => {
+      setLookSensitivity(value)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value })
+    },
+    [difficulty, mapId, modeId, persistConfig]
+  )
+
   const handleStart = useCallback(() => {
-    persistConfig({ difficulty, mapId, modeId })
+    persistConfig({ difficulty, mapId, modeId, lookSensitivity })
     setIsStarted(true)
-  }, [difficulty, mapId, modeId, persistConfig])
+  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig])
 
   const handleReturnToSetup = useCallback(() => {
     setIsStarted(false)
@@ -99,9 +123,11 @@ export default function ShootingRangePage() {
             difficulty={difficulty}
             mapId={mapId}
             modeId={modeId}
+            lookSensitivity={lookSensitivity}
             onDifficultyChange={setDifficulty}
             onMapChange={setMapId}
             onModeChange={setModeId}
+            onLookSensitivityChange={handleLookSensitivityChange}
             onStart={handleStart}
             onQuickStart={handleQuickStart}
             onViewHistory={() => setShowHistory(true)}
@@ -123,6 +149,8 @@ export default function ShootingRangePage() {
               difficulty={difficulty}
               mapId={mapId}
               modeId={modeId}
+              lookSensitivity={lookSensitivity}
+              onLookSensitivityChange={handleLookSensitivityChange}
               crosshairConfig={crosshairConfig}
               onCrosshairChange={updateCrosshair}
               onCrosshairReset={resetCrosshair}

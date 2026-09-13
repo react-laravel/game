@@ -98,6 +98,7 @@ describe('GameScene', () => {
     difficulty: 'easy' as const,
     mapId: 'indoor' as const,
     modeId: 'moving' as const,
+    lookSensitivity: 1,
     onShotResult: vi.fn(),
     gameStarted: false,
     useFallbackControls: false,

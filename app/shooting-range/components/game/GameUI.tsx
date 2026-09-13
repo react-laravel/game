@@ -18,6 +18,7 @@ interface GameUIProps {
   drillLabel: string
   grade: SessionGrade | null
   comparison: PersonalBestComparison | null
+  showTutorialTip?: boolean
   onRestart: () => void
   onViewHistory?: () => void
   onChangeDrill?: () => void
@@ -33,6 +34,7 @@ export function GameUI({
   drillLabel,
   grade,
   comparison,
+  showTutorialTip = false,
   onRestart,
   onViewHistory,
   onChangeDrill,
@@ -107,7 +109,17 @@ export function GameUI({
 
       {!gameOver && (
         <div className="absolute bottom-4 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/55 px-4 py-1.5 text-xs text-white/55 backdrop-blur sm:block">
-          移动鼠标瞄准 · 左键射击 · ESC 释放鼠标
+          移动鼠标瞄准 · 左键射击 · ESC 暂停
+        </div>
+      )}
+
+      {!gameOver && showTutorialTip && (
+        <div
+          className="absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-2xl border border-cyan-200/20 bg-slate-950/78 px-4 py-3 text-center text-sm leading-6 text-white/80 shadow-xl backdrop-blur-md transition-all duration-700 ease-out"
+          style={{ opacity: showTutorialTip ? 1 : 0 }}
+        >
+          <span className="font-semibold text-cyan-100">新手提示</span>
+          <div className="mt-1 text-white/70">移动鼠标瞄准，左键射击。命中后此提示会自动淡出。</div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
 import type { ShootingSceneSnapshot } from '../components/game/GameScene'
 import type { SessionStats, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 
@@ -39,25 +39,37 @@ export function useShootingDebugBridge({
   onEndSession,
   onInjectStats,
 }: ShootingDebugBridgeOptions) {
+  const statsRef = useRef(stats)
+  const timeLeftRef = useRef(timeLeft)
+  const gameOverRef = useRef(gameOver)
+  const gameStartedRef = useRef(gameStarted)
+
+  useLayoutEffect(() => {
+    statsRef.current = stats
+    timeLeftRef.current = timeLeft
+    gameOverRef.current = gameOver
+    gameStartedRef.current = gameStarted
+  })
+
   useEffect(() => {
     const gameWindow = window as ShootingWindow
     gameWindow.render_game_to_text = () =>
       JSON.stringify({
         coordinateSystem: 'origin at camera start; +x right, +y up, -z forward',
-        mode: gameOver ? 'game-over' : gameStarted ? 'playing' : 'ready',
+        mode: gameOverRef.current ? 'game-over' : gameStartedRef.current ? 'playing' : 'ready',
         difficulty,
         mapId,
         modeId,
         targetShape,
-        ...stats,
-        timeLeft,
+        ...statsRef.current,
+        timeLeft: timeLeftRef.current,
         pointerLocked: document.pointerLockElement === canvasRef.current,
         camera: sceneSnapshot.current?.camera ?? { yaw: 0, pitch: 0 },
         targets: sceneSnapshot.current?.targets ?? [],
       })
 
     gameWindow.endShootingSession = () => {
-      if (gameStarted && !gameOver) onEndSession()
+      if (gameStartedRef.current && !gameOverRef.current) onEndSession()
     }
 
     if (onInjectStats) {
@@ -88,15 +100,11 @@ export function useShootingDebugBridge({
   }, [
     canvasRef,
     difficulty,
-    gameOver,
-    gameStarted,
     mapId,
     modeId,
     targetShape,
     onEndSession,
     onInjectStats,
     sceneSnapshot,
-    stats,
-    timeLeft,
   ])
 }

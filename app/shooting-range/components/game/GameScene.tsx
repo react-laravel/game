@@ -315,8 +315,9 @@ export function GameScene({
     const handleMouseMove = (event: MouseEvent) => {
       if (document.pointerLockElement !== gl.domElement) return
 
+      // Apply pointer delta to the base look rotation only — never read camera.quaternion
+      // here, since useFrame already layers recoil on top of lookRotation each frame.
       const rotation = lookRotation.current
-      rotation.setFromQuaternion(camera.quaternion, 'YXZ')
       const lookSpeed = lookSpeedRef.current
       rotation.y -= event.movementX * lookSpeed
       rotation.x -= event.movementY * lookSpeed

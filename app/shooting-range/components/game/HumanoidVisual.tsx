@@ -41,8 +41,8 @@ function zoneHitColor(zone: HitZone | undefined, part: 'head' | 'body' | 'limb',
 
 interface HumanoidVisualProps {
   modeId: TrainingModeId
-  hit: boolean
-  hitZone?: HitZone
+  hitRef: MutableRefObject<boolean>
+  hitZoneRef: MutableRefObject<HitZone | undefined>
   lowLightBoost?: number
   crouchScaleRef: MutableRefObject<number>
   motionRef: MutableRefObject<BotMotionSample>
@@ -52,11 +52,20 @@ function matteProps(color: string) {
   return { color, metalness: MATTE.metalness, roughness: MATTE.roughness }
 }
 
+function flashLayoutForZone(hitZone?: HitZone) {
+  return {
+    y: hitZone === 'head' ? 1.74 : hitZone === 'limb' ? 0.62 : 1.08,
+    size: hitZone === 'head' ? 0.52 : hitZone === 'limb' ? 0.38 : 0.46,
+    isHead: hitZone === 'head',
+    color: impactColorForZone(hitZone),
+  }
+}
+
 /** Original low-poly training-bot silhouette — not based on any commercial IP. */
 export function HumanoidVisual({
   modeId,
-  hit,
-  hitZone,
+  hitRef,
+  hitZoneRef,
   lowLightBoost = 0,
   crouchScaleRef,
   motionRef,
@@ -71,13 +80,60 @@ export function HumanoidVisual({
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const accent = appearance.ringColor
   const hitFlashRef = useRef<THREE.Group>(null)
+  const headFlashRef = useRef<THREE.Group>(null)
+  const bodyFlashRef = useRef<THREE.Group>(null)
+  const headAccentRingRef = useRef<THREE.Mesh>(null)
   const hitFlashElapsed = useRef(0)
   const previousHit = useRef(false)
+  const previousZone = useRef<HitZone | undefined>(undefined)
+  const headMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const chestAccentMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const crownMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const bodyMaterialRefs = useRef<THREE.MeshStandardMaterial[]>([])
+  const limbMaterialRefs = useRef<THREE.MeshStandardMaterial[]>([])
+
+  const headIdle = nightBoost > 0 ? '#d0b890' : HEAD_COLOR
+  const bodyIdle = nightBoost > 0 ? '#4a5258' : BODY_COLOR
+  const limbIdle = nightBoost > 0 ? '#424a50' : LIMB_COLOR
+
+  const applyLook = (hit: boolean, hitZone?: HitZone) => {
+    const headColor = hit ? zoneHitColor(hitZone, 'head', headIdle) : headIdle
+    const bodyColor = hit ? zoneHitColor(hitZone, 'body', bodyIdle) : bodyIdle
+    const limbColor = hit ? zoneHitColor(hitZone, 'limb', limbIdle) : limbIdle
+
+    headMaterialRef.current?.color.set(headColor)
+    headMaterialRef.current?.emissive.set(hit && hitZone === 'head' ? '#5a1018' : '#000000')
+    headMaterialRef.current?.emissiveIntensity = hit && hitZone === 'head' ? 0.42 : 0
+
+    chestAccentMaterialRef.current?.color.set(hit && hitZone === 'body' ? '#e8d8b8' : ACCENT_COLOR)
+    crownMaterialRef.current?.color.set(hit && hitZone === 'head' ? '#f0c0c0' : accent)
+
+    bodyMaterialRefs.current.forEach(material => material.color.set(bodyColor))
+    limbMaterialRefs.current.forEach(material => material.color.set(limbColor))
+
+    if (headAccentRingRef.current) {
+      headAccentRingRef.current.visible = !hit
+    }
+
+    const flash = hitFlashRef.current
+    const layout = flashLayoutForZone(hitZone)
+    if (flash) {
+      flash.position.y = layout.y
+      flash.visible = hit
+    }
+    if (headFlashRef.current) headFlashRef.current.visible = hit && layout.isHead
+    if (bodyFlashRef.current) bodyFlashRef.current.visible = hit && !layout.isHead
+  }
 
   useFrame((_, delta) => {
-    if (previousHit.current !== hit) {
+    const hit = hitRef.current
+    const hitZone = hitZoneRef.current
+
+    if (previousHit.current !== hit || previousZone.current !== hitZone) {
       previousHit.current = hit
+      previousZone.current = hitZone
       hitFlashElapsed.current = 0
+      applyLook(hit, hitZone)
       if (hitFlashRef.current) {
         hitFlashRef.current.visible = hit
       }
@@ -133,134 +189,170 @@ export function HumanoidVisual({
     }
   })
 
-  const headIdle = nightBoost > 0 ? '#d0b890' : HEAD_COLOR
-  const bodyIdle = nightBoost > 0 ? '#4a5258' : BODY_COLOR
-  const limbIdle = nightBoost > 0 ? '#424a50' : LIMB_COLOR
-  const headColor = hit ? zoneHitColor(hitZone, 'head', headIdle) : headIdle
-  const bodyColor = hit ? zoneHitColor(hitZone, 'body', bodyIdle) : bodyIdle
-  const limbColor = hit ? zoneHitColor(hitZone, 'limb', limbIdle) : limbIdle
-  const flashColor = impactColorForZone(hitZone)
-  const flashY =
-    hitZone === 'head' ? 1.74 : hitZone === 'limb' ? 0.62 : 1.08
-  const flashSize = hitZone === 'head' ? 0.52 : hitZone === 'limb' ? 0.38 : 0.46
+  const initialFlash = flashLayoutForZone(undefined)
 
   return (
     <group>
-      {hit && (
-        <group ref={hitFlashRef} position={[0, flashY, 0.18]} visible={false}>
-          {hitZone === 'head' ? (
-            <>
-              <mesh rotation={[0, 0, Math.PI / 4]}>
-                <boxGeometry args={[flashSize * 1.45, 0.09, 0.09]} />
-                <meshBasicMaterial color={flashColor} toneMapped={false} />
-              </mesh>
-              <mesh rotation={[0, 0, -Math.PI / 4]}>
-                <boxGeometry args={[flashSize * 1.45, 0.09, 0.09]} />
-                <meshBasicMaterial color={flashColor} toneMapped={false} />
-              </mesh>
-            </>
-          ) : (
-            <mesh>
-              <ringGeometry args={[flashSize * 0.55, flashSize * 0.82, 16]} />
-              <meshBasicMaterial color={flashColor} transparent opacity={0.88} toneMapped={false} depthWrite={false} />
-            </mesh>
-          )}
+      <group ref={hitFlashRef} position={[0, initialFlash.y, 0.18]} visible={false}>
+        <group ref={headFlashRef} visible={false}>
+          <mesh rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[initialFlash.size * 1.45, 0.09, 0.09]} />
+            <meshBasicMaterial color={initialFlash.color} toneMapped={false} />
+          </mesh>
+          <mesh rotation={[0, 0, -Math.PI / 4]}>
+            <boxGeometry args={[initialFlash.size * 1.45, 0.09, 0.09]} />
+            <meshBasicMaterial color={initialFlash.color} toneMapped={false} />
+          </mesh>
         </group>
-      )}
+        <group ref={bodyFlashRef} visible={false}>
+          <mesh>
+            <ringGeometry args={[initialFlash.size * 0.55, initialFlash.size * 0.82, 16]} />
+            <meshBasicMaterial
+              color={initialFlash.color}
+              transparent
+              opacity={0.88}
+              toneMapped={false}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
+      </group>
+
       <group ref={leftLegRef} position={[-0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.22, 0.74, 0.22]} />
-          <meshStandardMaterial {...matteProps(limbColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) limbMaterialRefs.current[0] = node
+            }}
+            {...matteProps(limbIdle)}
+          />
         </mesh>
         <mesh position={[0, -0.42, 0.04]} userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.2, 0.38, 0.24]} />
-          <meshStandardMaterial {...matteProps(limbColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) limbMaterialRefs.current[1] = node
+            }}
+            {...matteProps(limbIdle)}
+          />
         </mesh>
       </group>
       <group ref={rightLegRef} position={[0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.22, 0.74, 0.22]} />
-          <meshStandardMaterial {...matteProps(limbColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) limbMaterialRefs.current[2] = node
+            }}
+            {...matteProps(limbIdle)}
+          />
         </mesh>
         <mesh position={[0, -0.42, 0.04]} userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.2, 0.38, 0.24]} />
-          <meshStandardMaterial {...matteProps(limbColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) limbMaterialRefs.current[3] = node
+            }}
+            {...matteProps(limbIdle)}
+          />
         </mesh>
       </group>
 
       <mesh position={[0, 0.78, 0]} userData={{ hitZone: 'body' }}>
         <boxGeometry args={[0.58, 0.22, 0.32]} />
-        <meshStandardMaterial {...matteProps(bodyColor)} />
+        <meshStandardMaterial
+          ref={node => {
+            if (node) bodyMaterialRefs.current[0] = node
+          }}
+          {...matteProps(bodyIdle)}
+        />
       </mesh>
 
       <group ref={torsoRef} position={[0, 1.02, 0]}>
         <mesh position={[0, 0.08, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.68, 0.88, 0.36]} />
-          <meshStandardMaterial {...matteProps(bodyColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) bodyMaterialRefs.current[1] = node
+            }}
+            {...matteProps(bodyIdle)}
+          />
         </mesh>
         <mesh position={[0, -0.22, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.52, 0.28, 0.32]} />
-          <meshStandardMaterial {...matteProps(bodyColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) bodyMaterialRefs.current[2] = node
+            }}
+            {...matteProps(bodyIdle)}
+          />
         </mesh>
         <mesh position={[0, 0.22, 0.1]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.3, 0.3, 0.06]} />
-          <meshStandardMaterial
-            color={hit && hitZone === 'body' ? '#e8d8b8' : ACCENT_COLOR}
-            metalness={0.04}
-            roughness={0.88}
-          />
+          <meshStandardMaterial ref={chestAccentMaterialRef} color={ACCENT_COLOR} metalness={0.04} roughness={0.88} />
         </mesh>
 
         <mesh position={[-0.4, 0.42, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.2, 0.2, 0.26]} />
-          <meshStandardMaterial {...matteProps(bodyColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) bodyMaterialRefs.current[3] = node
+            }}
+            {...matteProps(bodyIdle)}
+          />
         </mesh>
         <mesh position={[0.4, 0.42, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.2, 0.2, 0.26]} />
-          <meshStandardMaterial {...matteProps(bodyColor)} />
+          <meshStandardMaterial
+            ref={node => {
+              if (node) bodyMaterialRefs.current[4] = node
+            }}
+            {...matteProps(bodyIdle)}
+          />
         </mesh>
 
         <group ref={leftArmRef} position={[-0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
             <boxGeometry args={[0.18, 0.64, 0.18]} />
-            <meshStandardMaterial {...matteProps(limbColor)} />
+            <meshStandardMaterial
+              ref={node => {
+                if (node) limbMaterialRefs.current[4] = node
+              }}
+              {...matteProps(limbIdle)}
+            />
           </mesh>
         </group>
         <group ref={rightArmRef} position={[0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
             <boxGeometry args={[0.18, 0.64, 0.18]} />
-            <meshStandardMaterial {...matteProps(limbColor)} />
+            <meshStandardMaterial
+              ref={node => {
+                if (node) limbMaterialRefs.current[5] = node
+              }}
+              {...matteProps(limbIdle)}
+            />
           </mesh>
         </group>
 
         <group ref={headRef} position={[0, 0.72, 0]}>
           <mesh userData={{ hitZone: 'head' }}>
             <boxGeometry args={[0.4, 0.4, 0.4]} />
-            <meshStandardMaterial
-              {...matteProps(headColor)}
-              emissive={hit && hitZone === 'head' ? '#5a1018' : '#000000'}
-              emissiveIntensity={hit && hitZone === 'head' ? 0.42 : 0}
+            <meshStandardMaterial ref={headMaterialRef} {...matteProps(headIdle)} />
+          </mesh>
+          <mesh ref={headAccentRingRef} position={[0, 0, 0.22]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.22, 0.28, 4]} />
+            <meshBasicMaterial
+              color={nightBoost > 0 ? '#e8c898' : accent}
+              transparent
+              opacity={0.55}
+              toneMapped={false}
+              depthWrite={false}
             />
           </mesh>
-          {!hit && (
-            <mesh position={[0, 0, 0.22]} rotation={[0, 0, 0]}>
-              <ringGeometry args={[0.22, 0.28, 4]} />
-              <meshBasicMaterial
-                color={nightBoost > 0 ? '#e8c898' : accent}
-                transparent
-                opacity={0.55}
-                toneMapped={false}
-                depthWrite={false}
-              />
-            </mesh>
-          )}
           <mesh position={[0, 0.2, 0]} userData={{ hitZone: 'head' }}>
             <boxGeometry args={[0.24, 0.12, 0.24]} />
-            <meshStandardMaterial
-              color={hit && hitZone === 'head' ? '#f0c0c0' : accent}
-              metalness={0.04}
-              roughness={0.88}
-            />
+            <meshStandardMaterial ref={crownMaterialRef} color={accent} metalness={0.04} roughness={0.88} />
           </mesh>
         </group>
       </group>

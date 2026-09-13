@@ -44,7 +44,7 @@ function createCanvasTexture(
 function useGrassTexture() {
   return useMemo(
     () =>
-      createCanvasTexture(1024, 1024, (ctx, w, h) => {
+      createCanvasTexture(768, 768, (ctx, w, h) => {
         const rand = createSeededRandom(0x67a34c)
         ctx.fillStyle = '#4a7648'
         ctx.fillRect(0, 0, w, h)
@@ -81,23 +81,30 @@ function useGrassTexture() {
           ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2)
         }
 
-        // Per-pixel micro noise — subtle grain, no checker tiling.
+        // Per-pixel micro noise — stride-2 keeps grain without a full 1M-pixel loop.
         const imageData = ctx.getImageData(0, 0, w, h)
         const data = imageData.data
-        for (let y = 0; y < h; y += 1) {
-          for (let x = 0; x < w; x += 1) {
-            const i = (y * w + x) * 4
+        for (let y = 0; y < h; y += 2) {
+          for (let x = 0; x < w; x += 2) {
             const n = rand()
             const micro = (n - 0.5) * 18
-            data[i] = Math.min(255, Math.max(0, data[i] + micro * 0.55))
-            data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + micro))
-            data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + micro * 0.65))
+            for (let oy = 0; oy < 2; oy += 1) {
+              for (let ox = 0; ox < 2; ox += 1) {
+                const px = x + ox
+                const py = y + oy
+                if (px >= w || py >= h) continue
+                const i = (py * w + px) * 4
+                data[i] = Math.min(255, Math.max(0, data[i] + micro * 0.55))
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + micro))
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + micro * 0.65))
+              }
+            }
           }
         }
         ctx.putImageData(imageData, 0, 0)
 
         // Fine blade strokes — higher contrast so texture reads under grass tint.
-        for (let i = 0; i < 9200; i += 1) {
+        for (let i = 0; i < 6400; i += 1) {
           const x = rand() * w
           const y = rand() * h
           const shade = rand()
@@ -111,7 +118,7 @@ function useGrassTexture() {
           const bladeH = 1.2 + rand() * 3.2
           ctx.fillRect(x, y, bladeW, bladeH)
         }
-      }, 28),
+      }, 24),
     []
   )
 }
@@ -891,8 +898,7 @@ function OutdoorRangeLight({
           toneMapped={false}
         />
       </mesh>
-      <pointLight position={[0, 5.2, 0.2]} intensity={intensity} color="#ffd890" distance={42} decay={2} />
-      <pointLight position={[0, 1.8, 0.15]} intensity={intensity * 0.52} color="#ffe8c0" distance={28} decay={2} />
+      <pointLight position={[0, 4.8, 0.2]} intensity={intensity * 1.18} color="#ffd890" distance={46} decay={2} />
     </group>
   )
 }
@@ -1109,13 +1115,9 @@ function OutdoorRange({
               toneMapped={false}
             />
           </mesh>
-          <pointLight position={[0, 3.6, -45.5]} intensity={3.65} color="#ffd8a0" distance={48} decay={2} />
-          <pointLight position={[0, 2.2, -20]} intensity={1.85} color="#ffe8c8" distance={58} decay={2} />
-          <pointLight position={[0, 1.4, -32]} intensity={1.55} color="#ffe0b8" distance={48} decay={2} />
-          <pointLight position={[-8, 3.8, -36]} intensity={2.15} color="#ffd8a8" distance={44} decay={2} />
-          <pointLight position={[8, 3.8, -36]} intensity={2.15} color="#ffd8a8" distance={44} decay={2} />
-          <pointLight position={[0, 4.2, -40]} intensity={2.85} color="#ffe8c0" distance={52} decay={2} />
-          <pointLight position={[0, 2.6, -14]} intensity={1.25} color="#ffe8d0" distance={36} decay={2} />
+          <pointLight position={[0, 3.6, -45.5]} intensity={4.2} color="#ffd8a0" distance={52} decay={2} />
+          <pointLight position={[0, 2.4, -28]} intensity={2.45} color="#ffe0b8" distance={58} decay={2} />
+          <pointLight position={[0, 2.6, -14]} intensity={1.65} color="#ffe8d0" distance={42} decay={2} />
         </>
       ) : null}
 

@@ -18,6 +18,7 @@ interface SfxVolumeControlProps {
   onMutedChange: (muted: boolean) => void
   compact?: boolean
   variant?: 'default' | 'dark'
+  hideHint?: boolean
 }
 
 export function SfxVolumeControl({
@@ -27,6 +28,7 @@ export function SfxVolumeControl({
   onMutedChange,
   compact = false,
   variant = 'default',
+  hideHint = false,
 }: SfxVolumeControlProps) {
   const clamped = clampSfxVolume(volume)
   const onDark = variant === 'dark'
@@ -102,9 +104,11 @@ export function SfxVolumeControl({
         aria-label="音效音量"
         disabled={muted}
       />
-      <p className={`text-xs leading-5 ${hintClass}`}>
-        控制开枪、命中与未命中提示音。设置会保存到本地，下次训练自动恢复。
-      </p>
+      {!hideHint && (
+        <p className={`text-xs leading-5 ${hintClass}`}>
+          控制开枪、命中与未命中提示音。设置会保存到本地，下次训练自动恢复。
+        </p>
+      )}
     </section>
   )
 }

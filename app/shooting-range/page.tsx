@@ -41,8 +41,12 @@ export default function ShootingRangePage() {
     () => loadLastConfig()?.sfxVolume ?? DEFAULT_SFX_VOLUME
   )
   const [sfxMuted, setSfxMuted] = useState(() => loadLastConfig()?.sfxMuted ?? false)
-  const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
-    useCrosshairSettings()
+  const {
+    config: crosshairConfig,
+    updateConfig: updateCrosshair,
+    resetConfig: resetCrosshair,
+    applyConfig: applyCrosshair,
+  } = useCrosshairSettings()
 
   useEffect(() => {
     setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
@@ -173,8 +177,7 @@ export default function ShootingRangePage() {
               setShowHistory(true)
             }}
             crosshairConfig={crosshairConfig}
-            onCrosshairChange={updateCrosshair}
-            onCrosshairReset={resetCrosshair}
+            onCrosshairApply={applyCrosshair}
           />
         )
       ) : (
@@ -199,6 +202,7 @@ export default function ShootingRangePage() {
               crosshairConfig={crosshairConfig}
               onCrosshairChange={updateCrosshair}
               onCrosshairReset={resetCrosshair}
+              onCrosshairApply={applyCrosshair}
               setGameStarted={setIsStarted}
               onViewHistory={() => {
                 setIsStarted(false)

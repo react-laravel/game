@@ -11,8 +11,7 @@ describe('ShootingSetup', () => {
     const onStart = vi.fn()
     const onQuickStart = vi.fn()
     const onViewHistory = vi.fn()
-    const onCrosshairChange = vi.fn()
-    const onCrosshairReset = vi.fn()
+    const onCrosshairApply = vi.fn()
 
     render(
       <ShootingSetup
@@ -32,8 +31,7 @@ describe('ShootingSetup', () => {
         onQuickStart={onQuickStart}
         onViewHistory={onViewHistory}
         crosshairConfig={DEFAULT_CROSSHAIR_CONFIG}
-        onCrosshairChange={onCrosshairChange}
-        onCrosshairReset={onCrosshairReset}
+        onCrosshairApply={onCrosshairApply}
       />
     )
 
@@ -61,5 +59,7 @@ describe('ShootingSetup', () => {
     fireEvent.click(screen.getByRole('button', { name: '准星设置' }))
     expect(screen.getByRole('dialog', { name: /准星设置/ })).toBeInTheDocument()
     expect(screen.queryByText('常用预设')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '取消' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '应用并关闭' })).toBeInTheDocument()
   })
 })

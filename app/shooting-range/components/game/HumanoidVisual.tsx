@@ -5,10 +5,11 @@ import type { TrainingModeId } from '../../types'
 import type { BotMotionSample } from '../../utils/humanoidMotion'
 import { getTargetAppearance } from '../../utils/targetAppearance'
 
-const BODY_COLOR = '#5a6a78'
-const HEAD_COLOR = '#7ce8ff'
-const LIMB_COLOR = '#4a5a68'
-const ACCENT_COLOR = '#ffb347'
+const BODY_COLOR = '#3c444c'
+const HEAD_COLOR = '#c4a878'
+const LIMB_COLOR = '#343c44'
+const ACCENT_COLOR = '#a87848'
+const MATTE = { metalness: 0.05, roughness: 0.9 }
 
 const DEFAULT_MOTION: BotMotionSample = {
   offsetX: 0,
@@ -29,12 +30,18 @@ const DEFAULT_MOTION: BotMotionSample = {
 interface HumanoidVisualProps {
   modeId: TrainingModeId
   hit: boolean
+  lowLightBoost?: number
   crouchScaleRef: MutableRefObject<number>
   motionRef: MutableRefObject<BotMotionSample>
 }
 
+function matteProps(color: string) {
+  return { color, metalness: MATTE.metalness, roughness: MATTE.roughness }
+}
+
 /** Original low-poly training-bot silhouette — not based on any commercial IP. */
-export function HumanoidVisual({ modeId, hit, crouchScaleRef, motionRef }: HumanoidVisualProps) {
+export function HumanoidVisual({ modeId, hit, lowLightBoost = 0, crouchScaleRef, motionRef }: HumanoidVisualProps) {
+  const nightBoost = Math.max(0, Math.min(1, lowLightBoost))
   const torsoRef = useRef<THREE.Group>(null)
   const headRef = useRef<THREE.Group>(null)
   const leftLegRef = useRef<THREE.Group>(null)
@@ -86,96 +93,100 @@ export function HumanoidVisual({ modeId, hit, crouchScaleRef, motionRef }: Human
     }
   })
 
-  const headHit = hit ? '#ff7070' : HEAD_COLOR
-  const bodyHit = hit ? '#ff5050' : BODY_COLOR
-  const limbHit = hit ? '#e84848' : LIMB_COLOR
+  const headIdle = nightBoost > 0 ? '#d0b890' : HEAD_COLOR
+  const bodyIdle = nightBoost > 0 ? '#4a5258' : BODY_COLOR
+  const limbIdle = nightBoost > 0 ? '#424a50' : LIMB_COLOR
+  const headHit = hit ? '#d85858' : headIdle
+  const bodyHit = hit ? '#c84848' : bodyIdle
+  const limbHit = hit ? '#b04040' : limbIdle
 
   return (
     <group>
-      {/* Legs — wider hip stance, bend on crouch/jump */}
       <group ref={leftLegRef} position={[-0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.22, 0.74, 0.22]} />
-          <meshBasicMaterial color={limbHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(limbHit)} />
         </mesh>
         <mesh position={[0, -0.42, 0.04]} userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.2, 0.38, 0.24]} />
-          <meshBasicMaterial color={limbHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(limbHit)} />
         </mesh>
       </group>
       <group ref={rightLegRef} position={[0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.22, 0.74, 0.22]} />
-          <meshBasicMaterial color={limbHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(limbHit)} />
         </mesh>
         <mesh position={[0, -0.42, 0.04]} userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.2, 0.38, 0.24]} />
-          <meshBasicMaterial color={limbHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(limbHit)} />
         </mesh>
       </group>
 
-      {/* Hip block — wider than legs, narrower than shoulders */}
       <mesh position={[0, 0.78, 0]} userData={{ hitZone: 'body' }}>
         <boxGeometry args={[0.58, 0.22, 0.32]} />
-        <meshBasicMaterial color={bodyHit} toneMapped={false} />
+        <meshStandardMaterial {...matteProps(bodyHit)} />
       </mesh>
 
       <group ref={torsoRef} position={[0, 1.02, 0]}>
-        {/* Torso — tapered: wider chest, narrower waist */}
         <mesh position={[0, 0.08, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.68, 0.88, 0.36]} />
-          <meshBasicMaterial color={bodyHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(bodyHit)} />
         </mesh>
         <mesh position={[0, -0.22, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.52, 0.28, 0.32]} />
-          <meshBasicMaterial color={bodyHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(bodyHit)} />
         </mesh>
         <mesh position={[0, 0.22, 0.1]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.3, 0.3, 0.06]} />
-          <meshBasicMaterial color={hit ? '#fff0c8' : ACCENT_COLOR} transparent opacity={0.85} toneMapped={false} />
+          <meshStandardMaterial
+            color={hit ? '#e8d8b8' : ACCENT_COLOR}
+            metalness={0.04}
+            roughness={0.88}
+          />
         </mesh>
 
-        {/* Shoulder pads — broad read at range */}
         <mesh position={[-0.4, 0.42, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.2, 0.2, 0.26]} />
-          <meshBasicMaterial color={bodyHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(bodyHit)} />
         </mesh>
         <mesh position={[0.4, 0.42, 0]} userData={{ hitZone: 'body' }}>
           <boxGeometry args={[0.2, 0.2, 0.26]} />
-          <meshBasicMaterial color={bodyHit} toneMapped={false} />
+          <meshStandardMaterial {...matteProps(bodyHit)} />
         </mesh>
 
-        {/* Arms */}
         <group ref={leftArmRef} position={[-0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
             <boxGeometry args={[0.18, 0.64, 0.18]} />
-            <meshBasicMaterial color={limbHit} toneMapped={false} />
+            <meshStandardMaterial {...matteProps(limbHit)} />
           </mesh>
         </group>
         <group ref={rightArmRef} position={[0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
             <boxGeometry args={[0.18, 0.64, 0.18]} />
-            <meshBasicMaterial color={limbHit} toneMapped={false} />
+            <meshStandardMaterial {...matteProps(limbHit)} />
           </mesh>
         </group>
 
-        {/* Head */}
         <group ref={headRef} position={[0, 0.72, 0]}>
           <mesh userData={{ hitZone: 'head' }}>
             <boxGeometry args={[0.4, 0.4, 0.4]} />
-            <meshBasicMaterial color={headHit} toneMapped={false} />
+            <meshStandardMaterial {...matteProps(headHit)} />
           </mesh>
           <mesh position={[0, 0.2, 0]} userData={{ hitZone: 'head' }}>
             <boxGeometry args={[0.24, 0.12, 0.24]} />
-            <meshBasicMaterial color={hit ? '#ffd0d0' : accent} toneMapped={false} />
+            <meshStandardMaterial
+              color={hit ? '#e8c8c8' : accent}
+              metalness={0.04}
+              roughness={0.88}
+            />
           </mesh>
         </group>
       </group>
 
-      {/* Base shadow disc */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.58, 16]} />
-        <meshBasicMaterial color="#0a1018" transparent opacity={0.35} toneMapped={false} depthWrite={false} />
+        <meshStandardMaterial color="#0a1018" transparent opacity={0.32} metalness={0} roughness={1} depthWrite={false} />
       </mesh>
     </group>
   )

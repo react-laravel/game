@@ -15,6 +15,7 @@ import {
   respawnTarget,
 } from '../../utils/gameUtils'
 import { mapConfigs } from '../../utils/mapConfigs'
+import { getOutdoorTargetReadabilityBoost } from '../../utils/outdoorTimeOfDay'
 import { resolveTrainingSettings } from '../../utils/trainingModes'
 import { playHitSound, playMissSound, playShotSound } from '../../utils/audioUtils'
 import {
@@ -88,6 +89,8 @@ export function GameScene({
 }: GameSceneProps) {
   const { camera, gl } = useThree()
   const settings = resolveTrainingSettings(difficulty, modeId)
+  const targetLowLightBoost =
+    mapId === 'outdoor' ? getOutdoorTargetReadabilityBoost(outdoorTimeOfDay) : 0
   const mapConfig = mapConfigs[mapId]
   const [targets] = useState<TargetData[]>(() => createTargets(settings))
   const targetObjects = useRef(new Map<number, THREE.Group>())
@@ -353,6 +356,7 @@ export function GameScene({
           orbitSpeed={settings.orbitSpeed}
           modeId={modeId}
           targetShape={targetShape}
+          lowLightBoost={targetLowLightBoost}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />

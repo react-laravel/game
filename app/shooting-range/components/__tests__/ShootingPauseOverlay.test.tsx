@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CROSSHAIR_CONFIG } from '../../utils/crosshairConfig'
 import { ShootingPauseOverlay } from '../ShootingGameOverlays'
@@ -112,5 +113,28 @@ describe('ShootingPauseOverlay', () => {
     fireEvent.keyDown(window, { code: 'Space' })
 
     expect(onResume).not.toHaveBeenCalled()
+  })
+
+  it('shows framed sensitivity and volume tab content with previews', async () => {
+    const user = userEvent.setup()
+    render(<ShootingPauseOverlay {...baseProps} onChangeDrill={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    await user.click(screen.getByRole('tab', { name: '灵敏度' }))
+
+    const sensitivityPanel = screen.getByRole('tabpanel', { hidden: false })
+    expect(sensitivityPanel).toHaveTextContent('实时预览 · 转向幅度')
+    expect(sensitivityPanel).toHaveTextContent('精细瞄准')
+    expect(sensitivityPanel).toHaveTextContent('快速甩枪')
+
+    await user.click(screen.getByRole('tab', { name: '音量' }))
+    const volumePanel = screen.getByRole('tabpanel', { hidden: false })
+    expect(volumePanel).toHaveTextContent('实时预览 · 音量幅度')
+    expect(volumePanel).toHaveTextContent('夜间练习')
+
+    await user.click(screen.getByRole('tab', { name: '其他' }))
+    const otherPanel = screen.getByRole('tabpanel', { hidden: false })
+    expect(otherPanel).toHaveTextContent('快速参考')
+    expect(otherPanel).toHaveTextContent('显示强度')
   })
 })

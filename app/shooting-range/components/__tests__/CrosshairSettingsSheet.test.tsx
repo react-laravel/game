@@ -57,5 +57,6 @@ describe('CrosshairSettingsSheet', () => {
     expect(screen.getByText('暗色场景')).toBeInTheDocument()
     expect(screen.getByText('亮色场景')).toBeInTheDocument()
     expect(screen.getByText(/双背景对比/)).toBeInTheDocument()
+    expect(screen.getByText(/取消不保存/)).toBeInTheDocument()
   })
 })

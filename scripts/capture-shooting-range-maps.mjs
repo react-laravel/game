@@ -198,10 +198,18 @@ async function enterPauseOverlay(page) {
   await page.waitForTimeout(400)
 }
 
-async function capturePauseSettingsTabs(page, filePath) {
-  await page.getByRole('button', { name: '设置' }).click({ force: true, timeout: 15000 })
-  await page.getByTestId('shooting-pause-settings').waitFor({ state: 'visible', timeout: 10000 })
-  await page.getByRole('tab', { name: '准星' }).waitFor({ state: 'visible', timeout: 5000 })
+async function capturePauseSettingsTabs(page, filePath, tabName = '准星', options = {}) {
+  const { openSettings = true } = options
+  if (openSettings) {
+    const settingsButton = page.getByTestId('shooting-pause-dialog').getByRole('button', { name: '设置' })
+    await settingsButton.waitFor({ state: 'visible', timeout: 15000 })
+    await settingsButton.click({ force: true, timeout: 15000 })
+    await page.getByTestId('shooting-pause-settings').waitFor({ state: 'visible', timeout: 10000 })
+  }
+  if (tabName !== '准星') {
+    await page.getByRole('tab', { name: tabName }).click({ force: true, timeout: 5000 })
+  }
+  await page.getByRole('tab', { name: tabName }).waitFor({ state: 'visible', timeout: 5000 })
   await page.waitForTimeout(400)
   await page.screenshot({ path: filePath, fullPage: false })
 }
@@ -255,7 +263,13 @@ async function main() {
   await runStep('pause-overlay', async () => {
     await enterPauseOverlay(page)
     await page.screenshot({ path: path.join(OUT_DIR, 'pause-overlay.png'), fullPage: false })
-    await capturePauseSettingsTabs(page, path.join(OUT_DIR, 'pause-settings-tabs.png'))
+    await capturePauseSettingsTabs(page, path.join(OUT_DIR, 'pause-settings-tabs.png'), '准星')
+    await capturePauseSettingsTabs(
+      page,
+      path.join(OUT_DIR, 'pause-settings-sensitivity.png'),
+      '灵敏度',
+      { openSettings: false }
+    )
   })
 
   await browser.close()

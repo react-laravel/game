@@ -5,10 +5,10 @@ export const MIN_SFX_VOLUME = 0
 export const MAX_SFX_VOLUME = 1
 export const SFX_VOLUME_STEP = 0.05
 
-export const SFX_VOLUME_PRESETS: Array<{ id: string; label: string; value: number }> = [
-  { id: 'low', label: '轻柔', value: 0.45 },
-  { id: 'default', label: '标准', value: 0.85 },
-  { id: 'high', label: '响亮', value: 1 },
+export const SFX_VOLUME_PRESETS: Array<{ id: string; label: string; hint: string; value: number }> = [
+  { id: 'low', label: '轻柔', hint: '夜间练习', value: 0.45 },
+  { id: 'default', label: '标准', hint: '推荐默认', value: 0.85 },
+  { id: 'high', label: '响亮', hint: '清晰反馈', value: 1 },
 ]
 
 export function clampSfxVolume(value: number): number {

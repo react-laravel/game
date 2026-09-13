@@ -103,6 +103,7 @@ export function ShootingPauseSettingsPanel({
           <TabsContent value="sensitivity" className="mt-0">
             <LookSensitivityControl
               compact
+              framed
               variant="dark"
               value={lookSensitivity}
               onChange={onSensitivityChange}
@@ -112,6 +113,7 @@ export function ShootingPauseSettingsPanel({
           <TabsContent value="volume" className="mt-0">
             <SfxVolumeControl
               compact
+              framed
               variant="dark"
               volume={sfxVolume}
               muted={sfxMuted}
@@ -123,23 +125,35 @@ export function ShootingPauseSettingsPanel({
           <TabsContent value="other" className="mt-0 space-y-4">
             <ReducedMotionControl
               compact
+              framed
               variant="dark"
               value={motionPreference}
               onChange={onMotionPreferenceChange}
             />
 
             <div className="space-y-3 rounded-2xl border border-white/8 bg-slate-950/45 p-4">
-              <h3 className="text-sm font-semibold text-amber-100/90">操作说明</h3>
-              {shootingHelpSections.map(section => (
-                <section key={section.title}>
-                  <h4 className="text-xs font-semibold text-white/75">{section.title}</h4>
-                  <ul className="mt-1.5 space-y-1 text-xs leading-5 text-white/55">
-                    {section.items.slice(0, 2).map(item => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
+              <div className="text-[10px] font-semibold tracking-[0.14em] text-white/40 uppercase">
+                操作说明
+              </div>
+              <h3 className="text-sm font-semibold text-amber-100/90">快速参考</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {shootingHelpSections.map(section => (
+                  <section
+                    key={section.title}
+                    className="rounded-xl border border-white/6 bg-slate-900/40 px-3 py-2.5"
+                  >
+                    <h4 className="text-xs font-semibold text-white/80">{section.title}</h4>
+                    <ul className="mt-1.5 space-y-1 text-xs leading-5 text-white/55">
+                      {section.items.slice(0, 2).map(item => (
+                        <li key={item} className="flex gap-1.5">
+                          <span className="text-cyan-300/70">·</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              </div>
             </div>
 
             {onChangeDrill ? (

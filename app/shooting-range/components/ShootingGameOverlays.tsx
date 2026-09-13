@@ -5,7 +5,7 @@ import { Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-r
 import { Button } from '@/components/ui/button'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import type { MotionPreference } from '../utils/motionPrefs'
-import type { TargetShape } from '../types'
+import type { OutdoorTimeOfDay, ShootingMapId, TargetShape } from '../types'
 import { ShootingPauseSettingsPanel } from './ShootingPauseSettingsPanel'
 
 export function UnsupportedShootingDevice({ message }: { message: string }) {
@@ -82,6 +82,9 @@ interface ShootingPauseOverlayProps {
   onMotionPreferenceChange: (value: MotionPreference) => void
   targetShape: TargetShape
   onTargetShapeChange: (value: TargetShape) => void
+  mapId: ShootingMapId
+  outdoorTimeOfDay: OutdoorTimeOfDay
+  onOutdoorTimeOfDayChange: (value: OutdoorTimeOfDay) => void
 }
 
 export function ShootingPauseOverlay({
@@ -103,6 +106,9 @@ export function ShootingPauseOverlay({
   onMotionPreferenceChange,
   targetShape,
   onTargetShapeChange,
+  mapId,
+  outdoorTimeOfDay,
+  onOutdoorTimeOfDayChange,
 }: ShootingPauseOverlayProps) {
   const [view, setView] = useState<PauseView>('menu')
   const resumeButtonId = 'shooting-pause-resume'
@@ -215,6 +221,9 @@ export function ShootingPauseOverlay({
           onMotionPreferenceChange={onMotionPreferenceChange}
           targetShape={targetShape}
           onTargetShapeChange={onTargetShapeChange}
+          mapId={mapId}
+          outdoorTimeOfDay={outdoorTimeOfDay}
+          onOutdoorTimeOfDayChange={onOutdoorTimeOfDayChange}
           onChangeDrill={onChangeDrill}
           onBack={goBackToMenu}
         />

@@ -24,7 +24,7 @@ import {
   randomRecoilYaw,
 } from '../../utils/gunFeel'
 import { lookSpeedForSensitivity } from '../../utils/lookSensitivity'
-import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../../types'
+import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../../types'
 
 interface TargetData {
   id: number
@@ -59,6 +59,7 @@ interface GameSceneProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   targetShape: TargetShape
+  outdoorTimeOfDay?: OutdoorTimeOfDay
   lookSensitivity: number
   reducedMotion?: boolean
   onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
@@ -75,6 +76,7 @@ export function GameScene({
   mapId,
   modeId,
   targetShape,
+  outdoorTimeOfDay = 'day',
   lookSensitivity,
   reducedMotion = false,
   onShotResult,
@@ -333,7 +335,7 @@ export function GameScene({
 
   return (
     <>
-      <RangeEnvironment config={mapConfig} />
+      <RangeEnvironment config={mapConfig} outdoorTimeOfDay={outdoorTimeOfDay} />
 
       {targets.map(target => (
         <Target

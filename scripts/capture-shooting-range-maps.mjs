@@ -172,11 +172,15 @@ async function captureTrainingHud(page, filePath, options = {}) {
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
-async function captureCustomMapTraining(page, mapLabel, filePath) {
+async function captureCustomMapTraining(page, mapLabel, filePath, options = {}) {
+  const { outdoorTimeLabel } = options
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
   await page.getByRole('button', { name: /自定义场景与难度/ }).click()
   await page.locator('button', { hasText: mapLabel }).first().click()
+  if (outdoorTimeLabel) {
+    await page.getByRole('button', { name: new RegExp(outdoorTimeLabel) }).click()
+  }
   await page.getByRole('button', { name: /按当前设置开始/ }).click()
   await enterFallbackPlay(page)
   await captureTrainingHud(page, filePath)
@@ -322,6 +326,22 @@ async function main() {
       captureCustomMapTraining(page, map.label, path.join(OUT_DIR, `${map.id}-training-hud.png`))
     )
   }
+
+  await runStep('outdoor-noon', () =>
+    captureCustomMapTraining(page, '户外靶场', path.join(OUT_DIR, 'outdoor-noon-training-hud.png'), {
+      outdoorTimeLabel: '中午',
+    })
+  )
+  await runStep('outdoor-dusk', () =>
+    captureCustomMapTraining(page, '户外靶场', path.join(OUT_DIR, 'outdoor-dusk-training-hud.png'), {
+      outdoorTimeLabel: '傍晚',
+    })
+  )
+  await runStep('outdoor-night', () =>
+    captureCustomMapTraining(page, '户外靶场', path.join(OUT_DIR, 'outdoor-night-training-hud.png'), {
+      outdoorTimeLabel: '晚上',
+    })
+  )
 
   await runStep('drill-flick', () =>
     captureQuickStartTraining(page, '甩枪反应', path.join(OUT_DIR, 'drill-flick-training-hud.png'))

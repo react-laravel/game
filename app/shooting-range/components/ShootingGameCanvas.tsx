@@ -2,8 +2,9 @@ import { Canvas } from '@react-three/fiber'
 import { memo } from 'react'
 import type { MutableRefObject, RefObject } from 'react'
 import { GameScene, type ShootingSceneSnapshot } from './game/GameScene'
-import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
+import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { mapConfigs } from '../utils/mapConfigs'
+import { getOutdoorTimePreset } from '../utils/outdoorTimeOfDay'
 
 interface ShootingGameCanvasProps {
   canvasRef: RefObject<HTMLCanvasElement | null>
@@ -12,6 +13,7 @@ interface ShootingGameCanvasProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   targetShape: TargetShape
+  outdoorTimeOfDay?: OutdoorTimeOfDay
   lookSensitivity: number
   reducedMotion?: boolean
   gameStarted: boolean
@@ -29,6 +31,7 @@ function ShootingGameCanvasComponent({
   mapId,
   modeId,
   targetShape,
+  outdoorTimeOfDay = 'day',
   lookSensitivity,
   reducedMotion = false,
   gameStarted,
@@ -38,7 +41,16 @@ function ShootingGameCanvasComponent({
   onHitFeedback,
   onFpsReport,
 }: ShootingGameCanvasProps) {
-  const mapBackground = mapConfigs[mapId].background
+  const mapBackground =
+    mapId === 'outdoor'
+      ? getOutdoorTimePreset(outdoorTimeOfDay).background
+      : mapConfigs[mapId].background
+  const toneMappingExposure =
+    mapId === 'indoor'
+      ? 1.52
+      : mapId === 'outdoor'
+        ? getOutdoorTimePreset(outdoorTimeOfDay).toneMappingExposure
+        : 1.18
 
   return (
     <Canvas
@@ -49,18 +61,19 @@ function ShootingGameCanvasComponent({
       camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 130 : 90 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(mapBackground)
-        gl.toneMappingExposure = mapId === 'indoor' ? 1.52 : mapId === 'outdoor' ? 1.02 : 1.18
+        gl.toneMappingExposure = toneMappingExposure
         camera.rotation.set(0, 0, 0)
       }}
       style={{ touchAction: 'none' }}
       className="outline-none"
     >
       <GameScene
-        key={`${difficulty}-${mapId}-${modeId}-${targetShape}`}
+        key={`${difficulty}-${mapId}-${modeId}-${targetShape}-${outdoorTimeOfDay}`}
         difficulty={difficulty}
         mapId={mapId}
         modeId={modeId}
         targetShape={targetShape}
+        outdoorTimeOfDay={outdoorTimeOfDay}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         onShotResult={onShotResult}

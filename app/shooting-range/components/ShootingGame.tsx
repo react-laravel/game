@@ -15,7 +15,7 @@ import {
   computeSessionGrade,
 } from '../utils/sessionInsights'
 import { loadSessionHistory } from '../utils/statsStorage'
-import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
+import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { useMotionPreference } from '../hooks/useMotionPreference'
 import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { ShootingHelpSheet } from './ShootingHelpSheet'
@@ -37,6 +37,8 @@ interface ShootingGameProps {
   modeId: TrainingModeId
   targetShape: TargetShape
   onTargetShapeChange: (value: TargetShape) => void
+  outdoorTimeOfDay: OutdoorTimeOfDay
+  onOutdoorTimeOfDayChange: (value: OutdoorTimeOfDay) => void
   lookSensitivity: number
   sfxVolume: number
   sfxMuted: boolean
@@ -58,6 +60,8 @@ export default function ShootingGame({
   modeId,
   targetShape,
   onTargetShapeChange,
+  outdoorTimeOfDay,
+  onOutdoorTimeOfDayChange,
   lookSensitivity,
   sfxVolume,
   sfxMuted,
@@ -82,7 +86,7 @@ export default function ShootingGame({
     camera: { yaw: 0, pitch: 0 },
     targets: [],
   })
-  const config = { difficulty, mapId, modeId, targetShape }
+  const config = { difficulty, mapId, modeId, targetShape, outdoorTimeOfDay }
   const { displayFps, reportFps } = useFpsMeter()
   const {
     timeLeft,
@@ -291,6 +295,7 @@ export default function ShootingGame({
         mapId={mapId}
         modeId={modeId}
         targetShape={targetShape}
+        outdoorTimeOfDay={outdoorTimeOfDay}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         gameStarted={gameStarted}
@@ -392,6 +397,9 @@ export default function ShootingGame({
           onMotionPreferenceChange={setMotionPreference}
           targetShape={targetShape}
           onTargetShapeChange={onTargetShapeChange}
+          mapId={mapId}
+          outdoorTimeOfDay={outdoorTimeOfDay}
+          onOutdoorTimeOfDayChange={onOutdoorTimeOfDayChange}
         />
       )}
 

@@ -32,9 +32,11 @@ import {
 } from '../utils/drillPresets'
 import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
 import { loadSessionHistory } from '../utils/statsStorage'
-import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
+import type { OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { TargetShapeControl } from './TargetShapeControl'
+import { OutdoorTimeOfDayControl } from './OutdoorTimeOfDayControl'
 import { targetShapeLabel } from '../utils/targetShape'
+import { outdoorTimeLabel } from '../utils/outdoorTimeOfDay'
 import { mapOptions } from '../utils/mapConfigs'
 import { trainingModeOptions, trainingModes } from '../utils/trainingModes'
 
@@ -97,6 +99,8 @@ interface ShootingSetupProps {
   onSfxMutedChange: (muted: boolean) => void
   targetShape: TargetShape
   onTargetShapeChange: (value: TargetShape) => void
+  outdoorTimeOfDay: OutdoorTimeOfDay
+  onOutdoorTimeOfDayChange: (value: OutdoorTimeOfDay) => void
   onStart: () => void
   onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
@@ -119,6 +123,8 @@ export function ShootingSetup({
   onSfxMutedChange,
   targetShape,
   onTargetShapeChange,
+  outdoorTimeOfDay,
+  onOutdoorTimeOfDayChange,
   onStart,
   onQuickStart,
   onViewHistory,
@@ -289,7 +295,8 @@ export function ShootingSetup({
                     {selectedMode.name} · {selectedMap?.name} · {selectedDifficulty.name}
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs leading-5">
-                    {selectedDifficulty.label} · {targetShapeLabel(targetShape)} · 灵敏度{' '}
+                    {selectedDifficulty.label} · {targetShapeLabel(targetShape)}
+                    {mapId === 'outdoor' ? ` · ${outdoorTimeLabel(outdoorTimeOfDay)}` : ''} · 灵敏度{' '}
                     {lookSensitivity.toFixed(1)}× · 音效{' '}
                     {sfxMuted ? '静音' : `${sfxVolumePercent(sfxVolume)}%`}
                   </div>
@@ -371,6 +378,12 @@ export function ShootingSetup({
                     })}
                   </div>
                 </section>
+
+                <OutdoorTimeOfDayControl
+                  value={outdoorTimeOfDay}
+                  onChange={onOutdoorTimeOfDayChange}
+                  disabled={mapId !== 'outdoor'}
+                />
 
                 <button
                   type="button"

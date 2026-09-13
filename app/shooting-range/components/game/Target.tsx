@@ -7,6 +7,7 @@ import {
   createBotMotionState,
   getBotMotionProfile,
   stepBotMotion,
+  type BotMotionSample,
 } from '../../utils/humanoidMotion'
 import { getTargetAppearance } from '../../utils/targetAppearance'
 import { HumanoidVisual } from './HumanoidVisual'
@@ -78,6 +79,18 @@ function TargetComponent({
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const botMotionProfile = useMemo(() => getBotMotionProfile(modeId), [modeId])
   const botMotionState = useRef(createBotMotionState(id))
+  const botMotionSample = useRef<BotMotionSample>({
+    offsetX: 0,
+    offsetY: 0,
+    offsetZ: 0,
+    crouchScale: 1,
+    phaseT: 0,
+    phase: 'strafe',
+    leanX: 0,
+    leanZ: 0,
+    legSpread: 0,
+    armSwing: 0,
+  })
   const botOffset = useRef(new THREE.Vector3())
   const crouchScaleRef = useRef(1)
   const basePosition = useRef(new THREE.Vector3(...position))
@@ -192,6 +205,7 @@ function TargetComponent({
       if (isHumanoid) {
         const timeSec = performance.now() * 0.001
         const sample = stepBotMotion(botMotionState.current, delta, botMotionProfile, timeSec)
+        botMotionSample.current = sample
         botOffset.current.set(sample.offsetX, sample.offsetY, sample.offsetZ)
         crouchScaleRef.current = sample.crouchScale
         root.position.set(
@@ -290,7 +304,12 @@ function TargetComponent({
       >
       <group ref={visualRef}>
         {isHumanoid ? (
-          <HumanoidVisual modeId={modeId} hit={humanoidHit} crouchScaleRef={crouchScaleRef} />
+          <HumanoidVisual
+            modeId={modeId}
+            hit={humanoidHit}
+            crouchScaleRef={crouchScaleRef}
+            motionRef={botMotionSample}
+          />
         ) : (
           <>
         <mesh ref={spawnFlashRef} position={[0, 0, 0.12]} visible={false}>

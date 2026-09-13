@@ -34,45 +34,84 @@ function createCanvasTexture(
   texture.wrapT = THREE.RepeatWrapping
   texture.repeat.set(repeat, repeat)
   texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearMipmapLinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.generateMipmaps = true
+  texture.anisotropy = 4
   return texture
 }
 
 function useGrassTexture() {
   return useMemo(
     () =>
-      createCanvasTexture(512, 512, (ctx, w, h) => {
+      createCanvasTexture(1024, 1024, (ctx, w, h) => {
         const rand = createSeededRandom(0x67a34c)
         ctx.fillStyle = '#4a7648'
         ctx.fillRect(0, 0, w, h)
 
         // Large soft color washes — organic lawn variation, not tile blocks.
-        for (let i = 0; i < 28; i += 1) {
+        for (let i = 0; i < 36; i += 1) {
           const cx = rand() * w
           const cy = rand() * h
-          const radius = 48 + rand() * 92
+          const radius = 64 + rand() * 128
           const tone = rand()
-          const g = tone > 0.5 ? 108 + rand() * 18 : 88 + rand() * 16
+          const g = tone > 0.5 ? 112 + rand() * 22 : 84 + rand() * 18
           const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
-          gradient.addColorStop(0, `rgba(${48 + rand() * 12}, ${g}, ${46 + rand() * 10}, 0.22)`)
+          gradient.addColorStop(0, `rgba(${46 + rand() * 14}, ${g}, ${44 + rand() * 12}, 0.28)`)
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
           ctx.fillStyle = gradient
           ctx.fillRect(0, 0, w, h)
         }
 
-        // Fine blade strokes — high frequency, low contrast.
-        for (let i = 0; i < 5200; i += 1) {
+        // Medium clumps — visible from FPS distance without repeating squares.
+        for (let i = 0; i < 180; i += 1) {
+          const cx = rand() * w
+          const cy = rand() * h
+          const radius = 10 + rand() * 22
+          const lighter = rand() > 0.45
+          const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
+          if (lighter) {
+            gradient.addColorStop(0, `rgba(${72 + rand() * 18}, ${118 + rand() * 24}, ${68 + rand() * 16}, 0.34)`)
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          } else {
+            gradient.addColorStop(0, `rgba(${34 + rand() * 10}, ${72 + rand() * 16}, ${38 + rand() * 10}, 0.3)`)
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          }
+          ctx.fillStyle = gradient
+          ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2)
+        }
+
+        // Per-pixel micro noise — subtle grain, no checker tiling.
+        const imageData = ctx.getImageData(0, 0, w, h)
+        const data = imageData.data
+        for (let y = 0; y < h; y += 1) {
+          for (let x = 0; x < w; x += 1) {
+            const i = (y * w + x) * 4
+            const n = rand()
+            const micro = (n - 0.5) * 18
+            data[i] = Math.min(255, Math.max(0, data[i] + micro * 0.55))
+            data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + micro))
+            data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + micro * 0.65))
+          }
+        }
+        ctx.putImageData(imageData, 0, 0)
+
+        // Fine blade strokes — higher contrast so texture reads under grass tint.
+        for (let i = 0; i < 9200; i += 1) {
           const x = rand() * w
           const y = rand() * h
           const shade = rand()
           ctx.fillStyle =
-            shade > 0.88
-              ? 'rgba(82, 64, 40, 0.12)'
-              : shade > 0.52
-                ? `rgba(${54 + rand() * 16}, ${102 + rand() * 20}, ${54 + rand() * 14}, 0.28)`
-                : `rgba(${44 + rand() * 12}, ${88 + rand() * 16}, ${46 + rand() * 10}, 0.2)`
-          ctx.fillRect(x, y, 1 + rand() * 1.5, 1 + rand() * 2.5)
+            shade > 0.86
+              ? 'rgba(92, 72, 44, 0.2)'
+              : shade > 0.5
+                ? `rgba(${58 + rand() * 18}, ${108 + rand() * 22}, ${58 + rand() * 16}, 0.38)`
+                : `rgba(${38 + rand() * 14}, ${78 + rand() * 18}, ${42 + rand() * 12}, 0.3)`
+          const bladeW = 1 + rand() * 1.6
+          const bladeH = 1.2 + rand() * 3.2
+          ctx.fillRect(x, y, bladeW, bladeH)
         }
-      }, 1),
+      }, 28),
     []
   )
 }
@@ -806,7 +845,7 @@ function IndoorRange({ config }: { config: MapConfig }) {
 /** Solid metal pole + box head — no glass housings in the lane. */
 function OutdoorRangeLight({
   position,
-  intensity = 3.35,
+  intensity = 4.15,
 }: {
   position: [number, number, number]
   intensity?: number
@@ -826,12 +865,12 @@ function OutdoorRangeLight({
         <meshStandardMaterial
           color="#fff0d8"
           emissive="#ffd878"
-          emissiveIntensity={0.42}
+          emissiveIntensity={0.58}
           toneMapped={false}
         />
       </mesh>
-      <pointLight position={[0, 5.2, 0.2]} intensity={intensity} color="#ffd890" distance={36} decay={2} />
-      <pointLight position={[0, 1.8, 0.15]} intensity={intensity * 0.38} color="#ffe8c0" distance={22} decay={2} />
+      <pointLight position={[0, 5.2, 0.2]} intensity={intensity} color="#ffd890" distance={42} decay={2} />
+      <pointLight position={[0, 1.8, 0.15]} intensity={intensity * 0.52} color="#ffe8c0" distance={28} decay={2} />
     </group>
   )
 }
@@ -917,9 +956,9 @@ function OutdoorRange({
         <meshStandardMaterial
           map={grassTexture}
           color={grassTint}
-          emissive={showRangeLights ? '#1a2820' : '#000000'}
-          emissiveIntensity={showRangeLights ? 0.14 : 0}
-          roughness={0.97}
+          emissive={showRangeLights ? '#3a4840' : '#000000'}
+          emissiveIntensity={showRangeLights ? 0.34 : 0}
+          roughness={0.92}
           metalness={0.01}
         />
       </mesh>
@@ -1036,24 +1075,25 @@ function OutdoorRange({
               <OutdoorRangeLight key={`range-light-${x}-${z}`} position={[x, 0, z]} />
             ))
           )}
-          <OutdoorRangeLight position={[-10, 0, -44]} intensity={3.8} />
-          <OutdoorRangeLight position={[10, 0, -44]} intensity={3.8} />
-          <OutdoorRangeLight position={[0, 0, -24]} intensity={2.8} />
+          <OutdoorRangeLight position={[-10, 0, -44]} intensity={4.6} />
+          <OutdoorRangeLight position={[10, 0, -44]} intensity={4.6} />
+          <OutdoorRangeLight position={[0, 0, -24]} intensity={3.45} />
           <mesh position={[0, 3.8, -45.5]}>
             <boxGeometry args={[34, 0.14, 0.35]} />
             <meshStandardMaterial
               color="#fff0d0"
               emissive="#ffb347"
-              emissiveIntensity={0.38}
+              emissiveIntensity={0.52}
               toneMapped={false}
             />
           </mesh>
-          <pointLight position={[0, 3.6, -45.5]} intensity={2.85} color="#ffd8a0" distance={40} decay={2} />
-          <pointLight position={[0, 2.2, -20]} intensity={1.35} color="#ffe8c8" distance={52} decay={2} />
-          <pointLight position={[0, 1.4, -32]} intensity={1.15} color="#ffe0b8" distance={42} decay={2} />
-          <pointLight position={[-8, 3.8, -36]} intensity={1.65} color="#ffd8a8" distance={38} decay={2} />
-          <pointLight position={[8, 3.8, -36]} intensity={1.65} color="#ffd8a8" distance={38} decay={2} />
-          <pointLight position={[0, 4.2, -40]} intensity={2.2} color="#ffe8c0" distance={46} decay={2} />
+          <pointLight position={[0, 3.6, -45.5]} intensity={3.65} color="#ffd8a0" distance={48} decay={2} />
+          <pointLight position={[0, 2.2, -20]} intensity={1.85} color="#ffe8c8" distance={58} decay={2} />
+          <pointLight position={[0, 1.4, -32]} intensity={1.55} color="#ffe0b8" distance={48} decay={2} />
+          <pointLight position={[-8, 3.8, -36]} intensity={2.15} color="#ffd8a8" distance={44} decay={2} />
+          <pointLight position={[8, 3.8, -36]} intensity={2.15} color="#ffd8a8" distance={44} decay={2} />
+          <pointLight position={[0, 4.2, -40]} intensity={2.85} color="#ffe8c0" distance={52} decay={2} />
+          <pointLight position={[0, 2.6, -14]} intensity={1.25} color="#ffe8d0" distance={36} decay={2} />
         </>
       ) : null}
 

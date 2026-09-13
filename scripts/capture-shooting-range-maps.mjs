@@ -12,7 +12,15 @@ async function suppressNextJsDevOverlay(page) {
     const style = document.createElement('style')
     style.setAttribute('data-shooting-qa-overlay-suppress', 'true')
     style.textContent = `
-      nextjs-portal,
+      nextjs-portal {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
       [data-nextjs-dialog-overlay],
       [data-nextjs-toast],
       #__next-build-watcher,
@@ -26,19 +34,25 @@ async function suppressNextJsDevOverlay(page) {
     document.documentElement.appendChild(style)
 
     const hideDevChrome = () => {
-      document
-        .querySelectorAll(
-          'nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast], #__next-build-watcher, [data-next-badge-root]'
-        )
-        .forEach(node => {
-          node.remove()
-        })
+      document.querySelectorAll('nextjs-portal').forEach(node => {
+        node.style.setProperty('display', 'none', 'important')
+        node.remove()
+      })
     }
 
     hideDevChrome()
     new MutationObserver(hideDevChrome).observe(document.documentElement, {
       childList: true,
       subtree: true,
+    })
+  })
+}
+
+async function hideDevOverlayBeforeShot(page) {
+  await page.evaluate(() => {
+    document.querySelectorAll('nextjs-portal').forEach(node => {
+      node.style.setProperty('display', 'none', 'important')
+      node.remove()
     })
   })
 }
@@ -62,21 +76,31 @@ async function installQaFallback(page, options = {}) {
 }
 
 async function mockAuth(page) {
-  await page.route('**/api/user', async route => {
+  await page.route('**/api/**', async route => {
+    const url = route.request().url()
+    if (url.includes('/api/user')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: { id: 1, name: 'Test', email: 't@t.com', is_admin: false, permissions: [] },
+        }),
+      })
+      return
+    }
+    if (url.includes('/api/auth/csrf')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: { token: 'test' } }),
+      })
+      return
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: { id: 1, name: 'Test', email: 't@t.com', is_admin: false, permissions: [] },
-      }),
-    })
-  })
-  await page.route('**/api/auth/csrf', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: { token: 'test' } }),
+      body: JSON.stringify({ success: true, data: {} }),
     })
   })
 }
@@ -122,6 +146,7 @@ async function enterFallbackPlay(page) {
 async function captureSetup(page, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: true })
 }
 
@@ -206,6 +231,7 @@ async function captureTrainingHud(page, filePath, options = {}) {
       await page.waitForTimeout(320)
     }
   }
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -290,6 +316,7 @@ async function captureHumanoidHitFeedback(page, filePath) {
   await waitForSceneReady(page, { requireHumanoid: true })
   await page.evaluate(() => window.debugShootingDemonstrateHit?.('head'))
   await page.waitForTimeout(140)
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -313,6 +340,7 @@ async function captureHumanoidResultsScreen(page, filePath) {
   await page.getByText('训练完成', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 })
   await page.getByText('命中部位').waitFor({ state: 'visible', timeout: 10000 })
   await page.waitForTimeout(400)
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -353,10 +381,11 @@ async function capturePauseSettingsTabs(page, filePath, tabName = '准星', opti
     await page.getByTestId('shooting-pause-settings').waitFor({ state: 'visible', timeout: 10000 })
   }
   if (tabName !== '准星') {
-    await page.getByRole('tab', { name: tabName }).click({ force: true, timeout: 5000 })
+    await page.getByRole('tab', { name: tabName }).click({ force: true, timeout: 15000 })
   }
   await page.getByRole('tab', { name: tabName }).waitFor({ state: 'visible', timeout: 5000 })
   await page.waitForTimeout(400)
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -371,6 +400,7 @@ async function captureResultsScreen(page, filePath) {
   await page.evaluate(() => window.endShootingSession?.())
   await page.getByText('训练完成', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 })
   await page.waitForTimeout(500)
+  await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -434,6 +464,7 @@ async function main() {
 
   await runStep('pause-overlay', async () => {
     await enterPauseOverlay(page)
+    await hideDevOverlayBeforeShot(page)
     await page.screenshot({ path: path.join(OUT_DIR, 'pause-overlay.png'), fullPage: false })
     await capturePauseSettingsTabs(page, path.join(OUT_DIR, 'pause-settings-tabs.png'), '准星')
     await capturePauseSettingsTabs(

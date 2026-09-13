@@ -47,6 +47,28 @@ describe('lastConfigStorage', () => {
     expect(loadLastConfig()?.lookSensitivity).toBe(2)
   })
 
+  it('normalizes sfx volume and mute when loading saved config', () => {
+    localStorage.setItem(
+      LAST_CONFIG_KEY,
+      JSON.stringify({
+        difficulty: 'easy',
+        mapId: 'indoor',
+        modeId: 'static',
+        sfxVolume: 9,
+        sfxMuted: true,
+      })
+    )
+
+    expect(loadLastConfig()).toEqual({
+      difficulty: 'easy',
+      mapId: 'indoor',
+      modeId: 'static',
+      lookSensitivity: 1,
+      sfxVolume: 1,
+      sfxMuted: true,
+    })
+  })
+
   it('persists and loads config plus drill id', () => {
     saveLastConfig({ difficulty: 'medium', mapId: 'outdoor', modeId: 'flick' }, 'flick-reflex')
 
@@ -55,6 +77,8 @@ describe('lastConfigStorage', () => {
       mapId: 'outdoor',
       modeId: 'flick',
       lookSensitivity: 1,
+      sfxVolume: 0.85,
+      sfxMuted: false,
     })
     expect(loadLastDrillId()).toBe('flick-reflex')
     expect(localStorage.getItem(LAST_CONFIG_KEY)).toContain('"mapId":"outdoor"')

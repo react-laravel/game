@@ -22,6 +22,8 @@ import { Card } from '@/components/ui/card'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import { CrosshairSettings } from './CrosshairSettings'
 import { LookSensitivityControl } from './LookSensitivityControl'
+import { SfxVolumeControl } from './SfxVolumeControl'
+import { sfxVolumePercent } from '../utils/sfxVolume'
 import type { DrillPreset } from '../utils/drillPresets'
 import { drillPresets } from '../utils/drillPresets'
 import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
@@ -78,10 +80,14 @@ interface ShootingSetupProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity: number
+  sfxVolume: number
+  sfxMuted: boolean
   onDifficultyChange: (difficulty: ShootingDifficulty) => void
   onMapChange: (mapId: ShootingMapId) => void
   onModeChange: (modeId: TrainingModeId) => void
   onLookSensitivityChange: (value: number) => void
+  onSfxVolumeChange: (value: number) => void
+  onSfxMutedChange: (muted: boolean) => void
   onStart: () => void
   onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
@@ -95,10 +101,14 @@ export function ShootingSetup({
   mapId,
   modeId,
   lookSensitivity,
+  sfxVolume,
+  sfxMuted,
   onDifficultyChange,
   onMapChange,
   onModeChange,
   onLookSensitivityChange,
+  onSfxVolumeChange,
+  onSfxMutedChange,
   onStart,
   onQuickStart,
   onViewHistory,
@@ -247,7 +257,8 @@ export function ShootingSetup({
                     {selectedMode.name} · {selectedMap?.name} · {selectedDifficulty.name}
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs leading-5">
-                    {selectedDifficulty.label} · 灵敏度 {lookSensitivity.toFixed(1)}×
+                    {selectedDifficulty.label} · 灵敏度 {lookSensitivity.toFixed(1)}× · 音效{' '}
+                    {sfxMuted ? '静音' : `${sfxVolumePercent(sfxVolume)}%`}
                   </div>
                 </div>
 
@@ -279,6 +290,13 @@ export function ShootingSetup({
                 <LookSensitivityControl
                   value={lookSensitivity}
                   onChange={onLookSensitivityChange}
+                />
+
+                <SfxVolumeControl
+                  volume={sfxVolume}
+                  muted={sfxMuted}
+                  onVolumeChange={onSfxVolumeChange}
+                  onMutedChange={onSfxMutedChange}
                 />
 
                 <section>

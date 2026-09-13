@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
   CROSSHAIR_COLOR_PRESETS,
+  CROSSHAIR_QUICK_PRESETS,
   CROSSHAIR_STYLE_OPTIONS,
+  crosshairSizeLabel,
   type CrosshairConfig,
   type CrosshairStyle,
 } from '../utils/crosshairConfig'
@@ -48,6 +50,31 @@ export function CrosshairSettings({
       </div>
 
       <div className="space-y-2">
+        <Label>常用预设</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {CROSSHAIR_QUICK_PRESETS.map(preset => {
+            const active = config.style === preset.patch.style
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange(preset.patch)}
+                className={`rounded-xl border px-2 py-2.5 text-left transition-all ${
+                  active
+                    ? 'border-primary bg-primary/7 ring-1 ring-primary/20'
+                    : 'border-border hover:border-primary/40 hover:bg-muted/40'
+                }`}
+              >
+                <div className="text-sm font-semibold">{preset.label}</div>
+                <div className="text-muted-foreground mt-0.5 text-[10px] leading-4">{preset.hint}</div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
         <Label>样式</Label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {CROSSHAIR_STYLE_OPTIONS.map(option => (
@@ -76,15 +103,21 @@ export function CrosshairSettings({
               key={preset.id}
               type="button"
               aria-label={preset.label}
+              title={preset.label}
               aria-pressed={config.color.toLowerCase() === preset.color.toLowerCase()}
               onClick={() => onChange({ color: preset.color })}
-              className={`h-8 w-8 rounded-full border-2 transition-transform ${
+              className={`flex h-9 min-w-9 flex-col items-center justify-center rounded-xl border px-1.5 transition-all ${
                 config.color.toLowerCase() === preset.color.toLowerCase()
-                  ? 'scale-110 border-primary'
-                  : 'border-white/20'
+                  ? 'scale-105 border-primary ring-1 ring-primary/25'
+                  : 'border-border hover:border-primary/40'
               }`}
-              style={{ backgroundColor: preset.color }}
-            />
+            >
+              <span
+                className="h-4 w-4 rounded-full border border-black/20"
+                style={{ backgroundColor: preset.color }}
+              />
+              <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">{preset.label}</span>
+            </button>
           ))}
           <label className="flex items-center gap-2 rounded-xl border border-border px-3 py-1.5 text-xs">
             自定义
@@ -99,7 +132,7 @@ export function CrosshairSettings({
       </div>
 
       <SliderField
-        label="大小"
+        label={`大小 · ${crosshairSizeLabel(config.size)}`}
         value={config.size}
         min={8}
         max={28}

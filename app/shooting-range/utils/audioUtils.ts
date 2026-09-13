@@ -4,6 +4,8 @@
  * like the same clip, and allocating HTMLAudioElements on hit caused extra work.
  */
 
+import { DEFAULT_SFX_VOLUME, normalizeSfxMuted, normalizeSfxVolume } from './sfxVolume'
+
 type AudioContextWindow = Window &
   typeof globalThis & {
     webkitAudioContext?: typeof AudioContext
@@ -31,6 +33,26 @@ interface ToneBurst {
 let audioContext: AudioContext | null = null
 let noiseBuffer: AudioBuffer | null = null
 let output: AudioNode | null = null
+let sfxVolume = DEFAULT_SFX_VOLUME
+let sfxMuted = false
+
+export interface ShootingSfxSettings {
+  volume: number
+  muted: boolean
+}
+
+export function setShootingSfxSettings(settings: Partial<ShootingSfxSettings>) {
+  if (settings.volume !== undefined) {
+    sfxVolume = normalizeSfxVolume(settings.volume)
+  }
+  if (settings.muted !== undefined) {
+    sfxMuted = normalizeSfxMuted(settings.muted)
+  }
+}
+
+export function getShootingSfxSettings(): ShootingSfxSettings {
+  return { volume: sfxVolume, muted: sfxMuted }
+}
 
 function getAudioContextConstructor() {
   if (typeof window === 'undefined') return undefined
@@ -138,12 +160,12 @@ function playTone(context: AudioContext, destination: AudioNode, tone: ToneBurst
   oscillator.stop(end + 0.02)
 }
 
-function withAudio(play: (context: AudioContext, destination: AudioNode) => void) {
+function withAudio(play: (context: AudioContext, destination: AudioNode, volumeScale: number) => void) {
   try {
     const context = ensureContext()
-    if (!context || !output) return
+    if (!context || !output || sfxMuted) return
     if (context.state === 'suspended') void context.resume().catch(() => undefined)
-    play(context, output)
+    play(context, output, sfxVolume)
   } catch {
     // Audio is optional feedback and must never interrupt the render loop.
   }
@@ -154,6 +176,8 @@ export const resetShootingAudio = () => {
   audioContext = null
   noiseBuffer = null
   output = null
+  sfxVolume = DEFAULT_SFX_VOLUME
+  sfxMuted = false
   if (context && context.state !== 'closed') void context.close().catch(() => undefined)
 }
 
@@ -166,21 +190,21 @@ export const primeShootingAudio = () => {
 
 /** Compact indoor carbine: noise crack, body, low thump, and a short room slap. */
 export const playShotSound = () => {
-  withAudio((context, destination) => {
+  withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
     const pitch = jitter(1, 0.08)
 
     playNoiseBurst(context, destination, {
       start,
       duration: 0.036,
-      volume: 0.2,
+      volume: 0.2 * volumeScale,
       highpass: 1100 * pitch,
       lowpass: 5400,
     })
     playNoiseBurst(context, destination, {
       start,
       duration: 0.08,
-      volume: 0.11,
+      volume: 0.11 * volumeScale,
       bandpass: 380 * pitch,
       q: 0.85,
       lowpass: 1400,
@@ -190,20 +214,20 @@ export const playShotSound = () => {
       frequency: 108 * pitch,
       frequencyEnd: 46,
       duration: 0.12,
-      volume: 0.16,
+      volume: 0.16 * volumeScale,
       start,
     })
     playTone(context, destination, {
       type: 'square',
       frequency: 1750 * pitch,
       duration: 0.011,
-      volume: 0.03,
+      volume: 0.03 * volumeScale,
       start,
     })
     playNoiseBurst(context, destination, {
       start: start + 0.03,
       duration: 0.08,
-      volume: 0.028,
+      volume: 0.028 * volumeScale,
       highpass: 180,
       lowpass: 520,
     })
@@ -212,14 +236,14 @@ export const playShotSound = () => {
 
 /** Target confirm: tight metallic tick with a bright overtone — Aimlabs-style, original. */
 export const playHitSound = () => {
-  withAudio((context, destination) => {
+  withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
     const pitch = jitter(1, 0.08)
 
     playNoiseBurst(context, destination, {
       start,
       duration: 0.012,
-      volume: 0.07,
+      volume: 0.07 * volumeScale,
       highpass: 4200,
       lowpass: 11000,
     })
@@ -228,7 +252,7 @@ export const playHitSound = () => {
       frequency: 2860 * pitch,
       frequencyEnd: 2140 * pitch,
       duration: 0.055,
-      volume: 0.11,
+      volume: 0.11 * volumeScale,
       start,
     })
     playTone(context, destination, {
@@ -236,14 +260,14 @@ export const playHitSound = () => {
       frequency: 4120 * pitch,
       frequencyEnd: 3180 * pitch,
       duration: 0.038,
-      volume: 0.055,
+      volume: 0.055 * volumeScale,
       start: start + 0.003,
     })
     playTone(context, destination, {
       type: 'square',
       frequency: 5200 * pitch,
       duration: 0.006,
-      volume: 0.028,
+      volume: 0.028 * volumeScale,
       start: start + 0.0015,
     })
   })
@@ -251,14 +275,14 @@ export const playHitSound = () => {
 
 /** Soft wall miss — muted thud so hits feel distinct without clutter. */
 export const playMissSound = () => {
-  withAudio((context, destination) => {
+  withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
     const pitch = jitter(1, 0.06)
 
     playNoiseBurst(context, destination, {
       start,
       duration: 0.028,
-      volume: 0.035,
+      volume: 0.035 * volumeScale,
       bandpass: 420 * pitch,
       q: 0.7,
       lowpass: 900,
@@ -268,7 +292,7 @@ export const playMissSound = () => {
       frequency: 92 * pitch,
       frequencyEnd: 58,
       duration: 0.07,
-      volume: 0.045,
+      volume: 0.045 * volumeScale,
       start,
     })
   })

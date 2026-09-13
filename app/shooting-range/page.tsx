@@ -8,8 +8,10 @@ import { ShootingHistory } from './components/ShootingHistory'
 import { ShootingSetup } from './components/ShootingSetup'
 import { useCrosshairSettings } from './hooks/useCrosshairSettings'
 import type { DrillPreset } from './utils/drillPresets'
+import { setShootingSfxSettings } from './utils/audioUtils'
 import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
 import { DEFAULT_LOOK_SENSITIVITY } from './utils/lookSensitivity'
+import { DEFAULT_SFX_VOLUME } from './utils/sfxVolume'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from './types'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
@@ -28,6 +30,8 @@ export default function ShootingRangePage() {
   const [mapId, setMapId] = useState<ShootingMapId>('indoor')
   const [modeId, setModeId] = useState<TrainingModeId>('moving')
   const [lookSensitivity, setLookSensitivity] = useState(DEFAULT_LOOK_SENSITIVITY)
+  const [sfxVolume, setSfxVolume] = useState(DEFAULT_SFX_VOLUME)
+  const [sfxMuted, setSfxMuted] = useState(false)
   const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
     useCrosshairSettings()
 
@@ -38,7 +42,13 @@ export default function ShootingRangePage() {
     setMapId(last.mapId)
     setModeId(last.modeId)
     if (last.lookSensitivity !== undefined) setLookSensitivity(last.lookSensitivity)
+    if (last.sfxVolume !== undefined) setSfxVolume(last.sfxVolume)
+    if (last.sfxMuted !== undefined) setSfxMuted(last.sfxMuted)
   }, [])
+
+  useEffect(() => {
+    setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
+  }, [sfxMuted, sfxVolume])
 
   const persistConfig = useCallback(
     (
@@ -47,6 +57,8 @@ export default function ShootingRangePage() {
         mapId: ShootingMapId
         modeId: TrainingModeId
         lookSensitivity: number
+        sfxVolume: number
+        sfxMuted: boolean
       },
       drillId?: string
     ) => {
@@ -56,6 +68,8 @@ export default function ShootingRangePage() {
           mapId: next.mapId,
           modeId: next.modeId,
           lookSensitivity: next.lookSensitivity,
+          sfxVolume: next.sfxVolume,
+          sfxMuted: next.sfxMuted,
         },
         drillId
       )
@@ -67,8 +81,8 @@ export default function ShootingRangePage() {
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    persistConfig({ ...preset, lookSensitivity }, preset.id)
-  }, [lookSensitivity, persistConfig])
+    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted }, preset.id)
+  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume])
 
   const handleQuickStart = useCallback(
     (preset: DrillPreset) => {
@@ -81,15 +95,31 @@ export default function ShootingRangePage() {
   const handleLookSensitivityChange = useCallback(
     (value: number) => {
       setLookSensitivity(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted })
     },
-    [difficulty, mapId, modeId, persistConfig]
+    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume]
+  )
+
+  const handleSfxVolumeChange = useCallback(
+    (value: number) => {
+      setSfxVolume(value)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted })
+    },
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted]
+  )
+
+  const handleSfxMutedChange = useCallback(
+    (muted: boolean) => {
+      setSfxMuted(muted)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted })
+    },
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume]
   )
 
   const handleStart = useCallback(() => {
-    persistConfig({ difficulty, mapId, modeId, lookSensitivity })
+    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted })
     setIsStarted(true)
-  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig])
+  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume])
 
   const handleReturnToSetup = useCallback(() => {
     setIsStarted(false)
@@ -124,10 +154,14 @@ export default function ShootingRangePage() {
             mapId={mapId}
             modeId={modeId}
             lookSensitivity={lookSensitivity}
+            sfxVolume={sfxVolume}
+            sfxMuted={sfxMuted}
             onDifficultyChange={setDifficulty}
             onMapChange={setMapId}
             onModeChange={setModeId}
             onLookSensitivityChange={handleLookSensitivityChange}
+            onSfxVolumeChange={handleSfxVolumeChange}
+            onSfxMutedChange={handleSfxMutedChange}
             onStart={handleStart}
             onQuickStart={handleQuickStart}
             onViewHistory={() => setShowHistory(true)}
@@ -150,7 +184,11 @@ export default function ShootingRangePage() {
               mapId={mapId}
               modeId={modeId}
               lookSensitivity={lookSensitivity}
+              sfxVolume={sfxVolume}
+              sfxMuted={sfxMuted}
               onLookSensitivityChange={handleLookSensitivityChange}
+              onSfxVolumeChange={handleSfxVolumeChange}
+              onSfxMutedChange={handleSfxMutedChange}
               crosshairConfig={crosshairConfig}
               onCrosshairChange={updateCrosshair}
               onCrosshairReset={resetCrosshair}

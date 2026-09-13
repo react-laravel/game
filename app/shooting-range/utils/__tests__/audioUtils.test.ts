@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  getShootingSfxSettings,
   playExplosionSound,
   playHitSound,
   playMissSound,
   playShotSound,
   primeShootingAudio,
   resetShootingAudio,
+  setShootingSfxSettings,
 } from '../audioUtils'
 
 function createMockAudioContext() {
@@ -166,6 +168,23 @@ describe('shooting-range audioUtils', () => {
     expect(sources.length).toBe(1)
     expect(oscillators.some(oscillator => oscillator.type === 'sine')).toBe(true)
     expect(window.Audio).not.toHaveBeenCalled()
+  })
+
+  it('skips playback when sfx is muted and scales burst volume', () => {
+    const { MockAudioContext, sources } = createMockAudioContext()
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      value: MockAudioContext,
+    })
+
+    setShootingSfxSettings({ muted: true })
+    playShotSound()
+    expect(sources).toHaveLength(0)
+
+    setShootingSfxSettings({ muted: false, volume: 0.5 })
+    playShotSound()
+    expect(sources.length).toBeGreaterThan(0)
+    expect(getShootingSfxSettings()).toEqual({ volume: 0.5, muted: false })
   })
 
   it('keeps the explosion alias on the hit voice, not an mp3', () => {

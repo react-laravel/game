@@ -2,10 +2,16 @@ import { useEffect, useMemo } from 'react'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import type { MapConfig } from '../../utils/mapConfigs'
+import type { OutdoorTimeOfDay } from '../../types'
+import {
+  resolveOutdoorEnvironment,
+  type OutdoorSkyParams,
+} from '../../utils/outdoorTimeOfDay'
 import { createSeededRandom } from '../../utils/seededRandom'
 
 interface RangeEnvironmentProps {
   config: MapConfig
+  outdoorTimeOfDay?: OutdoorTimeOfDay
 }
 
 /** Lowered so troffer rows sit inside the FPS upper field of view (~8m room height). */
@@ -470,7 +476,13 @@ function BushClump({ position, scale = 1 }: { position: [number, number, number]
   )
 }
 
-function OutdoorSky() {
+function OutdoorSky({
+  sky,
+  horizonWash,
+}: {
+  sky: OutdoorSkyParams
+  horizonWash?: { color: string; opacity: number }
+}) {
   const cloudBanks = useMemo(
     () => [
       { pos: [-24, 28, -82] as [number, number, number], scale: [14, 3.2, 5] as [number, number, number], opacity: 0.12 },
@@ -485,16 +497,25 @@ function OutdoorSky() {
     <>
       <Sky
         distance={450000}
-        sunPosition={[85, 22, -45]}
-        mieCoefficient={0.004}
-        mieDirectionalG={0.8}
-        rayleigh={1.55}
-        turbidity={6.2}
+        sunPosition={sky.sunPosition}
+        mieCoefficient={sky.mieCoefficient}
+        mieDirectionalG={sky.mieDirectionalG}
+        rayleigh={sky.rayleigh}
+        turbidity={sky.turbidity}
       />
-      <mesh position={[0, 18, -55]} rotation={[0.12, 0, 0]}>
-        <planeGeometry args={[180, 42]} />
-        <meshBasicMaterial color="#8ab8d8" transparent opacity={0.28} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
+      {horizonWash ? (
+        <mesh position={[0, 18, -55]} rotation={[0.12, 0, 0]}>
+          <planeGeometry args={[180, 42]} />
+          <meshBasicMaterial
+            color={horizonWash.color}
+            transparent
+            opacity={horizonWash.opacity}
+            toneMapped={false}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ) : null}
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[2.0, 10, 10]} />
         <meshBasicMaterial color="#fff4e8" transparent opacity={0.14} toneMapped={false} depthWrite={false} />
@@ -519,9 +540,11 @@ function OutdoorSky() {
   )
 }
 
+/** Solid post-and-rail fence — no wire mesh planes that read as lane occluders. */
 function ChainLinkFence({ x }: { x: number }) {
   const posts = [-6, -14, -20, -27, -34, -41, -48]
-  const panelZs = [-10, -17, -24, -31, -38, -45]
+  const braceZs = [-10, -17, -24, -31, -38, -45]
+  const outward = x > 0 ? 1 : -1
 
   return (
     <group>
@@ -546,24 +569,22 @@ function ChainLinkFence({ x }: { x: number }) {
         </group>
       ))}
 
-      <mesh position={[x, 2.15, -27]}>
-        <boxGeometry args={[0.08, 0.08, 44]} />
-        <meshStandardMaterial color="#a8a098" metalness={0.68} roughness={0.35} />
-      </mesh>
-      <mesh position={[x, 0.42, -27]}>
-        <boxGeometry args={[0.08, 0.08, 44]} />
-        <meshStandardMaterial color="#8a8278" metalness={0.62} roughness={0.4} />
-      </mesh>
+      {[2.15, 1.28, 0.42].map((y, i) => (
+        <mesh key={`rail-${i}`} position={[x, y, -27]}>
+          <boxGeometry args={[0.1, 0.1, 44]} />
+          <meshStandardMaterial
+            color={i === 0 ? '#a8a098' : i === 1 ? '#9a9488' : '#8a8278'}
+            metalness={0.65}
+            roughness={0.36}
+          />
+        </mesh>
+      ))}
 
-      {panelZs.map(z => (
+      {braceZs.map(z => (
         <group key={z} position={[x, 1.25, z]}>
-          <mesh>
-            <planeGeometry args={[0.02, 1.55]} />
-            <meshStandardMaterial color="#6a6458" metalness={0.72} roughness={0.32} />
-          </mesh>
-          {[-0.55, 0, 0.55].map(yOff => (
-            <mesh key={yOff} position={[0, yOff, 0]} rotation={[0, 0, Math.PI / 4]}>
-              <planeGeometry args={[0.02, 1.4]} />
+          {[-0.45, 0, 0.45].map(yOff => (
+            <mesh key={yOff} position={[outward * 0.12, yOff, 0]}>
+              <boxGeometry args={[0.16, 0.07, 0.07]} />
               <meshStandardMaterial color="#7a7468" metalness={0.7} roughness={0.35} />
             </mesh>
           ))}
@@ -755,7 +776,43 @@ function IndoorRange({ config }: { config: MapConfig }) {
   )
 }
 
-function OutdoorRange() {
+/** Solid metal pole + box head — no glass housings in the lane. */
+function OutdoorRangeLight({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 2.8, 0]}>
+        <cylinderGeometry args={[0.08, 0.1, 5.6, 6]} />
+        <meshStandardMaterial color="#5a5848" metalness={0.55} roughness={0.42} />
+      </mesh>
+      <mesh position={[0, 5.65, 0.12]}>
+        <boxGeometry args={[0.55, 0.18, 0.35]} />
+        <meshStandardMaterial color="#3a3830" metalness={0.5} roughness={0.45} />
+      </mesh>
+      <mesh position={[0, 5.45, 0.12]}>
+        <boxGeometry args={[0.38, 0.1, 0.28]} />
+        <meshStandardMaterial
+          color="#fff8e8"
+          emissive="#ffd878"
+          emissiveIntensity={1.25}
+          toneMapped={false}
+        />
+      </mesh>
+      <pointLight position={[0, 5.2, 0.2]} intensity={1.85} color="#ffd890" distance={22} decay={2} />
+    </group>
+  )
+}
+
+function OutdoorRange({
+  grassTint,
+  showRangeLights,
+  sky,
+  horizonWash,
+}: {
+  grassTint: string
+  showRangeLights: boolean
+  sky: OutdoorSkyParams
+  horizonWash?: { color: string; opacity: number }
+}) {
   const grassTexture = useGrassTexture()
   const gravelTexture = useGravelTexture()
   const earthTexture = useEarthTexture()
@@ -816,9 +873,20 @@ function OutdoorRange() {
     []
   )
 
+  const distanceMarkers = useMemo(
+    () => [
+      { z: -8, label: '8M' },
+      { z: -16, label: '16M' },
+      { z: -24, label: '24M' },
+      { z: -32, label: '32M' },
+      { z: -40, label: '40M' },
+    ],
+    []
+  )
+
   return (
     <>
-      <OutdoorSky />
+      <OutdoorSky sky={sky} horizonWash={horizonWash} />
 
       {[-38, -58, -78, -98].map((z, index) => (
         <mesh key={z} position={[0, 0.6 + index * 0.55, z]} scale={[1.5 - index * 0.1, 1, 1]}>
@@ -838,7 +906,7 @@ function OutdoorRange() {
         <planeGeometry args={[160, 160]} />
         <meshStandardMaterial
           map={grassTexture}
-          color="#4a7a48"
+          color={grassTint}
           roughness={0.96}
           metalness={0.02}
         />
@@ -904,16 +972,24 @@ function OutdoorRange() {
         </mesh>
       ))}
 
-      {/* Firing line and distance markers */}
+      {/* Firing line and lane floor distance ticks */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, -2.5]}>
         <planeGeometry args={[12.5, 0.45]} />
         <meshStandardMaterial color="#e8d848" emissive="#c8b028" emissiveIntensity={0.12} roughness={0.75} />
       </mesh>
-      {[-8, -16, -24, -32, -40].map(z => (
-        <mesh key={`marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, z]}>
-          <planeGeometry args={[12.5, 0.12]} />
-          <meshStandardMaterial color="#7a7068" roughness={0.85} />
-        </mesh>
+      {distanceMarkers.map(marker => (
+        <group key={`lane-tick-${marker.z}`}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, marker.z]}>
+            <planeGeometry args={[12.5, 0.12]} />
+            <meshStandardMaterial color="#7a7068" roughness={0.85} />
+          </mesh>
+          {[-6.35, 6.35].map(laneX => (
+            <mesh key={laneX} position={[laneX, -1.78, marker.z]}>
+              <cylinderGeometry args={[0.07, 0.09, 0.32, 6]} />
+              <meshStandardMaterial color="#6a6458" roughness={0.88} />
+            </mesh>
+          ))}
+        </group>
       ))}
 
       {/* Berm approach gravel pad */}
@@ -922,18 +998,32 @@ function OutdoorRange() {
         <meshStandardMaterial map={gravelTexture} color="#7a6a52" roughness={0.88} />
       </mesh>
 
-      <mesh position={[0, 0.85, -44]}>
-        <boxGeometry args={[42, 1.7, 2.8]} />
-        <meshStandardMaterial map={earthTexture} color="#6a5840" roughness={0.96} />
-      </mesh>
-      <mesh position={[0, 0.35, -44.5]}>
-        <boxGeometry args={[40, 0.55, 2.4]} />
-        <meshStandardMaterial map={earthTexture} color="#5a4838" roughness={0.94} />
-      </mesh>
+      {[0, 1, 2].map(layer => (
+        <mesh key={`berm-tier-${layer}`} position={[0, 0.55 + layer * 0.48, -44.35 - layer * 0.14]}>
+          <boxGeometry args={[42 - layer * 3.5, 1.15 - layer * 0.12, 2.9 - layer * 0.35]} />
+          <meshStandardMaterial map={earthTexture} color={['#6a5840', '#5a4838', '#4a3828'][layer]} roughness={0.96} />
+        </mesh>
+      ))}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.62, -44.8]}>
         <planeGeometry args={[40, 2.8]} />
         <meshStandardMaterial map={grassTexture} color="#4a8a48" roughness={0.93} side={THREE.DoubleSide} />
       </mesh>
+      {[-18, -12, -6, 0, 6, 12, 18].map(x => (
+        <mesh key={`berm-timber-${x}`} position={[x, 0.18, -43.75]}>
+          <boxGeometry args={[5.4, 0.24, 0.14]} />
+          <meshStandardMaterial color="#5a4838" roughness={0.92} />
+        </mesh>
+      ))}
+      {Array.from({ length: 14 }, (_, i) => (
+        <mesh
+          key={`sandbag-${i}`}
+          position={[-19.25 + i * 3, -1.55, -43.15]}
+          rotation={[0, (i % 2) * 0.08, 0]}
+        >
+          <boxGeometry args={[2.35, 0.34, 0.52]} />
+          <meshStandardMaterial color="#6a5a48" roughness={0.94} />
+        </mesh>
+      ))}
       {[-14, -7, 0, 7, 14].map(x => (
         <mesh key={x} position={[x, 1.48, -45.2]}>
           <boxGeometry args={[0.35, 0.22, 0.35]} />
@@ -989,6 +1079,51 @@ function OutdoorRange() {
 
       <ChainLinkFence x={-15} />
       <ChainLinkFence x={15} />
+
+      {/* meshBasic depth pass — fence distance plaques and berm silhouette (no glass in lane) */}
+      {distanceMarkers.map(marker =>
+        [-14.85, 14.85].map(fenceX => (
+          <group key={`${marker.label}-${fenceX}`} position={[fenceX, 1.05, marker.z]}>
+            <mesh>
+              <boxGeometry args={[0.06, 0.55, 0.9]} />
+              <meshBasicMaterial color="#2a3828" toneMapped={false} />
+            </mesh>
+            <mesh position={[fenceX > 0 ? -0.04 : 0.04, 0.08, 0]}>
+              <boxGeometry args={[0.04, 0.18, 0.45]} />
+              <meshBasicMaterial color="#e8d848" toneMapped={false} />
+            </mesh>
+          </group>
+        ))
+      )}
+
+      {[0, 1, 2].map(layer => (
+        <mesh key={`berm-depth-${layer}`} position={[0, 1.05 + layer * 0.55, -45.1 - layer * 0.18]}>
+          <boxGeometry args={[38 - layer * 4, 2.2 - layer * 0.35, 0.12]} />
+          <meshBasicMaterial color={['#2a2018', '#241810', '#1e140c'][layer]} toneMapped={false} />
+        </mesh>
+      ))}
+
+      {showRangeLights ? (
+        <>
+          {[-15, 15].flatMap(x =>
+            [-6, -18, -30, -42].map(z => (
+              <OutdoorRangeLight key={`range-light-${x}-${z}`} position={[x, 0, z]} />
+            ))
+          )}
+          <OutdoorRangeLight position={[-10, 0, -44]} />
+          <OutdoorRangeLight position={[10, 0, -44]} />
+          <mesh position={[0, 3.8, -45.5]}>
+            <boxGeometry args={[34, 0.14, 0.35]} />
+            <meshStandardMaterial
+              color="#fff0d0"
+              emissive="#ffb347"
+              emissiveIntensity={0.95}
+              toneMapped={false}
+            />
+          </mesh>
+          <pointLight position={[0, 3.6, -45.5]} intensity={1.35} color="#ffd8a0" distance={28} decay={2} />
+        </>
+      ) : null}
 
       {bushes.map(([x, z], i) => (
         <BushClump key={i} position={[x, -1.95, z]} scale={0.85 + (i % 3) * 0.12} />
@@ -1394,23 +1529,28 @@ function WarehouseRange({ config }: { config: MapConfig }) {
   )
 }
 
-export function RangeEnvironment({ config }: RangeEnvironmentProps) {
+export function RangeEnvironment({ config, outdoorTimeOfDay = 'day' }: RangeEnvironmentProps) {
   const isOutdoor = config.id === 'outdoor'
   const isWarehouse = config.id === 'warehouse'
   const isIndoor = config.id === 'indoor'
-
+  const outdoorEnv = isOutdoor ? resolveOutdoorEnvironment(config, outdoorTimeOfDay) : null
+  const activeConfig = outdoorEnv?.config ?? config
   return (
     <>
-      <color attach="background" args={[config.background]} />
-      <fog attach="fog" args={[config.fog.color, config.fog.near, config.fog.far]} />
+      <color attach="background" args={[activeConfig.background]} />
+      <fog attach="fog" args={[activeConfig.fog.color, activeConfig.fog.near, activeConfig.fog.far]} />
 
       <hemisphereLight
-        args={[config.hemisphere.sky, config.hemisphere.ground, config.hemisphere.intensity]}
+        args={[
+          activeConfig.hemisphere.sky,
+          activeConfig.hemisphere.ground,
+          activeConfig.hemisphere.intensity,
+        ]}
       />
       <directionalLight
-        position={config.directional.position}
-        intensity={config.directional.intensity}
-        color={config.directional.color}
+        position={activeConfig.directional.position}
+        intensity={activeConfig.directional.intensity}
+        color={activeConfig.directional.color}
         castShadow={isWarehouse}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -1420,20 +1560,20 @@ export function RangeEnvironment({ config }: RangeEnvironmentProps) {
         shadow-camera-top={18}
         shadow-camera-bottom={-6}
       />
-      {config.fillLight && (
+      {activeConfig.fillLight && (
         <pointLight
-          position={config.fillLight.position}
-          intensity={config.fillLight.intensity}
-          color={config.fillLight.color}
+          position={activeConfig.fillLight.position}
+          intensity={activeConfig.fillLight.intensity}
+          color={activeConfig.fillLight.color}
           distance={42}
           decay={2}
         />
       )}
-      {config.rimLight && (
+      {activeConfig.rimLight && (
         <directionalLight
-          position={config.rimLight.position}
-          intensity={config.rimLight.intensity}
-          color={config.rimLight.color}
+          position={activeConfig.rimLight.position}
+          intensity={activeConfig.rimLight.intensity}
+          color={activeConfig.rimLight.color}
         />
       )}
 
@@ -1441,21 +1581,27 @@ export function RangeEnvironment({ config }: RangeEnvironmentProps) {
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -20]} receiveShadow>
           <planeGeometry args={[48, 84]} />
           <meshStandardMaterial
-            color={config.floor.color}
-            metalness={config.floor.metalness}
-            roughness={config.floor.roughness}
+            color={activeConfig.floor.color}
+            metalness={activeConfig.floor.metalness}
+            roughness={activeConfig.floor.roughness}
           />
         </mesh>
       )}
 
-
       {!isOutdoor && !isWarehouse && (
-        <gridHelper position={[0, -1.97, -20]} args={config.grid} />
+        <gridHelper position={[0, -1.97, -20]} args={activeConfig.grid} />
       )}
 
-      {isIndoor && <IndoorRange config={config} />}
-      {isOutdoor && <OutdoorRange />}
-      {isWarehouse && <WarehouseRange config={config} />}
+      {isIndoor && <IndoorRange config={activeConfig} />}
+      {isOutdoor && outdoorEnv && (
+        <OutdoorRange
+          grassTint={outdoorEnv.grassTint}
+          showRangeLights={outdoorEnv.showRangeLights}
+          sky={outdoorEnv.sky}
+          horizonWash={outdoorEnv.horizonWash}
+        />
+      )}
+      {isWarehouse && <WarehouseRange config={activeConfig} />}
     </>
   )
 }

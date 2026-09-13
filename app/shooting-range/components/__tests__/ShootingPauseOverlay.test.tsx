@@ -22,6 +22,9 @@ const baseProps = {
   onMotionPreferenceChange: vi.fn(),
   targetShape: 'circle' as const,
   onTargetShapeChange: vi.fn(),
+  mapId: 'outdoor' as const,
+  outdoorTimeOfDay: 'day' as const,
+  onOutdoorTimeOfDayChange: vi.fn(),
 }
 
 describe('ShootingPauseOverlay', () => {
@@ -138,5 +141,6 @@ describe('ShootingPauseOverlay', () => {
     const otherPanel = screen.getByRole('tabpanel', { hidden: false })
     expect(otherPanel).toHaveTextContent('快速参考')
     expect(otherPanel).toHaveTextContent('显示强度')
+    expect(otherPanel).toHaveTextContent('户外时段')
   })
 })

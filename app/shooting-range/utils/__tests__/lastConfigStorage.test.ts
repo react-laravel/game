@@ -67,6 +67,7 @@ describe('lastConfigStorage', () => {
       sfxVolume: 1,
       sfxMuted: true,
       targetShape: 'circle',
+      outdoorTimeOfDay: 'day',
     })
   })
 
@@ -84,6 +85,21 @@ describe('lastConfigStorage', () => {
     expect(loadLastConfig()?.targetShape).toBe('humanoid')
   })
 
+  it('normalizes outdoor time of day when loading saved config', () => {
+    localStorage.setItem(
+      LAST_CONFIG_KEY,
+      JSON.stringify({
+        difficulty: 'easy',
+        mapId: 'outdoor',
+        modeId: 'moving',
+        outdoorTimeOfDay: 'night',
+      })
+    )
+
+    expect(loadLastConfig()?.outdoorTimeOfDay).toBe('night')
+    expect(loadLastConfig()?.outdoorTimeOfDay).not.toBe('invalid')
+  })
+
   it('persists and loads config plus drill id', () => {
     saveLastConfig(
       { difficulty: 'medium', mapId: 'outdoor', modeId: 'flick', targetShape: 'humanoid' },
@@ -98,6 +114,7 @@ describe('lastConfigStorage', () => {
       sfxVolume: 0.85,
       sfxMuted: false,
       targetShape: 'humanoid',
+      outdoorTimeOfDay: 'day',
     })
     expect(loadLastDrillId()).toBe('flick-reflex')
     expect(localStorage.getItem(LAST_CONFIG_KEY)).toContain('"mapId":"outdoor"')

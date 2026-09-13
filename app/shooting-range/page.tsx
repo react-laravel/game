@@ -12,8 +12,9 @@ import { setShootingSfxSettings } from './utils/audioUtils'
 import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
 import { DEFAULT_LOOK_SENSITIVITY } from './utils/lookSensitivity'
 import { DEFAULT_SFX_VOLUME } from './utils/sfxVolume'
-import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from './types'
+import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId, OutdoorTimeOfDay } from './types'
 import { DEFAULT_TARGET_SHAPE, normalizeTargetShape } from './utils/targetShape'
+import { DEFAULT_OUTDOOR_TIME_OF_DAY, normalizeOutdoorTimeOfDay } from './utils/outdoorTimeOfDay'
 
 const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
   ssr: false,
@@ -45,6 +46,9 @@ export default function ShootingRangePage() {
   const [targetShape, setTargetShape] = useState<TargetShape>(
     () => normalizeTargetShape(loadLastConfig()?.targetShape ?? DEFAULT_TARGET_SHAPE)
   )
+  const [outdoorTimeOfDay, setOutdoorTimeOfDay] = useState<OutdoorTimeOfDay>(
+    () => normalizeOutdoorTimeOfDay(loadLastConfig()?.outdoorTimeOfDay ?? DEFAULT_OUTDOOR_TIME_OF_DAY)
+  )
   const {
     config: crosshairConfig,
     updateConfig: updateCrosshair,
@@ -66,6 +70,7 @@ export default function ShootingRangePage() {
         sfxVolume: number
         sfxMuted: boolean
         targetShape: TargetShape
+        outdoorTimeOfDay: OutdoorTimeOfDay
       },
       drillId?: string
     ) => {
@@ -78,6 +83,7 @@ export default function ShootingRangePage() {
           sfxVolume: next.sfxVolume,
           sfxMuted: next.sfxMuted,
           targetShape: next.targetShape,
+          outdoorTimeOfDay: next.outdoorTimeOfDay,
         },
         drillId
       )
@@ -89,8 +95,8 @@ export default function ShootingRangePage() {
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted, targetShape }, preset.id)
-  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape])
+    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay }, preset.id)
+  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
 
   const handleQuickStart = useCallback(
     (preset: DrillPreset) => {
@@ -103,39 +109,47 @@ export default function ShootingRangePage() {
   const handleLookSensitivityChange = useCallback(
     (value: number) => {
       setLookSensitivity(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted, targetShape })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape]
+    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay]
   )
 
   const handleSfxVolumeChange = useCallback(
     (value: number) => {
       setSfxVolume(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted, targetShape })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, targetShape]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, targetShape, outdoorTimeOfDay]
   )
 
   const handleSfxMutedChange = useCallback(
     (muted: boolean) => {
       setSfxMuted(muted)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted, targetShape })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume, targetShape]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume, targetShape, outdoorTimeOfDay]
   )
 
   const handleTargetShapeChange = useCallback(
     (value: TargetShape) => {
       setTargetShape(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape: value })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape: value, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume, outdoorTimeOfDay]
+  )
+
+  const handleOutdoorTimeOfDayChange = useCallback(
+    (value: OutdoorTimeOfDay) => {
+      setOutdoorTimeOfDay(value)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay: value })
+    },
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape]
   )
 
   const handleStart = useCallback(() => {
-    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape })
+    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
     setIsStarted(true)
-  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape])
+  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
 
   const handleReturnToSetup = useCallback(() => {
     setIsStarted(false)
@@ -186,6 +200,8 @@ export default function ShootingRangePage() {
             onSfxMutedChange={handleSfxMutedChange}
             targetShape={targetShape}
             onTargetShapeChange={handleTargetShapeChange}
+            outdoorTimeOfDay={outdoorTimeOfDay}
+            onOutdoorTimeOfDayChange={handleOutdoorTimeOfDayChange}
             onStart={handleStart}
             onQuickStart={handleQuickStart}
             onViewHistory={() => {
@@ -211,6 +227,8 @@ export default function ShootingRangePage() {
               modeId={modeId}
               targetShape={targetShape}
               onTargetShapeChange={handleTargetShapeChange}
+              outdoorTimeOfDay={outdoorTimeOfDay}
+              onOutdoorTimeOfDayChange={handleOutdoorTimeOfDayChange}
               lookSensitivity={lookSensitivity}
               sfxVolume={sfxVolume}
               sfxMuted={sfxMuted}

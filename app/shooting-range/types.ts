@@ -14,6 +14,8 @@ export type SpawnPattern = 'random' | 'grid'
 
 export type TargetShape = 'circle' | 'humanoid'
 
+export type OutdoorTimeOfDay = 'day' | 'noon' | 'dusk' | 'night'
+
 export type HitZone = 'head' | 'body' | 'limb'
 
 export interface ZoneHitStats {
@@ -58,4 +60,5 @@ export interface ShootingSetupConfig {
   sfxVolume?: number
   sfxMuted?: boolean
   targetShape?: TargetShape
+  outdoorTimeOfDay?: OutdoorTimeOfDay
 }

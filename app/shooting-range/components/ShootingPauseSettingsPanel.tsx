@@ -11,7 +11,8 @@ import { LookSensitivityControl } from './LookSensitivityControl'
 import { ReducedMotionControl } from './ReducedMotionControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
 import { TargetShapeControl } from './TargetShapeControl'
-import type { TargetShape } from '../types'
+import { OutdoorTimeOfDayControl } from './OutdoorTimeOfDayControl'
+import type { OutdoorTimeOfDay, ShootingMapId, TargetShape } from '../types'
 
 const pauseSettingsTabTriggerClass =
   'rounded-lg px-3 py-1.5 text-xs font-medium text-white/45 transition-all hover:bg-white/5 hover:text-white/70 data-[state=active]:bg-amber-400/18 data-[state=active]:font-semibold data-[state=active]:text-amber-50 data-[state=active]:shadow-[inset_0_0_0_1px_rgba(251,191,36,0.38)] data-[state=active]:ring-1 data-[state=active]:ring-amber-400/30'
@@ -31,6 +32,9 @@ interface ShootingPauseSettingsPanelProps {
   onMotionPreferenceChange: (value: MotionPreference) => void
   targetShape: TargetShape
   onTargetShapeChange: (value: TargetShape) => void
+  mapId: ShootingMapId
+  outdoorTimeOfDay: OutdoorTimeOfDay
+  onOutdoorTimeOfDayChange: (value: OutdoorTimeOfDay) => void
   onChangeDrill?: () => void
   onBack: () => void
 }
@@ -50,6 +54,9 @@ export function ShootingPauseSettingsPanel({
   onMotionPreferenceChange,
   targetShape,
   onTargetShapeChange,
+  mapId,
+  outdoorTimeOfDay,
+  onOutdoorTimeOfDayChange,
   onChangeDrill,
   onBack,
 }: ShootingPauseSettingsPanelProps) {
@@ -135,6 +142,15 @@ export function ShootingPauseSettingsPanel({
               variant="dark"
               value={targetShape}
               onChange={onTargetShapeChange}
+            />
+
+            <OutdoorTimeOfDayControl
+              compact
+              framed
+              variant="dark"
+              value={outdoorTimeOfDay}
+              onChange={onOutdoorTimeOfDayChange}
+              disabled={mapId !== 'outdoor'}
             />
 
             <ReducedMotionControl

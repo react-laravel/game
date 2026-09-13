@@ -43,6 +43,11 @@ export interface BotMotionSample {
   legSpread: number
   /** Arm swing offset for gait (-1..1). */
   armSwing: number
+  /** Subtle vertical bob during lateral movement. */
+  strideBob: number
+  /** Head look tilt derived from lean (-1..1). */
+  headTiltX: number
+  headTiltZ: number
 }
 
 const profiles: Record<TrainingModeId, BotMotionProfile> = {
@@ -184,30 +189,40 @@ export function stepBotMotion(
   let leanZ = 0
   let legSpread = 0
   let armSwing = 0
+  let strideBob = 0
+  let headTiltX = 0
+  let headTiltZ = 0
 
   switch (state.phase) {
     case 'strafe':
       offsetX = state.strafeDir * profile.strafeSpeed * strafeWave
       leanX = state.strafeDir * strafeWave * 0.35
       armSwing = Math.sin(t * Math.PI * 2) * 0.55
+      strideBob = Math.abs(Math.sin(t * Math.PI * 2)) * 0.045
+      headTiltX = leanX * 0.55
       break
     case 'advance':
       offsetZ = -profile.advanceSpeed * pulse
       leanZ = -pulse * 0.4
       armSwing = pulse * 0.45
+      strideBob = pulse * 0.025
+      headTiltZ = leanZ * 0.45
       break
     case 'retreat':
       offsetZ = profile.advanceSpeed * pulse * 0.85
       leanZ = pulse * 0.32
       armSwing = -pulse * 0.35
+      strideBob = pulse * 0.02
+      headTiltZ = leanZ * 0.4
       break
     case 'jump': {
       const jumpArc = Math.sin(t * Math.PI)
-      const squat = t < 0.18 ? (0.18 - t) / 0.18 : 0
+      const squat = t < 0.22 ? (0.22 - t) / 0.22 : 0
       offsetY = profile.jumpHeight * jumpArc
-      crouchScale = 1 - squat * 0.12
-      legSpread = squat * 0.35 + jumpArc * 0.15
-      armSwing = jumpArc > 0.4 ? -0.5 : 0.35
+      crouchScale = 1 - squat * 0.16
+      legSpread = squat * 0.42 + jumpArc * 0.18
+      armSwing = jumpArc > 0.45 ? -0.55 : squat * 0.4
+      headTiltZ = jumpArc > 0.35 ? -0.25 : squat * 0.15
       break
     }
     case 'crouch':
@@ -215,6 +230,7 @@ export function stepBotMotion(
       offsetY = -profile.crouchDepth * 0.42 * pulse
       legSpread = pulse * 0.55
       leanZ = pulse * 0.12
+      headTiltZ = pulse * 0.18
       break
     case 'hover':
       offsetY =
@@ -222,10 +238,13 @@ export function stepBotMotion(
         profile.hoverAmplitude * 0.35
       offsetX = Math.sin(timeSec * 1.6 + state.seed) * profile.strafeSpeed * 0.35
       armSwing = Math.sin(timeSec * 3.2 + state.seed) * 0.25
+      headTiltX = Math.sin(timeSec * 1.6 + state.seed) * 0.12
       break
     default:
       break
   }
+
+  offsetY += strideBob
 
   return {
     offsetX,
@@ -238,5 +257,8 @@ export function stepBotMotion(
     leanZ,
     legSpread,
     armSwing,
+    strideBob,
+    headTiltX,
+    headTiltZ,
   }
 }

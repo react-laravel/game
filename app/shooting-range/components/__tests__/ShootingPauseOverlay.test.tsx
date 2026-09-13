@@ -70,7 +70,7 @@ describe('ShootingPauseOverlay', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '回到游戏' }))
+    fireEvent.pointerDown(screen.getByRole('button', { name: '回到游戏' }))
     expect(onResume).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('button', { name: '退出游戏' }))

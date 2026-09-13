@@ -16,6 +16,8 @@ interface CrosshairProps {
 
 const HIT_X_INSET = 14
 const HIT_X_OUTSET = 30
+const HEADSHOT_X_INSET = 8
+const HEADSHOT_X_OUTSET = 36
 
 export function Crosshair({
   config,
@@ -31,7 +33,9 @@ export function Crosshair({
   const circleRadius = getCrosshairCircleRadius(config)
   const center = getCrosshairViewboxSize() / 2
   const outlineWidth = config.thickness + 2
-  const hitGapScale = confirmed ? (headshot ? 0.66 : 0.72) : 1
+  const hitGapScale = confirmed ? (headshot ? 0.62 : 0.72) : 1
+  const xInset = headshot ? HEADSHOT_X_INSET : HIT_X_INSET
+  const xOutset = headshot ? HEADSHOT_X_OUTSET : HIT_X_OUTSET
 
   return (
     <div
@@ -41,14 +45,14 @@ export function Crosshair({
       <svg
         viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
         className={`transition-transform duration-75 ease-out ${
-          headshot ? 'scale-[1.12]' : hit ? 'scale-[1.08]' : miss ? 'scale-[0.94]' : 'scale-100'
+          headshot ? 'scale-[1.18]' : hit ? 'scale-[1.08]' : miss ? 'scale-[0.94]' : 'scale-100'
         }`}
         style={{
           width: `${config.size * 2.8}px`,
           height: `${config.size * 2.8}px`,
           opacity,
           filter: headshot
-            ? 'drop-shadow(0 0 8px rgba(255, 120, 140, 0.65))'
+            ? 'drop-shadow(0 0 10px rgba(200, 90, 100, 0.55))'
             : hit
               ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))'
               : miss
@@ -60,11 +64,11 @@ export function Crosshair({
           <circle
             cx={center}
             cy={center}
-            r={circleRadius !== null ? circleRadius + (headshot ? 8 : 6) : headshot ? 20 : 18}
+            r={circleRadius !== null ? circleRadius + (headshot ? 10 : 6) : headshot ? 22 : 18}
             fill="none"
-            stroke={headshot ? '#ffb4c0' : '#ffe9a8'}
-            strokeWidth={headshot ? 2 : 1.5}
-            strokeOpacity={headshot ? 0.85 : 0.7}
+            stroke={headshot ? '#e8a0a8' : '#ffe9a8'}
+            strokeWidth={headshot ? 2.6 : 1.5}
+            strokeOpacity={headshot ? 0.92 : 0.7}
           />
         )}
 
@@ -166,39 +170,39 @@ export function Crosshair({
         {confirmed && (
           <>
             <line
-              x1={HIT_X_INSET}
-              y1={HIT_X_INSET}
-              x2={HIT_X_OUTSET}
-              y2={HIT_X_OUTSET}
-              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
-              strokeWidth={headshot ? 2.8 : 2.4}
+              x1={xInset}
+              y1={xInset}
+              x2={xOutset}
+              y2={xOutset}
+              stroke={headshot ? '#e8a8b0' : '#ffe9a0'}
+              strokeWidth={headshot ? 3.6 : 2.4}
               strokeLinecap="round"
             />
             <line
-              x1={64 - HIT_X_INSET}
-              y1={HIT_X_INSET}
-              x2={64 - HIT_X_OUTSET}
-              y2={HIT_X_OUTSET}
-              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
-              strokeWidth={headshot ? 2.8 : 2.4}
+              x1={64 - xInset}
+              y1={xInset}
+              x2={64 - xOutset}
+              y2={xOutset}
+              stroke={headshot ? '#e8a8b0' : '#ffe9a0'}
+              strokeWidth={headshot ? 3.6 : 2.4}
               strokeLinecap="round"
             />
             <line
-              x1={HIT_X_INSET}
-              y1={64 - HIT_X_INSET}
-              x2={HIT_X_OUTSET}
-              y2={64 - HIT_X_OUTSET}
-              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
-              strokeWidth={headshot ? 2.8 : 2.4}
+              x1={xInset}
+              y1={64 - xInset}
+              x2={xOutset}
+              y2={64 - xOutset}
+              stroke={headshot ? '#e8a8b0' : '#ffe9a0'}
+              strokeWidth={headshot ? 3.6 : 2.4}
               strokeLinecap="round"
             />
             <line
-              x1={64 - HIT_X_INSET}
-              y1={64 - HIT_X_INSET}
-              x2={64 - HIT_X_OUTSET}
-              y2={64 - HIT_X_OUTSET}
-              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
-              strokeWidth={headshot ? 2.8 : 2.4}
+              x1={64 - xInset}
+              y1={64 - xInset}
+              x2={64 - xOutset}
+              y2={64 - xOutset}
+              stroke={headshot ? '#e8a8b0' : '#ffe9a0'}
+              strokeWidth={headshot ? 3.6 : 2.4}
               strokeLinecap="round"
             />
           </>

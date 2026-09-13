@@ -145,7 +145,7 @@ describe('useShootingSession', () => {
     expect(result.current.hitMarker).toBe(true)
 
     act(() => {
-      vi.advanceTimersByTime(100)
+      vi.advanceTimersByTime(120)
     })
     expect(result.current.hitMarker).toBe(false)
   })

@@ -160,6 +160,9 @@ export default function ShootingGame({
 
   const resumePointerLock = useCallback(() => {
     requestPointerLock()
+    window.requestAnimationFrame(() => {
+      requestPointerLock()
+    })
   }, [requestPointerLock])
 
   const showHitFeedbackRef = useRef(showHitFeedback)

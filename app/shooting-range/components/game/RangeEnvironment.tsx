@@ -807,6 +807,28 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <WallSconce key={x} x={x} z={-16} color={config.accent} />
       ))}
 
+      {[-8, 8].map(x => (
+        <group key={`vent-${x}`} position={[x, 7.2, -32]}>
+          <mesh>
+            <boxGeometry args={[1.8, 0.9, 0.12]} />
+            <meshStandardMaterial color="#4a5a68" metalness={0.35} roughness={0.62} />
+          </mesh>
+          {[-0.45, 0, 0.45].map(sl => (
+            <mesh key={sl} position={[sl, 0, 0.07]}>
+              <boxGeometry args={[0.08, 0.65, 0.04]} />
+              <meshBasicMaterial color="#1a2838" toneMapped={false} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {[-6, 6].map(x => (
+        <mesh key={`bench-${x}`} position={[x, 0.42, -6.5]}>
+          <boxGeometry args={[2.4, 0.84, 0.55]} />
+          <meshStandardMaterial color="#4a5a68" metalness={0.28} roughness={0.68} />
+        </mesh>
+      ))}
+
       {/* meshBasic depth pass — ceiling beams and solid wall distance plaques */}
       {[-10, 0, 10].map(x => (
         <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y - 0.42, -24]}>
@@ -1496,6 +1518,26 @@ function WarehouseRange({ config }: { config: MapConfig }) {
 
       {[-16, 16].map(x => (
         <WallSconce key={x} x={x} z={-14} color={config.accent} />
+      ))}
+
+      {[-11, 0, 11].map(x => (
+        <group key={`chain-${x}`} position={[x, 9.8, -36]}>
+          <mesh>
+            <boxGeometry args={[0.06, 2.4, 0.06]} />
+            <meshBasicMaterial color="#14100c" toneMapped={false} />
+          </mesh>
+          <mesh position={[0, -1.35, 0]}>
+            <boxGeometry args={[0.5, 0.35, 0.5]} />
+            <meshBasicMaterial color="#1a1612" toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {[-5, 5].map(x => (
+        <mesh key={`oil-stain-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.9625, -24]}>
+          <planeGeometry args={[3.2, 2.4]} />
+          <meshStandardMaterial color="#3a3428" roughness={0.95} transparent opacity={0.55} depthWrite={false} />
+        </mesh>
       ))}
     </>
   )

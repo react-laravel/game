@@ -1,8 +1,8 @@
 /** Tunable gun-feel constants — frame-based flash, recoil, and hit-marker timing. */
 
 export const MUZZLE_FLASH_DURATION = 0.064
-export const HIT_MARKER_DURATION_MS = 100
-export const HEADSHOT_MARKER_DURATION_MS = 130
+export const HIT_MARKER_DURATION_MS = 120
+export const HEADSHOT_MARKER_DURATION_MS = 165
 export const MISS_MARKER_DURATION_MS = 82
 export const RECOIL_KICK_PITCH = 0.019
 export const RECOIL_KICK_YAW = 0.0036

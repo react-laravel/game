@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { HitZone, TrainingModeId } from '../../types'
 import type { BotMotionSample } from '../../utils/humanoidMotion'
+import { impactColorForZone } from '../../utils/impactFx'
 import { getTargetAppearance } from '../../utils/targetAppearance'
 
 const BODY_COLOR = '#3c444c'
@@ -68,8 +69,27 @@ export function HumanoidVisual({
   const rightArmRef = useRef<THREE.Group>(null)
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const accent = appearance.ringColor
+  const hitFlashRef = useRef<THREE.Group>(null)
+  const hitFlashElapsed = useRef(0)
+  const previousHit = useRef(false)
 
   useFrame((_, delta) => {
+    if (previousHit.current !== hit) {
+      previousHit.current = hit
+      hitFlashElapsed.current = 0
+      if (hitFlashRef.current) {
+        hitFlashRef.current.visible = hit
+      }
+    }
+
+    if (hit && hitFlashRef.current) {
+      hitFlashElapsed.current += delta
+      const flashT = hitFlashElapsed.current / 0.24
+      const flashScale = 0.85 + flashT * 1.15
+      hitFlashRef.current.scale.setScalar(flashScale)
+      hitFlashRef.current.visible = flashT < 1
+    }
+
     const motion = motionRef.current ?? DEFAULT_MOTION
     const crouch = crouchScaleRef.current
     const spread = motion.legSpread
@@ -117,9 +137,34 @@ export function HumanoidVisual({
   const headColor = hit ? zoneHitColor(hitZone, 'head', headIdle) : headIdle
   const bodyColor = hit ? zoneHitColor(hitZone, 'body', bodyIdle) : bodyIdle
   const limbColor = hit ? zoneHitColor(hitZone, 'limb', limbIdle) : limbIdle
+  const flashColor = impactColorForZone(hitZone)
+  const flashY =
+    hitZone === 'head' ? 1.74 : hitZone === 'limb' ? 0.62 : 1.08
+  const flashSize = hitZone === 'head' ? 0.52 : hitZone === 'limb' ? 0.38 : 0.46
 
   return (
     <group>
+      {hit && (
+        <group ref={hitFlashRef} position={[0, flashY, 0.18]} visible={false}>
+          {hitZone === 'head' ? (
+            <>
+              <mesh rotation={[0, 0, Math.PI / 4]}>
+                <boxGeometry args={[flashSize * 1.35, 0.07, 0.07]} />
+                <meshBasicMaterial color={flashColor} toneMapped={false} />
+              </mesh>
+              <mesh rotation={[0, 0, -Math.PI / 4]}>
+                <boxGeometry args={[flashSize * 1.35, 0.07, 0.07]} />
+                <meshBasicMaterial color={flashColor} toneMapped={false} />
+              </mesh>
+            </>
+          ) : (
+            <mesh>
+              <ringGeometry args={[flashSize * 0.55, flashSize * 0.82, 16]} />
+              <meshBasicMaterial color={flashColor} transparent opacity={0.88} toneMapped={false} depthWrite={false} />
+            </mesh>
+          )}
+        </group>
+      )}
       <group ref={leftLegRef} position={[-0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
           <boxGeometry args={[0.22, 0.74, 0.22]} />

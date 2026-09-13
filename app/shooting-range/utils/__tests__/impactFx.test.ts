@@ -37,11 +37,11 @@ describe('shooting-range impactFx', () => {
     expect(Array.from(velocities)).toEqual([2, 1, 4])
   })
 
-  it('maps hit zones to distinct impact colors', () => {
-    expect(impactColorForZone('head')).toBe('#ff6868')
-    expect(impactColorForZone('limb')).toBe('#88c8ff')
-    expect(impactColorForZone('body')).toBe('#ffd080')
-    expect(impactColorForZone()).toBe('#ffd080')
+  it('maps hit zones to distinct matte impact colors', () => {
+    expect(impactColorForZone('head')).toBe('#d85858')
+    expect(impactColorForZone('limb')).toBe('#6898c0')
+    expect(impactColorForZone('body')).toBe('#d8a050')
+    expect(impactColorForZone()).toBe('#d8a050')
   })
 
   it('reuses a fixed number of impact slots', () => {

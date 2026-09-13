@@ -7,6 +7,7 @@ import {
   IMPACT_SLOT_COUNT,
   createPackedBurst,
   impactColorForZone,
+  impactParticleSizeForZone,
   nextImpactSlot,
   resetBurst,
   stepBurst,
@@ -49,14 +50,14 @@ export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function Impac
       const burst = bursts[index]
       if (!points || !material) return
 
-      resetBurst(burst)
+      resetBurst(burst, hitZone)
       const positionAttribute = points.geometry.getAttribute('position')
       positionAttribute.needsUpdate = true
       points.position.copy(position)
       points.visible = true
       material.color.set(impactColorForZone(hitZone))
-      material.opacity = particleScale
-      material.size = (hitZone === 'head' ? 0.13 : 0.11) * particleScale
+      material.opacity = Math.min(1, particleScale * 1.08)
+      material.size = impactParticleSizeForZone(hitZone) * particleScale
       elapsed.current[index] = 0
       active.current[index] = true
     },
@@ -75,7 +76,8 @@ export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function Impac
       stepBurst(burst.positions, burst.velocities, delta)
       const positionAttribute = points.geometry.getAttribute('position')
       positionAttribute.needsUpdate = true
-      material.opacity = Math.max(0, particleScale * (1 - elapsed.current[index] / IMPACT_DURATION))
+      const fadeT = elapsed.current[index] / IMPACT_DURATION
+      material.opacity = Math.max(0, particleScale * (1 - fadeT ** 1.15))
 
       if (elapsed.current[index] >= IMPACT_DURATION) {
         active.current[index] = false
@@ -102,13 +104,13 @@ export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function Impac
             ref={node => {
               materialRefs.current[index] = node
             }}
-            color="#fff8e8"
-            size={0.11}
+            color="#e8dcc8"
+            size={0.14}
             sizeAttenuation
             transparent
             opacity={1}
             depthWrite={false}
-            blending={THREE.AdditiveBlending}
+            blending={THREE.NormalBlending}
           />
         </points>
       ))}

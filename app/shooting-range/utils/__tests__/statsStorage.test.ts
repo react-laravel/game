@@ -34,6 +34,23 @@ describe('statsStorage', () => {
     expect(localStorage.getItem(SHOOTING_HISTORY_KEY)).toContain('"score":120')
   })
 
+  it('rejects malformed records missing mode metadata', () => {
+    localStorage.setItem(
+      SHOOTING_HISTORY_KEY,
+      JSON.stringify([
+        {
+          id: 'bad',
+          timestamp: Date.now(),
+          date: '2026-01-01',
+          score: 10,
+          hits: 1,
+          shots: 1,
+        },
+      ])
+    )
+    expect(loadSessionHistory()).toEqual([])
+  })
+
   it('caps history length and clears storage', () => {
     for (let index = 0; index < 205; index += 1) {
       saveSessionRecord(

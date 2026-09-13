@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  HEADSHOT_FLASH_DURATION,
   MUZZLE_FLASH_DURATION,
+  SHOT_COOLDOWN_MS,
   decayRecoil,
+  hitFlashDurationForZone,
   muzzleFlashIntensity,
   randomRecoilYaw,
 } from '../gunFeel'
@@ -34,5 +37,11 @@ describe('gunFeel', () => {
       expect(yaw).toBeGreaterThanOrEqual(-0.0036)
       expect(yaw).toBeLessThanOrEqual(0.0036)
     }
+  })
+
+  it('exposes shared shot cadence and longer headshot flash timing', () => {
+    expect(SHOT_COOLDOWN_MS).toBe(132)
+    expect(hitFlashDurationForZone('head')).toBe(HEADSHOT_FLASH_DURATION)
+    expect(hitFlashDurationForZone('body')).toBeLessThan(HEADSHOT_FLASH_DURATION)
   })
 })

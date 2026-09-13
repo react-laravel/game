@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import type { HitZone, TrainingModeId } from '../../types'
 import type { BotMotionSample } from '../../utils/humanoidMotion'
 import { impactColorForZone } from '../../utils/impactFx'
+import { hitFlashDurationForZone } from '../../utils/gunFeel'
 import { getTargetAppearance } from '../../utils/targetAppearance'
 
 const BODY_COLOR = '#3c444c'
@@ -84,7 +85,8 @@ export function HumanoidVisual({
 
     if (hit && hitFlashRef.current) {
       hitFlashElapsed.current += delta
-      const flashT = hitFlashElapsed.current / 0.24
+      const flashDuration = hitFlashDurationForZone(hitZone)
+      const flashT = hitFlashElapsed.current / flashDuration
       const flashScale = 0.85 + flashT * 1.15
       hitFlashRef.current.scale.setScalar(flashScale)
       hitFlashRef.current.visible = flashT < 1
@@ -149,11 +151,11 @@ export function HumanoidVisual({
           {hitZone === 'head' ? (
             <>
               <mesh rotation={[0, 0, Math.PI / 4]}>
-                <boxGeometry args={[flashSize * 1.35, 0.07, 0.07]} />
+                <boxGeometry args={[flashSize * 1.45, 0.09, 0.09]} />
                 <meshBasicMaterial color={flashColor} toneMapped={false} />
               </mesh>
               <mesh rotation={[0, 0, -Math.PI / 4]}>
-                <boxGeometry args={[flashSize * 1.35, 0.07, 0.07]} />
+                <boxGeometry args={[flashSize * 1.45, 0.09, 0.09]} />
                 <meshBasicMaterial color={flashColor} toneMapped={false} />
               </mesh>
             </>

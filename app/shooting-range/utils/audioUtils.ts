@@ -192,44 +192,44 @@ export const primeShootingAudio = () => {
 export const playShotSound = () => {
   withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
-    const pitch = jitter(1, 0.08)
+    const pitch = jitter(1, 0.07)
 
     playNoiseBurst(context, destination, {
       start,
-      duration: 0.036,
-      volume: 0.2 * volumeScale,
-      highpass: 1100 * pitch,
-      lowpass: 5400,
+      duration: 0.028,
+      volume: 0.22 * volumeScale,
+      highpass: 1250 * pitch,
+      lowpass: 5600,
     })
     playNoiseBurst(context, destination, {
       start,
-      duration: 0.08,
-      volume: 0.11 * volumeScale,
-      bandpass: 380 * pitch,
-      q: 0.85,
-      lowpass: 1400,
+      duration: 0.062,
+      volume: 0.1 * volumeScale,
+      bandpass: 410 * pitch,
+      q: 0.9,
+      lowpass: 1300,
     })
     playTone(context, destination, {
       type: 'sine',
-      frequency: 108 * pitch,
-      frequencyEnd: 46,
-      duration: 0.12,
-      volume: 0.16 * volumeScale,
+      frequency: 118 * pitch,
+      frequencyEnd: 42,
+      duration: 0.09,
+      volume: 0.17 * volumeScale,
       start,
     })
     playTone(context, destination, {
       type: 'square',
-      frequency: 1750 * pitch,
-      duration: 0.011,
-      volume: 0.03 * volumeScale,
+      frequency: 1880 * pitch,
+      duration: 0.008,
+      volume: 0.034 * volumeScale,
       start,
     })
     playNoiseBurst(context, destination, {
-      start: start + 0.03,
-      duration: 0.08,
-      volume: 0.028 * volumeScale,
-      highpass: 180,
-      lowpass: 520,
+      start: start + 0.022,
+      duration: 0.055,
+      volume: 0.022 * volumeScale,
+      highpass: 220,
+      lowpass: 480,
     })
   })
 }
@@ -241,24 +241,24 @@ export const playHitSound = (zone: HitConfirmZone = 'plate') => {
   withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
     const pitch =
-      zone === 'head' ? jitter(1.18, 0.06) : zone === 'limb' ? jitter(0.82, 0.08) : jitter(1, 0.08)
-    const baseFreq = zone === 'head' ? 3380 : zone === 'limb' ? 2280 : 2860
-    const endFreq = zone === 'head' ? 2680 : zone === 'limb' ? 1780 : 2140
-    const tickVolume = zone === 'head' ? 0.13 : zone === 'limb' ? 0.08 : 0.11
-    const noiseVolume = zone === 'head' ? 0.085 : zone === 'limb' ? 0.05 : 0.07
+      zone === 'head' ? jitter(1.2, 0.05) : zone === 'limb' ? jitter(0.82, 0.08) : jitter(1, 0.08)
+    const baseFreq = zone === 'head' ? 3520 : zone === 'limb' ? 2280 : 2860
+    const endFreq = zone === 'head' ? 2720 : zone === 'limb' ? 1780 : 2140
+    const tickVolume = zone === 'head' ? 0.145 : zone === 'limb' ? 0.08 : 0.11
+    const noiseVolume = zone === 'head' ? 0.095 : zone === 'limb' ? 0.05 : 0.07
 
     playNoiseBurst(context, destination, {
       start,
-      duration: zone === 'head' ? 0.01 : 0.012,
+      duration: zone === 'head' ? 0.012 : 0.012,
       volume: noiseVolume * volumeScale,
-      highpass: zone === 'head' ? 5200 : 4200,
-      lowpass: zone === 'head' ? 13000 : 11000,
+      highpass: zone === 'head' ? 5600 : 4200,
+      lowpass: zone === 'head' ? 14000 : 11000,
     })
     playTone(context, destination, {
       type: 'sine',
       frequency: baseFreq * pitch,
       frequencyEnd: endFreq * pitch,
-      duration: zone === 'head' ? 0.048 : 0.055,
+      duration: zone === 'head' ? 0.058 : 0.055,
       volume: tickVolume * volumeScale,
       start,
     })
@@ -266,17 +266,25 @@ export const playHitSound = (zone: HitConfirmZone = 'plate') => {
       type: 'triangle',
       frequency: (baseFreq + 1260) * pitch,
       frequencyEnd: (endFreq + 1040) * pitch,
-      duration: 0.038,
-      volume: (zone === 'head' ? 0.07 : 0.055) * volumeScale,
+      duration: zone === 'head' ? 0.048 : 0.038,
+      volume: (zone === 'head' ? 0.078 : 0.055) * volumeScale,
       start: start + 0.003,
     })
     if (zone === 'head') {
       playTone(context, destination, {
         type: 'square',
-        frequency: 6200 * pitch,
-        duration: 0.005,
-        volume: 0.038 * volumeScale,
+        frequency: 6480 * pitch,
+        duration: 0.006,
+        volume: 0.042 * volumeScale,
         start: start + 0.001,
+      })
+      playTone(context, destination, {
+        type: 'sine',
+        frequency: 4180 * pitch,
+        frequencyEnd: 2860 * pitch,
+        duration: 0.032,
+        volume: 0.028 * volumeScale,
+        start: start + 0.008,
       })
     } else {
       playTone(context, destination, {

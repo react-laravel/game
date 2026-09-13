@@ -13,6 +13,7 @@ import {
 import { computeSessionGrade, gradeColor, summarizeByMode } from '../utils/sessionInsights'
 import { clearSessionHistory, loadSessionHistory } from '../utils/statsStorage'
 import type { TrainingModeId } from '../types'
+import { mapOptions } from '../utils/mapConfigs'
 import { trainingModes } from '../utils/trainingModes'
 
 interface ShootingHistoryProps {
@@ -178,7 +179,7 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                   <thead className="bg-muted/40 text-xs text-muted-foreground">
                     <tr>
                       <th className="px-4 py-2 font-medium">日期</th>
-                      <th className="px-4 py-2 font-medium">模式</th>
+                      <th className="px-4 py-2 font-medium">模式 / 场景</th>
                       <th className="px-4 py-2 font-medium">得分</th>
                       <th className="hidden px-4 py-2 font-medium sm:table-cell">评级</th>
                       <th className="hidden px-4 py-2 font-medium sm:table-cell">精准度</th>
@@ -215,6 +216,10 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                           <td className="px-4 py-2.5">
                             <span className="font-medium">
                               {trainingModes[record.modeId].name}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                              {mapOptions.find(option => option.id === record.mapId)?.name ??
+                                record.mapId}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 font-mono font-bold tabular-nums">

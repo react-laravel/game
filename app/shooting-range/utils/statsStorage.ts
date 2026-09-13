@@ -58,6 +58,9 @@ function isValidSessionRecord(value: unknown): value is SessionRecord {
     typeof record.date === 'string' &&
     typeof record.score === 'number' &&
     typeof record.hits === 'number' &&
-    typeof record.shots === 'number'
+    typeof record.shots === 'number' &&
+    typeof record.modeId === 'string' &&
+    typeof record.mapId === 'string' &&
+    typeof record.accuracy === 'number'
   )
 }

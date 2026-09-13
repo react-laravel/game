@@ -11,6 +11,10 @@ import { useShootingSession } from '../hooks/useShootingSession'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import { drillLabelForConfig } from '../utils/drillPresets'
 import {
+  dismissTutorialTip,
+  isTutorialTipDismissed,
+} from '../utils/tutorialTipStorage'
+import {
   compareToPersonalBest,
   computeSessionGrade,
 } from '../utils/sessionInsights'
@@ -78,7 +82,7 @@ export default function ShootingGame({
 }: ShootingGameProps) {
   const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
   const [showHelpSheet, setShowHelpSheet] = useState(false)
-  const [showTutorialTip, setShowTutorialTip] = useState(true)
+  const [showTutorialTip, setShowTutorialTip] = useState(() => !isTutorialTipDismissed(modeId))
   const { preference: motionPreference, reducedMotion, setPreference: setMotionPreference } =
     useMotionPreference()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -150,13 +154,29 @@ export default function ShootingGame({
     setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
   }, [sfxMuted, sfxVolume])
 
+  useEffect(() => {
+    if (!gameOver) return
+    releasePointerLock()
+  }, [gameOver, releasePointerLock])
+
+  useEffect(() => {
+    if (!showTutorialTip || !gameStarted || gameOver) return
+    const timer = window.setTimeout(() => setShowTutorialTip(false), 9000)
+    return () => window.clearTimeout(timer)
+  }, [gameOver, gameStarted, modeId, showTutorialTip])
+
+  const dismissTutorial = useCallback(() => {
+    dismissTutorialTip(modeId)
+    setShowTutorialTip(false)
+  }, [modeId])
+
   const startGame = useCallback(() => {
     setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
     primeShootingAudio()
-    setShowTutorialTip(true)
+    setShowTutorialTip(!isTutorialTipDismissed(modeId))
     beginTraining()
     requestPointerLock()
-  }, [beginTraining, requestPointerLock, sfxMuted, sfxVolume])
+  }, [beginTraining, modeId, requestPointerLock, sfxMuted, sfxVolume])
 
   const resumePointerLock = useCallback(() => {
     requestPointerLock()
@@ -173,9 +193,12 @@ export default function ShootingGame({
   const handleShotResult = useCallback(
     (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => {
       recordShot(didHit, reactionMs, hitZone)
-      if (didHit) setShowTutorialTip(false)
+      if (didHit) {
+        dismissTutorialTip(modeId)
+        setShowTutorialTip(false)
+      }
     },
-    [recordShot]
+    [modeId, recordShot]
   )
 
   const handleHitFeedback = useCallback((hitZone?: HitZone) => {
@@ -183,10 +206,12 @@ export default function ShootingGame({
   }, [])
 
   const handleRestart = useCallback(() => {
-    setShowTutorialTip(true)
+    primeShootingAudio()
+    setShowTutorialTip(!isTutorialTipDismissed(modeId))
     restartTraining()
-    requestPointerLock()
-  }, [requestPointerLock, restartTraining])
+    releasePointerLock()
+    resumePointerLock()
+  }, [modeId, releasePointerLock, restartTraining, resumePointerLock])
 
   const handlePauseChangeDrill = useCallback(() => {
     releasePointerLock()
@@ -378,6 +403,7 @@ export default function ShootingGame({
         grade={sessionGrade}
         comparison={personalBestComparison}
         showTutorialTip={showTutorialTip && gameStarted && !gameOver}
+        onDismissTutorialTip={dismissTutorial}
         onRestart={handleRestart}
         onViewHistory={onViewHistory}
         onChangeDrill={onChangeDrill}

@@ -67,7 +67,7 @@ export function impactColorForZone(hitZone?: HitZone): string {
 export function impactParticleSizeForZone(hitZone?: HitZone): number {
   switch (hitZone) {
     case 'head':
-      return 0.18
+      return 0.22
     case 'limb':
       return 0.14
     default:

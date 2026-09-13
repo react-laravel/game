@@ -167,7 +167,7 @@ function TargetComponent({
   const [humanoidHit, setHumanoidHit] = useState(false)
   const [humanoidHitZone, setHumanoidHitZone] = useState<HitZone | undefined>()
   const motionTrailRef = useRef<THREE.Mesh>(null)
-  const staticAnchorRef = useRef<THREE.Mesh>(null)
+  const staticAnchorRef = useRef<THREE.Group>(null)
   const prevPosition = useRef(new THREE.Vector3(...position))
   const botMotionScale = movement === 'static' && modeId === 'static' ? 0 : 1
 
@@ -398,16 +398,28 @@ function TargetComponent({
   return (
     <group>
       {appearance.showStaticAnchor && (
-        <mesh ref={staticAnchorRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
-          <ringGeometry args={[0.72, 0.82, 24]} />
-          <meshBasicMaterial
-            color={appearance.ringColor}
-            transparent
-            opacity={0.2}
-            toneMapped={false}
-            depthWrite={false}
-          />
-        </mesh>
+        <group ref={staticAnchorRef} visible={false}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.68, 0.74, 24]} />
+            <meshBasicMaterial
+              color={appearance.ringColor}
+              transparent
+              opacity={0.28}
+              toneMapped={false}
+              depthWrite={false}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
+            <ringGeometry args={[0.84, 0.9, 24]} />
+            <meshBasicMaterial
+              color={appearance.spawnFlashColor}
+              transparent
+              opacity={0.14}
+              toneMapped={false}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
       )}
 
       {appearance.showOrbitHint && orbitRadius > 0 && (
@@ -569,7 +581,7 @@ function TargetComponent({
                 <meshStandardMaterial
                   color={appearance.ringColor}
                   transparent
-                  opacity={0.42}
+                  opacity={0.5}
                   metalness={0.02}
                   roughness={0.9}
                   depthWrite={false}

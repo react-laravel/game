@@ -20,6 +20,7 @@ interface GameUIProps {
   grade: SessionGrade | null
   comparison: PersonalBestComparison | null
   showTutorialTip?: boolean
+  onDismissTutorialTip?: () => void
   onRestart: () => void
   onViewHistory?: () => void
   onChangeDrill?: () => void
@@ -36,6 +37,7 @@ export function GameUI({
   grade,
   comparison,
   showTutorialTip = false,
+  onDismissTutorialTip,
   onRestart,
   onViewHistory,
   onChangeDrill,
@@ -140,11 +142,20 @@ export function GameUI({
 
       {!gameOver && showTutorialTip && (
         <div
-          className="absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-2xl border border-cyan-200/20 bg-slate-950/78 px-4 py-3 text-center text-sm leading-6 text-white/80 shadow-xl backdrop-blur-md transition-all duration-700 ease-out"
+          className="pointer-events-auto absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-2xl border border-cyan-200/20 bg-slate-950/78 px-4 py-3 text-center text-sm leading-6 text-white/80 shadow-xl backdrop-blur-md transition-all duration-700 ease-out"
           style={{ opacity: showTutorialTip ? 1 : 0 }}
         >
           <span className="font-semibold text-cyan-100">模式提示 · {mode.name}</span>
           <div className="mt-1 text-white/70">{tutorialTips[modeId]}</div>
+          {onDismissTutorialTip && (
+            <button
+              type="button"
+              className="mt-3 rounded-lg border border-white/15 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/85 transition-colors hover:bg-white/12"
+              onClick={onDismissTutorialTip}
+            >
+              知道了
+            </button>
+          )}
         </div>
       )}
 

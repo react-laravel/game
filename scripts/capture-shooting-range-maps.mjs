@@ -189,9 +189,7 @@ async function captureCustomMapTraining(page, mapLabel, filePath, options = {}) 
 async function captureHumanoidTraining(page, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
-  await page.getByRole('button', { name: /自定义场景与难度/ }).click()
-  await page.getByRole('button', { name: /人形靶/ }).click()
-  await page.getByRole('button', { name: /按当前设置开始/ }).click()
+  await page.getByRole('button', { name: /人形靶追踪/ }).first().click()
   await enterFallbackPlay(page)
   await captureTrainingHud(page, filePath, { requireHumanoid: true })
 }

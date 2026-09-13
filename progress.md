@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 29 (2026-09-13, window ending ~10:30 Asia/Shanghai): **training feel / maps** — mode-specific target accents (flick orange / track green / strafe magenta / grid cyan), spawn flash rings, corner brackets for single-target modes, orbit path hint for tracking; indoor meshBasic depth (ceiling beams, lane guides, distance plaques, backstop layers). Pause/settings (#26–#28) unchanged. Focused 141/141; full 700/700; eslint 0 errors; map/drill HUD screenshots refreshed.
 - Shooting Range cycle 28 (2026-09-13, window ending ~10:30 Asia/Shanghai): pause settings **灵敏度 / 音量 / 其他** tab content parity with crosshair (live previews, preset hints, framed cards); lighter home **准星设置** sheet (sticky footer, bottom-sheet mobile); results hit/miss legend dots; `pause-settings-sensitivity.png` added. Focused 138/138; full 697/697; eslint 0 errors.
 - Shooting Range cycle 27 (2026-09-13): pause settings tabs stronger active contrast (amber ring 4-col grid); ESC → 设置 → back arrow or Escape returns to compact pause dialog with resume focus; Enter/Space resume only from pause menu; history recent table grade badges; `pause-settings-tabs.png` screenshot. Focused 137/137; full 696/696; eslint 0 errors.
 - Shooting Range cycle 26 (2026-09-13): **ESC pause = compact centered popup** (回到游戏 / 设置 / 退出游戏 + 重新开始 secondary); **tabbed settings panel** (准星 / 灵敏度 / 音量 / 其他) opened from 设置 — removed left-drawer `shooting-pause-menu`. `CrosshairSettingsSheet` apply/cancel + dual-background preview on setup. Outdoor berm target frames. Focused 133/133; full 692/692; eslint 0 errors; `pause-overlay.png` refreshed.
@@ -205,6 +206,22 @@ Follow-up after #27 coordinator review (`pause-settings-tabs.png`); Aimlabs-insp
 ### Screenshots & QA
 - `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`; added `pause-settings-sensitivity.png`.
 - Focused shooting-range tests: **138/138**; full suite **697/697**; `npm run lint` **0 errors**.
+
+## Shooting Range overnight polish cycle 29 (2026-09-13)
+
+Shift ROI from settings UX to **training feel / maps** (Aimlabs-inspired ORIGINAL only).
+
+### Target spawn readability / mode differentiation
+- `targetAppearance.ts`: per-mode ring colors, spawn pop scale, pulse rhythm, and spawn-flash ring.
+- Flick / grid single-target modes get corner bracket guides; tracking shows orbit-radius hint ring at anchor.
+- `Target` accepts `modeId`; `GameScene` passes it through.
+
+### Indoor map depth (meshBasic only)
+- Ceiling I-beam silhouettes, cyan lane edge guides, 7M/15M/25M distance plaques, layered backstop depth planes, overhead conduit runs — no new point lights.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs` (setup, three maps, drill HUDs, results, pause-overlay).
+- Focused shooting-range tests: **141/141**; full suite **700/700**; `npm run lint` **0 errors**.
 
 ## Shooting Range overnight polish cycle 26 (2026-09-13)
 

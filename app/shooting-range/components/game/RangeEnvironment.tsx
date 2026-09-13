@@ -953,6 +953,64 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <WallSconce key={x} x={x} z={-16} color={config.accent} />
       ))}
 
+      {/* meshBasic depth pass — ceiling beams, lane guides, distance plaques, backstop layers */}
+      {[-10, 0, 10].map(x => (
+        <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y - 0.42, -24]}>
+          <boxGeometry args={[0.65, 0.22, 52]} />
+          <meshBasicMaterial color="#1a2838" toneMapped={false} />
+        </mesh>
+      ))}
+
+      {[-15.5, 15.5].map(x => (
+        <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.972, -24]}>
+          <planeGeometry args={[0.1, 50]} />
+          <meshBasicMaterial
+            color={config.accent}
+            transparent
+            opacity={0.28}
+            toneMapped={false}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
+      {[
+        { z: -12, label: '7M' },
+        { z: -26, label: '15M' },
+        { z: -40, label: '25M' },
+      ].map(marker => (
+        <group key={marker.label} position={[-15.2, 3.4, marker.z]}>
+          <mesh>
+            <boxGeometry args={[0.04, 0.9, 1.4]} />
+            <meshBasicMaterial color="#1e3040" toneMapped={false} />
+          </mesh>
+          <mesh position={[0.03, 0, 0]}>
+            <planeGeometry args={[1.1, 0.55]} />
+            <meshBasicMaterial color={config.accent} transparent opacity={0.35} toneMapped={false} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {[0, 1, 2].map(layer => (
+        <mesh key={`backstop-layer-${layer}`} position={[0, 2.2 + layer * 1.6, -47.88 - layer * 0.06]}>
+          <planeGeometry args={[33 - layer * 2.5, 7.5 - layer * 0.8]} />
+          <meshBasicMaterial
+            color="#0a1824"
+            transparent
+            opacity={0.12 + layer * 0.07}
+            toneMapped={false}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+
+      {[-14, 0, 14].map(x => (
+        <mesh key={`conduit-${x}`} position={[x, INDOOR_CEILING_Y - 1.15, -20]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[38, 0.14, 0.14]} />
+          <meshBasicMaterial color="#253848" toneMapped={false} />
+        </mesh>
+      ))}
+
       {[-15, -30, -44].map(z => (
         <pointLight key={z} position={[0, 6.5, z]} intensity={0.68} color="#e8f8ff" distance={16} decay={2} />
       ))}

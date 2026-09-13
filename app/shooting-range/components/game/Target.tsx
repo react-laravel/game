@@ -1,7 +1,9 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import type { TrainingModeId } from '../../types'
 import type { TargetMovement } from '../../utils/trainingModes'
+import { getTargetAppearance } from '../../utils/targetAppearance'
 
 interface TargetProps {
   position: [number, number, number]
@@ -14,6 +16,7 @@ interface TargetProps {
   faceCamera: boolean
   orbitRadius: number
   orbitSpeed: number
+  modeId: TrainingModeId
   onClick: (id: number) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
@@ -23,7 +26,6 @@ const plateIdleColor = new THREE.Color('#e8f0f7')
 const plateHitColor = new THREE.Color('#ff3b3b')
 const plateIdleEmissive = new THREE.Color('#07131d')
 const plateHitEmissive = new THREE.Color('#7f1010')
-const ringIdleColor = new THREE.Color('#2ab0ff')
 const ringHitColor = new THREE.Color('#ffb020')
 const innerIdleColor = new THREE.Color('#0a1a28')
 const innerHitColor = new THREE.Color('#fff1c2')
@@ -32,6 +34,7 @@ const centerHitColor = new THREE.Color('#ffffff')
 
 function applyTargetLook(
   hit: boolean,
+  ringIdleHex: string,
   plate: THREE.MeshStandardMaterial | null,
   ring: THREE.MeshBasicMaterial | null,
   inner: THREE.MeshBasicMaterial | null,
@@ -41,7 +44,7 @@ function applyTargetLook(
   plate.color.copy(hit ? plateHitColor : plateIdleColor)
   plate.emissive.copy(hit ? plateHitEmissive : plateIdleEmissive)
   plate.emissiveIntensity = hit ? 2.5 : 0.35
-  ring.color.copy(hit ? ringHitColor : ringIdleColor)
+  ring.color.set(hit ? ringHitColor : ringIdleHex)
   inner.color.copy(hit ? innerHitColor : innerIdleColor)
   center.color.copy(hit ? centerHitColor : centerIdleColor)
 }
@@ -58,24 +61,30 @@ function TargetComponent({
   faceCamera,
   orbitRadius,
   orbitSpeed,
+  modeId,
   onClick,
   onReady,
   id,
 }: TargetProps) {
+  const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const rootRef = useRef<THREE.Group>(null)
   const visualRef = useRef<THREE.Group>(null)
   const plateMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
   const ringMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const innerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const centerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const spawnFlashRef = useRef<THREE.Mesh>(null)
+  const spawnFlashMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
   const jitterRef = useRef(new THREE.Vector3())
   const orbitAnchor = useRef(new THREE.Vector3(...position))
   const hitElapsed = useRef(0)
+  const spawnFlashElapsed = useRef(0.5)
   const previousHit = useRef(false)
   const spawnPulse = useRef(1)
   const burstRingRef = useRef<THREE.Mesh>(null)
   const burstMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const orbitHintRef = useRef<THREE.Group>(null)
 
   useEffect(() => {
     const root = rootRef.current
@@ -87,10 +96,11 @@ function TargetComponent({
     root.userData.spawnedAt = performance.now()
     root.userData.orbitAnchor = orbitAnchor.current
     orbitAnchor.current.set(...position)
-    spawnPulse.current = 1.35
+    spawnPulse.current = appearance.spawnPop
+    spawnFlashElapsed.current = 0
     onReady?.(id, root)
     return () => onReady?.(id, null)
-  }, [id, onReady, position])
+  }, [appearance.spawnPop, id, onReady, position])
 
   useFrame(({ camera }, delta) => {
     const root = rootRef.current
@@ -106,9 +116,13 @@ function TargetComponent({
         burstRingRef.current.visible = true
         burstRingRef.current.scale.setScalar(0.85)
       }
-      if (!hit) spawnPulse.current = 1.35
+      if (!hit) {
+        spawnPulse.current = appearance.spawnPop
+        spawnFlashElapsed.current = 0
+      }
       applyTargetLook(
         hit,
+        appearance.ringColor,
         plateMaterialRef.current,
         ringMaterialRef.current,
         innerMaterialRef.current,
@@ -149,11 +163,27 @@ function TargetComponent({
       }
 
       spawnPulse.current = THREE.MathUtils.lerp(spawnPulse.current, 1, delta * 6)
-      const pulse =
-        movement === 'static'
-          ? spawnPulse.current
-          : 1 + Math.sin(performance.now() * 0.004 + id) * 0.025
+      const movingPulse =
+        appearance.pulseAmplitude > 0
+          ? 1 + Math.sin(performance.now() * 0.001 * appearance.pulseSpeed + id) * appearance.pulseAmplitude
+          : 1
+      const pulse = movement === 'static' ? spawnPulse.current : movingPulse
       visual.scale.setScalar(pulse)
+
+      if (spawnFlashElapsed.current < 0.42) {
+        spawnFlashElapsed.current += delta
+        const flashT = spawnFlashElapsed.current / 0.42
+        const spawnFlash = spawnFlashRef.current
+        const spawnFlashMaterial = spawnFlashMaterialRef.current
+        if (spawnFlash && spawnFlashMaterial) {
+          spawnFlash.visible = true
+          const flashScale = 0.7 + flashT * 1.1
+          spawnFlash.scale.setScalar(flashScale)
+          spawnFlashMaterial.opacity = Math.max(0, 0.72 * (1 - flashT ** 1.4))
+        }
+      } else if (spawnFlashRef.current) {
+        spawnFlashRef.current.visible = false
+      }
     } else {
       hitElapsed.current += delta
       const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2.4 - hitElapsed.current ** 2 * 52)
@@ -176,6 +206,10 @@ function TargetComponent({
     }
 
     if (faceCamera) root.lookAt(camera.position)
+
+    if (orbitHintRef.current && appearance.showOrbitHint) {
+      orbitHintRef.current.position.copy(orbitAnchor.current)
+    }
   })
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
@@ -184,13 +218,41 @@ function TargetComponent({
   }
 
   return (
-    <group
-      ref={rootRef}
-      position={position}
-      scale={scale}
-      onClick={handleClick}
-    >
+    <group>
+      {appearance.showOrbitHint && orbitRadius > 0 && (
+        <group ref={orbitHintRef} position={position}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]}>
+            <ringGeometry args={[orbitRadius * 0.92, orbitRadius * 1.02, 48]} />
+            <meshBasicMaterial
+              color={appearance.ringColor}
+              transparent
+              opacity={0.22}
+              toneMapped={false}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
+      )}
+
+      <group
+        ref={rootRef}
+        position={position}
+        scale={scale}
+        onClick={handleClick}
+      >
       <group ref={visualRef}>
+        <mesh ref={spawnFlashRef} position={[0, 0, 0.12]} visible={false}>
+          <ringGeometry args={[1.02, 1.18, 32]} />
+          <meshBasicMaterial
+            ref={spawnFlashMaterialRef}
+            color={appearance.spawnFlashColor}
+            transparent
+            opacity={0}
+            toneMapped={false}
+            depthWrite={false}
+          />
+        </mesh>
+
         <mesh ref={burstRingRef} position={[0, 0, 0.14]} visible={false}>
           <ringGeometry args={[0.92, 1.08, 32]} />
           <meshBasicMaterial
@@ -231,7 +293,7 @@ function TargetComponent({
 
         <mesh position={[0, 0, 0.115]}>
           <ringGeometry args={[0.55, 0.73, 32]} />
-          <meshBasicMaterial ref={ringMaterialRef} color="#2ab0ff" toneMapped={false} />
+          <meshBasicMaterial ref={ringMaterialRef} color={appearance.ringColor} toneMapped={false} />
         </mesh>
 
         <mesh position={[0, 0, 0.125]}>
@@ -252,6 +314,29 @@ function TargetComponent({
           <boxGeometry args={[0.24, 0.42, 0.22]} />
           <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
         </mesh>
+
+        {appearance.showSpawnBrackets && (
+          <>
+            {[
+              [-1.35, 1.05, 0.12],
+              [1.35, 1.05, 0.12],
+              [-1.35, -1.05, 0.12],
+              [1.35, -1.05, 0.12],
+            ].map(([bx, by, bz], index) => (
+              <group key={index} position={[bx, by, bz]}>
+                <mesh position={[bx > 0 ? -0.18 : 0.18, 0, 0]}>
+                  <boxGeometry args={[0.36, 0.06, 0.04]} />
+                  <meshBasicMaterial color={appearance.ringColor} toneMapped={false} />
+                </mesh>
+                <mesh position={[0, by > 0 ? -0.18 : 0.18, 0]}>
+                  <boxGeometry args={[0.06, 0.36, 0.04]} />
+                  <meshBasicMaterial color={appearance.ringColor} toneMapped={false} />
+                </mesh>
+              </group>
+            ))}
+          </>
+        )}
+      </group>
       </group>
     </group>
   )

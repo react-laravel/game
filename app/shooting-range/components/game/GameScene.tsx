@@ -335,6 +335,7 @@ export function GameScene({
           faceCamera={settings.faceCamera}
           orbitRadius={settings.orbitRadius}
           orbitSpeed={settings.orbitSpeed}
+          modeId={modeId}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />

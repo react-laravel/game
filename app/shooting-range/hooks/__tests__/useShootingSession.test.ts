@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useShootingSession } from '../useShootingSession'
+import { useShootingSession, HEADSHOT_PULSE_DURATION_MS, HIT_PULSE_DURATION_MS } from '../useShootingSession'
 import { loadSessionHistory } from '../../utils/statsStorage'
 
 const baseConfig = {
@@ -71,6 +71,30 @@ describe('useShootingSession', () => {
     expect(result.current.sessionStats.score).toBe(35)
     expect(result.current.sessionStats.zoneHits).toEqual({ head: 1, body: 1, limb: 1 })
     expect(result.current.hitPulse?.zoneLabel).toBe('四肢')
+    expect(result.current.hitPulse?.hitZone).toBe('limb')
+  })
+
+  it('keeps headshot hit pulse visible longer than body hits', () => {
+    const { result } = renderHook(() =>
+      useShootingSession({ ...baseConfig, targetShape: 'humanoid' })
+    )
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.recordShot(true, 200, 'head')
+    })
+
+    expect(result.current.hitPulse?.hitZone).toBe('head')
+
+    act(() => {
+      vi.advanceTimersByTime(HIT_PULSE_DURATION_MS)
+    })
+    expect(result.current.hitPulse?.hitZone).toBe('head')
+
+    act(() => {
+      vi.advanceTimersByTime(HEADSHOT_PULSE_DURATION_MS - HIT_PULSE_DURATION_MS)
+    })
+    expect(result.current.hitPulse).toBeNull()
   })
 
   it('tracks misses, streaks, and persists history on game over', () => {

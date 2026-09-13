@@ -154,6 +154,21 @@ async function captureTrainingHud(page, filePath, options = {}) {
     await page.waitForTimeout(1200)
   }
   await waitForSceneReady(page, options)
+  if (options.requireHumanoid) {
+    const canvas = page.locator('canvas').first()
+    const box = await canvas.boundingBox()
+    if (box) {
+      await canvas
+        .click({
+          position: { x: box.width * 0.5, y: box.height * 0.34 },
+          force: true,
+          noWaitAfter: true,
+          timeout: 5000,
+        })
+        .catch(() => {})
+      await page.waitForTimeout(320)
+    }
+  }
   await page.screenshot({ path: filePath, fullPage: false })
 }
 

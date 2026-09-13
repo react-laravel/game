@@ -1,6 +1,6 @@
 import type { HitZone } from '../types'
 
-export const IMPACT_PARTICLE_COUNT = 22
+export const IMPACT_PARTICLE_COUNT = 16
 export const IMPACT_SLOT_COUNT = 4
 export const IMPACT_DURATION = 0.42
 

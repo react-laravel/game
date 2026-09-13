@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { HitZone, TargetShape, TrainingModeId } from '../../types'
@@ -164,11 +164,12 @@ function TargetComponent({
   const orbitHintRef = useRef<THREE.Group>(null)
   const speedRingRef = useRef<THREE.Mesh>(null)
   const speedRingMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const [humanoidHit, setHumanoidHit] = useState(false)
-  const [humanoidHitZone, setHumanoidHitZone] = useState<HitZone | undefined>()
+  const humanoidHitRef = useRef(false)
+  const humanoidHitZoneRef = useRef<HitZone | undefined>(undefined)
   const motionTrailRef = useRef<THREE.Mesh>(null)
   const staticAnchorRef = useRef<THREE.Group>(null)
   const prevPosition = useRef(new THREE.Vector3(...position))
+  const trailVelocity = useRef(new THREE.Vector3())
   const botMotionScale = movement === 'static' && modeId === 'static' ? 0 : 1
 
   useEffect(() => {
@@ -221,10 +222,10 @@ function TargetComponent({
         spawnFlashElapsed.current = 0
       }
       if (isHumanoid) {
-        setHumanoidHit(hit)
-        setHumanoidHitZone(
-          hit ? (root.userData.lastHitZone as HitZone | undefined) ?? 'body' : undefined
-        )
+        humanoidHitRef.current = hit
+        humanoidHitZoneRef.current = hit
+          ? (root.userData.lastHitZone as HitZone | undefined) ?? 'body'
+          : undefined
       } else {
         applyTargetLook(
           hit,
@@ -303,7 +304,7 @@ function TargetComponent({
 
       if (appearance.showMotionStreak && motionTrailRef.current && movement === 'linear' && speed > 0) {
         const trail = motionTrailRef.current
-        const velocity = prevPosition.current.clone().sub(root.position)
+        const velocity = trailVelocity.current.copy(prevPosition.current).sub(root.position)
         const speedMag = velocity.length()
         trail.visible = speedMag > 0.02
         if (trail.visible) {
@@ -460,8 +461,8 @@ function TargetComponent({
         {isHumanoid ? (
           <HumanoidVisual
             modeId={modeId}
-            hit={humanoidHit}
-            hitZone={humanoidHitZone}
+            hitRef={humanoidHitRef}
+            hitZoneRef={humanoidHitZoneRef}
             lowLightBoost={nightBoost}
             crouchScaleRef={crouchScaleRef}
             motionRef={botMotionSample}

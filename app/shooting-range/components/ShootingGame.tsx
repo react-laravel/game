@@ -200,7 +200,8 @@ export default function ShootingGame({
         !showStartOverlay &&
         !pointerLockError &&
         !showHelpSheet &&
-        !showCrosshairSettings
+        !showCrosshairSettings &&
+        !showPauseOverlay
       ) {
         event.preventDefault()
         resumePointerLock()
@@ -230,6 +231,7 @@ export default function ShootingGame({
     showStartOverlay,
     showHelpSheet,
     showCrosshairSettings,
+    showPauseOverlay,
     handleCloseHelp,
     handleOpenHelp,
     startGame,

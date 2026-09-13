@@ -70,4 +70,47 @@ describe('ShootingPauseOverlay', () => {
     fireEvent.click(screen.getByRole('button', { name: '退出游戏' }))
     expect(onExitTraining).toHaveBeenCalledOnce()
   })
+
+  it('returns to the compact pause dialog from settings via back arrow or Escape', () => {
+    render(<ShootingPauseOverlay {...baseProps} onChangeDrill={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    expect(screen.getByTestId('shooting-pause-settings')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '返回暂停菜单' }))
+    expect(screen.getByTestId('shooting-pause-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('shooting-pause-settings')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    fireEvent.keyDown(window, { code: 'Escape' })
+    expect(screen.getByTestId('shooting-pause-dialog')).toBeInTheDocument()
+  })
+
+  it('resumes from the pause menu with Enter or Space after leaving settings', () => {
+    const onResume = vi.fn()
+    render(<ShootingPauseOverlay {...baseProps} onResume={onResume} onChangeDrill={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回暂停菜单' }))
+
+    fireEvent.keyDown(window, { code: 'Enter' })
+    expect(onResume).toHaveBeenCalledOnce()
+
+    onResume.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回暂停菜单' }))
+    fireEvent.keyDown(window, { code: 'Space' })
+    expect(onResume).toHaveBeenCalledOnce()
+  })
+
+  it('does not resume with Enter or Space while settings are open', () => {
+    const onResume = vi.fn()
+    render(<ShootingPauseOverlay {...baseProps} onResume={onResume} onChangeDrill={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    fireEvent.keyDown(window, { code: 'Enter' })
+    fireEvent.keyDown(window, { code: 'Space' })
+
+    expect(onResume).not.toHaveBeenCalled()
+  })
 })

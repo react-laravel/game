@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 27 (2026-09-13, window ending ~10:30 Asia/Shanghai): pause settings tabs stronger active contrast (amber ring 4-col grid); ESC → 设置 → back arrow or Escape returns to compact pause dialog with resume focus; Enter/Space resume only from pause menu; history recent table grade badges; `pause-settings-tabs.png` screenshot. Focused 137/137; full 696/696; eslint 0 errors.
 - Shooting Range cycle 26 (2026-09-13): **ESC pause = compact centered popup** (回到游戏 / 设置 / 退出游戏 + 重新开始 secondary); **tabbed settings panel** (准星 / 灵敏度 / 音量 / 其他) opened from 设置 — removed left-drawer `shooting-pause-menu`. `CrosshairSettingsSheet` apply/cancel + dual-background preview on setup. Outdoor berm target frames. Focused 133/133; full 692/692; eslint 0 errors; `pause-overlay.png` refreshed.
 - Shooting Range cycle 25 (2026-09-13): **deploy CI lint fix** (seeded PRNG textures, no setState-in-effect); **Overwatch left pause menu** with 结束训练/准星/设置 on left rail; setup **准星设置** behind `CrosshairSettingsSheet` menu. Focused 129/129; full 688/688; eslint 0 errors; screenshots `setup-quick-start.png` + `pause-overlay.png`.
 - Shooting Range cycle 24 (2026-09-13, overnight window ending ~10:45 Asia/Shanghai): ESC pause overlay scrolls on short viewports with tighter spacing so SFX / reduced-motion controls stay reachable; results「查看进步」lands on history with a subtle highlight on the latest session row; zero-shot sessions persist `accuracy: 0` (not 100) for chart averages; Enter/Space no longer re-locks pointer while crosshair settings are open. Focused tests 123/123; full suite 682/682; screenshots refreshed.
@@ -231,6 +232,25 @@ Priority interrupt: production deploy CI (`eslint .`) was failing on `main`; UX 
 ### Screenshots & QA
 - `docs/shooting-range-screenshots/setup-quick-start.png`, `pause-overlay.png` refreshed.
 - Focused shooting-range tests: **129/129**; full suite **688/688**; `npm run lint` **0 errors**.
+
+## Shooting Range overnight polish cycle 27 (2026-09-13)
+
+Follow-up after #26 compact ESC pause popup + tabbed settings; keeps centered pause dialog (no left drawer).
+
+### Pause settings tabs
+- `ShootingPauseSettingsPanel`: 4-column tab grid, amber active ring/contrast, clearer inactive `text-white/45` labels.
+- Screenshot: `docs/shooting-range-screenshots/pause-settings-tabs.png`.
+
+### Pause navigation / keyboard
+- Back arrow or Escape from settings returns to compact pause dialog; resume button refocused for keyboard resume.
+- Enter / Space resume only from pause menu; blocked while settings panel is open (overlay owns keyboard when visible).
+
+### History polish
+- Recent sessions table adds per-row grade badge (`computeSessionGrade`).
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests: **137/137**; full suite **696/696**; lint **0** errors.
 
 ## Shooting Range overnight polish cycle 24 (2026-09-13)
 

@@ -170,7 +170,7 @@ async function injectQaSessionStats(page) {
   })
 }
 
-async function capturePauseOverlay(page, filePath) {
+async function enterPauseOverlay(page) {
   await installQaFallback(page, { forceFallback: true, forcePause: true })
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.waitForSelector('text=选择训练项目', { timeout: 30000 })
@@ -195,6 +195,13 @@ async function capturePauseOverlay(page, filePath) {
 
   await page.getByTestId('shooting-pause-dialog').waitFor({ state: 'visible', timeout: 25000 })
   await page.getByRole('button', { name: '回到游戏' }).waitFor({ state: 'visible', timeout: 10000 })
+  await page.waitForTimeout(400)
+}
+
+async function capturePauseSettingsTabs(page, filePath) {
+  await page.getByRole('button', { name: '设置' }).click({ force: true, timeout: 15000 })
+  await page.getByTestId('shooting-pause-settings').waitFor({ state: 'visible', timeout: 10000 })
+  await page.getByRole('tab', { name: '准星' }).waitFor({ state: 'visible', timeout: 5000 })
   await page.waitForTimeout(400)
   await page.screenshot({ path: filePath, fullPage: false })
 }
@@ -245,9 +252,11 @@ async function main() {
   )
   await runStep('results', () => captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png')))
 
-  await runStep('pause-overlay', () =>
-    capturePauseOverlay(page, path.join(OUT_DIR, 'pause-overlay.png'))
-  )
+  await runStep('pause-overlay', async () => {
+    await enterPauseOverlay(page)
+    await page.screenshot({ path: path.join(OUT_DIR, 'pause-overlay.png'), fullPage: false })
+    await capturePauseSettingsTabs(page, path.join(OUT_DIR, 'pause-settings-tabs.png'))
+  })
 
   await browser.close()
   console.log(`Saved screenshots to ${OUT_DIR}`)

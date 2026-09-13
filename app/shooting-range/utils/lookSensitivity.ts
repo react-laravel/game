@@ -23,7 +23,9 @@ export function normalizeLookSensitivity(value: unknown): number {
 }
 
 export function lookSpeedForSensitivity(sensitivity: number): number {
-  return BASE_LOOK_SPEED * clampLookSensitivity(sensitivity)
+  const clamped = clampLookSensitivity(sensitivity)
+  // Slight ease-out so high sensitivity stays controllable at the top end.
+  return BASE_LOOK_SPEED * clamped ** 1.06
 }
 
 export function lookSensitivityLabel(value: number): string {

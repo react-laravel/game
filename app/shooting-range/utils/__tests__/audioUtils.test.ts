@@ -156,6 +156,19 @@ describe('shooting-range audioUtils', () => {
     expect(window.Audio).not.toHaveBeenCalledWith('/sounds/shot.mp3')
   })
 
+  it('layers extra harmonics for headshot confirms', () => {
+    const { MockAudioContext, oscillators } = createMockAudioContext()
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      value: MockAudioContext,
+    })
+
+    playHitSound('head')
+
+    expect(oscillators.filter(oscillator => oscillator.type === 'sine')).toHaveLength(2)
+    expect(oscillators.some(oscillator => oscillator.type === 'square')).toBe(true)
+  })
+
   it('plays a softer miss thud without mp3 fallbacks', () => {
     const { MockAudioContext, oscillators, sources } = createMockAudioContext()
     Object.defineProperty(window, 'AudioContext', {

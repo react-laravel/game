@@ -4,6 +4,7 @@ import {
   IMPACT_SLOT_COUNT,
   createPackedBurst,
   impactColorForZone,
+  impactParticleSizeForZone,
   nextImpactSlot,
   resetBurst,
   stepBurst,
@@ -42,6 +43,10 @@ describe('shooting-range impactFx', () => {
     expect(impactColorForZone('limb')).toBe('#6898c0')
     expect(impactColorForZone('body')).toBe('#d8a050')
     expect(impactColorForZone()).toBe('#d8a050')
+  })
+
+  it('uses larger headshot particles for readability', () => {
+    expect(impactParticleSizeForZone('head')).toBeGreaterThan(impactParticleSizeForZone('body'))
   })
 
   it('reuses a fixed number of impact slots', () => {

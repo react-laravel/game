@@ -55,9 +55,10 @@ describe('GameUI', () => {
   })
 
   it('shows the mode-specific tutorial tip while training is active', () => {
-    render(<GameUI {...baseProps} showTutorialTip />)
+    render(<GameUI {...baseProps} showTutorialTip onDismissTutorialTip={() => {}} />)
     expect(screen.getByText(/模式提示/)).toBeInTheDocument()
     expect(screen.getByText(/靶位高速乱窜/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '知道了' })).toBeInTheDocument()
   })
 
   it('shows humanoid zone hit breakdown on results when zone stats exist', () => {

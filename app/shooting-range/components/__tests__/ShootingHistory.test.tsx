@@ -54,5 +54,6 @@ describe('ShootingHistory', () => {
     render(<ShootingHistory onClose={() => {}} />)
 
     expect(screen.getByTitle('评级 B')).toBeInTheDocument()
+    expect(screen.getByText('户外靶场')).toBeInTheDocument()
   })
 })

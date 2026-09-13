@@ -22,6 +22,7 @@ import { playHitSound, playMissSound, playShotSound } from '../../utils/audioUti
 import {
   MUZZLE_FLASH_DURATION,
   RECOIL_KICK_PITCH,
+  SHOT_COOLDOWN_MS,
   decayRecoil,
   randomRecoilYaw,
 } from '../../utils/gunFeel'
@@ -174,7 +175,11 @@ export function GameScene({
       playHitSound(hitZone ?? 'plate')
       onShotResultRef.current(true, reactionMs, hitZone)
       onHitFeedbackRef.current?.(hitZone)
-      navigator.vibrate?.(28)
+      if (hitZone === 'head') {
+        navigator.vibrate?.([18, 24, 32])
+      } else {
+        navigator.vibrate?.(24)
+      }
 
       const previousTimer = respawnTimers.current.get(id)
       if (previousTimer) clearTimeout(previousTimer)
@@ -202,7 +207,7 @@ export function GameScene({
 
     const now = performance.now()
     if (now < nextShotAt.current) return
-    nextShotAt.current = now + 132
+    nextShotAt.current = now + SHOT_COOLDOWN_MS
 
     triggerGunFeel()
     playShotSound()

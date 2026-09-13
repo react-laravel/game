@@ -315,7 +315,8 @@ async function captureHumanoidHitFeedback(page, filePath) {
   await enterFallbackPlay(page)
   await waitForSceneReady(page, { requireHumanoid: true })
   await page.evaluate(() => window.debugShootingDemonstrateHit?.('head'))
-  await page.waitForTimeout(140)
+  // Freeze near the headshot flash peak (see HEADSHOT_FLASH_DURATION in gunFeel.ts).
+  await page.waitForTimeout(118)
   await hideDevOverlayBeforeShot(page)
   await page.screenshot({ path: filePath, fullPage: false })
 }
@@ -450,6 +451,9 @@ async function main() {
   )
   await runStep('drill-precision', () =>
     captureQuickStartTraining(page, '网格速点', path.join(OUT_DIR, 'drill-precision-training-hud.png'))
+  )
+  await runStep('drill-static', () =>
+    captureQuickStartTraining(page, '静态精准', path.join(OUT_DIR, 'drill-static-training-hud.png'))
   )
   await runStep('humanoid-hud', () =>
     captureHumanoidTraining(page, path.join(OUT_DIR, 'humanoid-training-hud.png'))

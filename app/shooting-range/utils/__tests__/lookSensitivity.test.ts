@@ -21,8 +21,8 @@ describe('lookSensitivity', () => {
   })
 
   it('scales base look speed by sensitivity', () => {
-    expect(lookSpeedForSensitivity(1)).toBe(BASE_LOOK_SPEED)
-    expect(lookSpeedForSensitivity(2)).toBe(BASE_LOOK_SPEED * 2)
+    expect(lookSpeedForSensitivity(1)).toBeCloseTo(BASE_LOOK_SPEED, 8)
+    expect(lookSpeedForSensitivity(2)).toBeCloseTo(BASE_LOOK_SPEED * 2 ** 1.06, 8)
   })
 
   it('maps values to readable labels', () => {

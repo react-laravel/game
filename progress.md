@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 23 (2026-09-13): compact Chinese help sheet (`?` HUD + pause「操作说明」); `prefers-reduced-motion` + pause「动态效果」toggle for score pop / combo toast / muzzle flash / impact particles; target hit ring-burst on despawn; outdoor lane gravel shoulders + fence concrete footings. Focused tests 119/119; screenshots refreshed (pause-overlay retained).
 - Shooting Range cycle 22 (2026-09-13): master SFX volume + mute toggle on setup custom panel and ESC pause overlay, persisted via `lastConfigStorage`; shot/hit/miss Web Audio respects volume + mute. Crosshair settings: dot/circle/cross quick presets, Chinese color/size labels, live preview retained. Added `pause-overlay.png` to `docs/shooting-range-screenshots/`. Focused tests 113/113; screenshots overwritten.
 - Shooting Range cycle 21 (2026-09-13): ESC pause overlay with 继续 / 重新开始 / 换训练项 / 准星 / 灵敏度 (no dead ends); setup custom panel highlights difficulty + look sensitivity with `lastConfig` persistence; indoor side/back wall poster blocks + meshBasic wash planes; first-hit tutorial tip fades after first hit. Focused tests 107/107; screenshots overwritten.
 - Shooting Range cycle 20 (2026-09-13): history chart period/metric toggles + hover tooltips; in-session score pop + streak milestone toasts; outdoor umbrella/sparse tree canopy variety. Focused tests 101/101; full suite 660/660.
@@ -181,6 +182,28 @@ Follow-up after #21 coordinator review; Aimlabs-inspired audio/crosshair UX with
 - `docs/shooting-range-screenshots/pause-overlay.png` added for ESC menu visual QA.
 - All screenshots overwritten via `node scripts/capture-shooting-range-maps.mjs`.
 - Focused shooting-range tests: **113/113**.
+
+## Shooting Range overnight polish cycle 23 (2026-09-13)
+
+Follow-up after #22 coordinator review; Aimlabs-inspired accessibility/feedback without copying IP.
+
+### Keyboard / help sheet
+- `ShootingHelpSheet` + `shootingHelp.ts`: compact Chinese help for controls, all six training modes, ESC pause, sensitivity, and SFX volume.
+- Open from HUD `?` button or pause overlay「操作说明」; `?` toggles, ESC closes.
+
+### Reduced motion / accessibility
+- `motionPrefs.ts` + pause「动态效果」toggle (跟随系统 / 减弱 / 完整), persisted in `localStorage`.
+- Score float, combo toast, muzzle flash intensity, and impact particle opacity/size respect reduced motion; gun remains fully functional.
+
+### Target break feedback
+- Hit despawn adds a brief warm ring burst (scale-out + fade) on the target plate — no new lights, same particle budget.
+
+### Outdoor visual nit
+- Gravel shoulder strips beside the main lane; chain-link fence posts get concrete footing cylinders.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs` (pause-overlay kept).
+- Focused shooting-range tests: **119/119**.
 
 ## Shooting Range overnight polish cycle 21 (2026-09-13)
 

@@ -230,8 +230,8 @@ async function scoreFallbackHits(page, attempts = 8) {
   }
 }
 
-async function injectQaSessionStats(page) {
-  await page.evaluate(() => {
+async function injectQaSessionStats(page, patch = {}) {
+  await page.evaluate(stats => {
     window.debugShootingSession?.({
       score: 40,
       hits: 4,
@@ -239,8 +239,44 @@ async function injectQaSessionStats(page) {
       shots: 5,
       bestStreak: 3,
       avgReactionMs: 285,
+      zoneHits: { head: 0, body: 0, limb: 0 },
+      ...stats,
     })
+  }, patch)
+}
+
+async function captureHumanoidHitFeedback(page, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('text=选择训练项目')
+  await page.getByRole('button', { name: /人形靶追踪/ }).first().click()
+  await enterFallbackPlay(page)
+  await waitForSceneReady(page, { requireHumanoid: true })
+  await page.evaluate(() => window.debugShootingDemonstrateHit?.('head'))
+  await page.waitForTimeout(140)
+  await page.screenshot({ path: filePath, fullPage: false })
+}
+
+async function captureHumanoidResultsScreen(page, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('text=选择训练项目')
+  await page.getByRole('button', { name: /人形靶追踪/ }).first().click()
+  await enterFallbackPlay(page)
+  await waitForSceneReady(page, { requireHumanoid: true })
+  await injectQaSessionStats(page, {
+    score: 118,
+    hits: 9,
+    misses: 2,
+    shots: 11,
+    bestStreak: 5,
+    avgReactionMs: 312,
+    zoneHits: { head: 3, body: 4, limb: 2 },
   })
+  await page.waitForTimeout(200)
+  await page.evaluate(() => window.endShootingSession?.())
+  await page.getByText('训练完成', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 })
+  await page.getByText('命中部位').waitFor({ state: 'visible', timeout: 10000 })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: filePath, fullPage: false })
 }
 
 async function enterPauseOverlay(page) {
@@ -350,7 +386,13 @@ async function main() {
   await runStep('humanoid-hud', () =>
     captureHumanoidTraining(page, path.join(OUT_DIR, 'humanoid-training-hud.png'))
   )
+  await runStep('humanoid-hit-feedback', () =>
+    captureHumanoidHitFeedback(page, path.join(OUT_DIR, 'humanoid-hit-feedback.png'))
+  )
   await runStep('results', () => captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png')))
+  await runStep('humanoid-results', () =>
+    captureHumanoidResultsScreen(page, path.join(OUT_DIR, 'humanoid-results-screen.png'))
+  )
 
   await runStep('pause-overlay', async () => {
     await enterPauseOverlay(page)

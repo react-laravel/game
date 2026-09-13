@@ -230,11 +230,11 @@ export function GameScene({
   }, [camera, gameStarted, handleTargetHit, resolveRaycastHit, triggerGunFeel])
 
   const handleFallbackTargetClick = useCallback(
-    (id: number) => {
+    (id: number, hitZone?: HitZone) => {
       if (!gameStarted || !useFallbackControls || hitTargetIds.current.has(id)) return
       triggerGunFeel()
       playShotSound()
-      handleTargetHit(id)
+      handleTargetHit(id, hitZone)
     },
     [gameStarted, handleTargetHit, triggerGunFeel, useFallbackControls]
   )
@@ -331,6 +331,27 @@ export function GameScene({
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [])
+
+  useEffect(() => {
+    if (!gameStarted) return
+
+    const gameWindow = window as Window &
+      typeof globalThis & {
+        debugShootingDemonstrateHit?: (hitZone: HitZone) => void
+      }
+
+    gameWindow.debugShootingDemonstrateHit = (hitZone: HitZone) => {
+      for (const [id, object] of targetObjects.current) {
+        if (hitTargetIds.current.has(id)) continue
+        handleTargetHit(id, hitZone)
+        return
+      }
+    }
+
+    return () => {
+      delete gameWindow.debugShootingDemonstrateHit
+    }
+  }, [gameStarted, handleTargetHit])
 
   useEffect(
     () => () => {

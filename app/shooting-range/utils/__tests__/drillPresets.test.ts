@@ -38,6 +38,16 @@ describe('drillPresets', () => {
     )
   })
 
+  it('only labels humanoid drill when target shape is humanoid', () => {
+    expect(drillLabelForConfig('moving', 'warehouse', 'medium')).toBe(
+      '动态追踪 · 工业仓库'
+    )
+    expect(drillLabelForConfig('moving', 'warehouse', 'medium', 'humanoid')).toBe(
+      '人形靶追踪'
+    )
+    expect(drillLabelForConfig('moving', 'warehouse', 'hard')).toBe('乱战移动')
+  })
+
   it('exposes duration and difficulty meta for quick-start cards', () => {
     const preset = findDrillPreset('speed-burst')
     expect(preset).toBeDefined()

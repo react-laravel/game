@@ -3,11 +3,25 @@ import {
   applyTargetHit,
   generateRandomPosition,
   generateRandomDirection,
+  generateWallPosition,
   difficultySettings,
   respawnTarget,
 } from '../gameUtils'
 
 describe('shooting-range gameUtils', () => {
+  describe('generateWallPosition', () => {
+    it('places static wall targets in readable tiers', () => {
+      const first = generateWallPosition(0, 20)
+      const second = generateWallPosition(1, 20)
+      const fifth = generateWallPosition(4, 20)
+
+      expect(first[1]).toBeGreaterThan(1.5)
+      expect(second[0]).not.toBeCloseTo(first[0], 0)
+      expect(fifth[1]).toBeGreaterThan(first[1])
+      expect(fifth[2]).toBeLessThan(0)
+    })
+  })
+
   describe('generateRandomPosition', () => {
     it('should return a 3-tuple', () => {
       const pos = generateRandomPosition(20)

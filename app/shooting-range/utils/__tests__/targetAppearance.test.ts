@@ -28,8 +28,11 @@ describe('targetAppearance', () => {
   it('enables aim cross for static and speed ring for timed modes', () => {
     expect(getTargetAppearance('static').showAimCross).toBe(true)
     expect(getTargetAppearance('static').showSpeedRing).toBe(false)
+    expect(getTargetAppearance('static').showStaticAnchor).toBe(true)
     expect(getTargetAppearance('timed').showSpeedRing).toBe(true)
     expect(getTargetAppearance('timed').showAimCross).toBe(false)
+    expect(getTargetAppearance('timed').showMotionStreak).toBe(true)
+    expect(getTargetAppearance('moving').showMotionStreak).toBe(true)
     expect(getTargetAppearance('timed').pulseSpeed).toBeGreaterThan(getTargetAppearance('moving').pulseSpeed)
   })
 

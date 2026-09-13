@@ -95,6 +95,7 @@ export default function ShootingGame({
     gameStarted,
     showStartOverlay,
     hitMarker,
+    headshotMarker,
     missMarker,
     hitPulse,
     streakToast,
@@ -161,6 +162,11 @@ export default function ShootingGame({
     requestPointerLock()
   }, [requestPointerLock])
 
+  const showHitFeedbackRef = useRef(showHitFeedback)
+  useEffect(() => {
+    showHitFeedbackRef.current = showHitFeedback
+  }, [showHitFeedback])
+
   const handleShotResult = useCallback(
     (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => {
       recordShot(didHit, reactionMs, hitZone)
@@ -168,6 +174,10 @@ export default function ShootingGame({
     },
     [recordShot]
   )
+
+  const handleHitFeedback = useCallback((hitZone?: HitZone) => {
+    showHitFeedbackRef.current(hitZone)
+  }, [])
 
   const handleRestart = useCallback(() => {
     setShowTutorialTip(true)
@@ -302,13 +312,18 @@ export default function ShootingGame({
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
         onShotResult={handleShotResult}
-        onHitFeedback={showHitFeedback}
+        onHitFeedback={handleHitFeedback}
         onFpsReport={reportFps}
       />
 
       {gameStarted && !gameOver && isPointerLocked && (
         <>
-          <Crosshair config={crosshairConfig} hit={hitMarker} miss={missMarker} />
+          <Crosshair
+            config={crosshairConfig}
+            hit={hitMarker}
+            headshot={headshotMarker}
+            miss={missMarker}
+          />
           <SessionFeedback
             hitPulse={hitPulse}
             streakToast={streakToast}

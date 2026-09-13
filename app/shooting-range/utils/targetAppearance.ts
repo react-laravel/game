@@ -15,6 +15,10 @@ export interface TargetAppearance {
   showAimCross: boolean
   /** Timed speed mode shows outer urgency ring */
   showSpeedRing: boolean
+  /** Linear modes show a motion streak for velocity readability */
+  showMotionStreak: boolean
+  /** Static wall modes show a subtle anchor ring */
+  showStaticAnchor: boolean
 }
 
 /** Muted painted-ring colors — warm matte cardboard / spray-painted paper under sun, not neon. */
@@ -29,6 +33,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     showOrbitHint: false,
     showAimCross: false,
     showSpeedRing: false,
+    showMotionStreak: false,
+    showStaticAnchor: false,
   },
   tracking: {
     ringColor: '#5a7860',
@@ -40,17 +46,21 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     showOrbitHint: true,
     showAimCross: false,
     showSpeedRing: false,
+    showMotionStreak: false,
+    showStaticAnchor: false,
   },
   moving: {
     ringColor: '#6a6460',
     spawnPop: 1.15,
-    pulseAmplitude: 0.035,
-    pulseSpeed: 5.5,
+    pulseAmplitude: 0.048,
+    pulseSpeed: 6.8,
     spawnFlashColor: '#9a9490',
     showSpawnBrackets: false,
     showOrbitHint: false,
     showAimCross: false,
     showSpeedRing: false,
+    showMotionStreak: true,
+    showStaticAnchor: false,
   },
   precision: {
     ringColor: '#6a7880',
@@ -62,6 +72,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     showOrbitHint: false,
     showAimCross: false,
     showSpeedRing: false,
+    showMotionStreak: false,
+    showStaticAnchor: false,
   },
   timed: {
     ringColor: '#9a6860',
@@ -73,6 +85,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     showOrbitHint: false,
     showAimCross: false,
     showSpeedRing: true,
+    showMotionStreak: true,
+    showStaticAnchor: false,
   },
   static: {
     ringColor: '#6a7880',
@@ -84,6 +98,8 @@ const appearances: Record<TrainingModeId, TargetAppearance> = {
     showOrbitHint: false,
     showAimCross: true,
     showSpeedRing: false,
+    showMotionStreak: false,
+    showStaticAnchor: true,
   },
 }
 

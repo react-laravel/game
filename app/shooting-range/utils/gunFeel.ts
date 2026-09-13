@@ -1,11 +1,12 @@
 /** Tunable gun-feel constants — frame-based flash, recoil, and hit-marker timing. */
 
-export const MUZZLE_FLASH_DURATION = 0.072
-export const HIT_MARKER_DURATION_MS = 120
-export const MISS_MARKER_DURATION_MS = 90
-export const RECOIL_KICK_PITCH = 0.017
-export const RECOIL_KICK_YAW = 0.0032
-export const RECOIL_RECOVERY_SPEED = 13.5
+export const MUZZLE_FLASH_DURATION = 0.064
+export const HIT_MARKER_DURATION_MS = 100
+export const HEADSHOT_MARKER_DURATION_MS = 130
+export const MISS_MARKER_DURATION_MS = 82
+export const RECOIL_KICK_PITCH = 0.019
+export const RECOIL_KICK_YAW = 0.0036
+export const RECOIL_RECOVERY_SPEED = 15.5
 
 /** Snappy peak-then-decay curve for muzzle flash intensity (0–1). */
 export function muzzleFlashIntensity(elapsed: number, motionScale = 1): number {

@@ -31,8 +31,8 @@ describe('gunFeel', () => {
   it('returns bounded random yaw kick', () => {
     for (let i = 0; i < 20; i += 1) {
       const yaw = randomRecoilYaw()
-      expect(yaw).toBeGreaterThanOrEqual(-0.0032)
-      expect(yaw).toBeLessThanOrEqual(0.0032)
+      expect(yaw).toBeGreaterThanOrEqual(-0.0036)
+      expect(yaw).toBeLessThanOrEqual(0.0036)
     }
   })
 })

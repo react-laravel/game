@@ -1,4 +1,4 @@
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { mapOptions } from './mapConfigs'
 import { trainingModes } from './trainingModes'
 
@@ -8,7 +8,7 @@ const DIFFICULTY_LABELS: Record<ShootingDifficulty, string> = {
   hard: '专家',
 }
 
-export type DrillFocus = 'flick' | 'tracking' | 'speed' | 'precision' | 'mixed'
+export type DrillFocus = 'flick' | 'tracking' | 'speed' | 'precision' | 'mixed' | 'humanoid'
 
 export interface DrillPreset {
   id: string
@@ -20,6 +20,8 @@ export interface DrillPreset {
   difficulty: ShootingDifficulty
   /** Short label shown on quick-start cards */
   tag: string
+  /** Optional target shape override for quick-start */
+  targetShape?: TargetShape
 }
 
 export const drillPresets: DrillPreset[] = [
@@ -82,6 +84,17 @@ export const drillPresets: DrillPreset[] = [
     mapId: 'outdoor',
     difficulty: 'easy',
     tag: 'Aim',
+  },
+  {
+    id: 'humanoid-strafe',
+    name: '人形靶追踪',
+    subtitle: '人形移动靶 · 头部双倍分',
+    focus: 'humanoid',
+    modeId: 'moving',
+    mapId: 'warehouse',
+    difficulty: 'medium',
+    tag: 'Human',
+    targetShape: 'humanoid',
   },
 ]
 

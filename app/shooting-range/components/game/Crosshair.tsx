@@ -9,6 +9,7 @@ import {
 interface CrosshairProps {
   config: CrosshairConfig
   hit?: boolean
+  headshot?: boolean
   miss?: boolean
   className?: string
 }
@@ -16,14 +17,21 @@ interface CrosshairProps {
 const HIT_X_INSET = 14
 const HIT_X_OUTSET = 30
 
-export function Crosshair({ config, hit = false, miss = false, className = '' }: CrosshairProps) {
-  const color = hit ? '#fff6d8' : miss ? '#ffb4b4' : config.color
-  const opacity = hit || miss ? Math.min(1, config.opacity + 0.15) : config.opacity
+export function Crosshair({
+  config,
+  hit = false,
+  headshot = false,
+  miss = false,
+  className = '',
+}: CrosshairProps) {
+  const confirmed = hit || headshot
+  const color = headshot ? '#ffd0d8' : hit ? '#fff6d8' : miss ? '#ffb4b4' : config.color
+  const opacity = confirmed || miss ? Math.min(1, config.opacity + 0.15) : config.opacity
   const segments = getCrosshairSegments(config)
   const circleRadius = getCrosshairCircleRadius(config)
   const center = getCrosshairViewboxSize() / 2
   const outlineWidth = config.thickness + 2
-  const hitGapScale = hit ? 0.72 : 1
+  const hitGapScale = confirmed ? (headshot ? 0.66 : 0.72) : 1
 
   return (
     <div
@@ -33,28 +41,30 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
       <svg
         viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
         className={`transition-transform duration-75 ease-out ${
-          hit ? 'scale-[1.08]' : miss ? 'scale-[0.94]' : 'scale-100'
+          headshot ? 'scale-[1.12]' : hit ? 'scale-[1.08]' : miss ? 'scale-[0.94]' : 'scale-100'
         }`}
         style={{
           width: `${config.size * 2.8}px`,
           height: `${config.size * 2.8}px`,
           opacity,
-          filter: hit
-            ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))'
-            : miss
-              ? 'drop-shadow(0 0 5px rgba(255, 90, 90, 0.45))'
-              : undefined,
+          filter: headshot
+            ? 'drop-shadow(0 0 8px rgba(255, 120, 140, 0.65))'
+            : hit
+              ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))'
+              : miss
+                ? 'drop-shadow(0 0 5px rgba(255, 90, 90, 0.45))'
+                : undefined,
         }}
       >
-        {hit && (
+        {confirmed && (
           <circle
             cx={center}
             cy={center}
-            r={circleRadius !== null ? circleRadius + 6 : 18}
+            r={circleRadius !== null ? circleRadius + (headshot ? 8 : 6) : headshot ? 20 : 18}
             fill="none"
-            stroke="#ffe9a8"
-            strokeWidth={1.5}
-            strokeOpacity={0.7}
+            stroke={headshot ? '#ffb4c0' : '#ffe9a8'}
+            strokeWidth={headshot ? 2 : 1.5}
+            strokeOpacity={headshot ? 0.85 : 0.7}
           />
         )}
 
@@ -128,7 +138,7 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
           </>
         )}
 
-        {miss && !hit && (
+        {miss && !confirmed && (
           <>
             <line
               x1={center - 10}
@@ -153,15 +163,15 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
           </>
         )}
 
-        {hit && (
+        {confirmed && (
           <>
             <line
               x1={HIT_X_INSET}
               y1={HIT_X_INSET}
               x2={HIT_X_OUTSET}
               y2={HIT_X_OUTSET}
-              stroke="#ffe9a0"
-              strokeWidth={2.4}
+              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
+              strokeWidth={headshot ? 2.8 : 2.4}
               strokeLinecap="round"
             />
             <line
@@ -169,8 +179,8 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
               y1={HIT_X_INSET}
               x2={64 - HIT_X_OUTSET}
               y2={HIT_X_OUTSET}
-              stroke="#ffe9a0"
-              strokeWidth={2.4}
+              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
+              strokeWidth={headshot ? 2.8 : 2.4}
               strokeLinecap="round"
             />
             <line
@@ -178,8 +188,8 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
               y1={64 - HIT_X_INSET}
               x2={HIT_X_OUTSET}
               y2={64 - HIT_X_OUTSET}
-              stroke="#ffe9a0"
-              strokeWidth={2.4}
+              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
+              strokeWidth={headshot ? 2.8 : 2.4}
               strokeLinecap="round"
             />
             <line
@@ -187,8 +197,8 @@ export function Crosshair({ config, hit = false, miss = false, className = '' }:
               y1={64 - HIT_X_INSET}
               x2={64 - HIT_X_OUTSET}
               y2={64 - HIT_X_OUTSET}
-              stroke="#ffe9a0"
-              strokeWidth={2.4}
+              stroke={headshot ? '#ffc0cc' : '#ffe9a0'}
+              strokeWidth={headshot ? 2.8 : 2.4}
               strokeLinecap="round"
             />
           </>

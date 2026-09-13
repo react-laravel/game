@@ -3,6 +3,7 @@ import {
   IMPACT_PARTICLE_COUNT,
   IMPACT_SLOT_COUNT,
   createPackedBurst,
+  impactColorForZone,
   nextImpactSlot,
   resetBurst,
   stepBurst,
@@ -34,6 +35,13 @@ describe('shooting-range impactFx', () => {
 
     expect(Array.from(positions)).toEqual([1, 1.5, 2])
     expect(Array.from(velocities)).toEqual([2, 1, 4])
+  })
+
+  it('maps hit zones to distinct impact colors', () => {
+    expect(impactColorForZone('head')).toBe('#ff6868')
+    expect(impactColorForZone('limb')).toBe('#88c8ff')
+    expect(impactColorForZone('body')).toBe('#ffd080')
+    expect(impactColorForZone()).toBe('#ffd080')
   })
 
   it('reuses a fixed number of impact slots', () => {

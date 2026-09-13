@@ -1,10 +1,12 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import type { HitZone } from '../../types'
 import {
   IMPACT_DURATION,
   IMPACT_SLOT_COUNT,
   createPackedBurst,
+  impactColorForZone,
   nextImpactSlot,
   resetBurst,
   stepBurst,
@@ -12,7 +14,7 @@ import {
 import { motionParticleScale } from '../../utils/motionPrefs'
 
 export type ImpactFXHandle = {
-  trigger: (position: THREE.Vector3) => void
+  trigger: (position: THREE.Vector3, hitZone?: HitZone) => void
 }
 
 interface ImpactFXProps {
@@ -38,7 +40,7 @@ export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function Impac
   )
 
   useImperativeHandle(ref, () => ({
-    trigger(position: THREE.Vector3) {
+    trigger(position: THREE.Vector3, hitZone?: HitZone) {
       const index = nextSlot.current
       nextSlot.current = nextImpactSlot(index)
 
@@ -52,8 +54,9 @@ export const ImpactFX = forwardRef<ImpactFXHandle, ImpactFXProps>(function Impac
       positionAttribute.needsUpdate = true
       points.position.copy(position)
       points.visible = true
+      material.color.set(impactColorForZone(hitZone))
       material.opacity = particleScale
-      material.size = 0.11 * particleScale
+      material.size = (hitZone === 'head' ? 0.13 : 0.11) * particleScale
       elapsed.current[index] = 0
       active.current[index] = true
     },

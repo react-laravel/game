@@ -18,6 +18,7 @@ describe('trainingModes', () => {
     expect(staticSettings.movement).toBe('static')
     expect(staticSettings.targetSpeed).toBe(0)
     expect(staticSettings.faceCamera).toBe(false)
+    expect(staticSettings.spawnPattern).toBe('wall')
     expect(staticSettings.targetCount).toBeGreaterThanOrEqual(8)
 
     const movingSettings = resolveTrainingSettings('easy', 'moving')

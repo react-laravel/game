@@ -23,6 +23,7 @@ import { SessionFeedback } from './game/SessionFeedback'
 import type { ShootingSceneSnapshot } from './game/GameScene'
 import { ShootingGameCanvas } from './ShootingGameCanvas'
 import {
+  ShootingPauseOverlay,
   ShootingPointerLockError,
   ShootingReadyOverlay,
   UnsupportedShootingDevice,
@@ -32,6 +33,8 @@ interface ShootingGameProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  lookSensitivity: number
+  onLookSensitivityChange: (value: number) => void
   crosshairConfig: CrosshairConfig
   onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
   onCrosshairReset: () => void
@@ -44,6 +47,8 @@ export default function ShootingGame({
   difficulty,
   mapId,
   modeId,
+  lookSensitivity,
+  onLookSensitivityChange,
   crosshairConfig,
   onCrosshairChange,
   onCrosshairReset,
@@ -52,6 +57,7 @@ export default function ShootingGame({
   onChangeDrill,
 }: ShootingGameProps) {
   const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
+  const [showTutorialTip, setShowTutorialTip] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneSnapshot = useRef<ShootingSceneSnapshot>({
     camera: { yaw: 0, pitch: 0 },
@@ -109,6 +115,7 @@ export default function ShootingGame({
 
   const startGame = useCallback(() => {
     primeShootingAudio()
+    setShowTutorialTip(true)
     beginTraining()
     requestPointerLock()
   }, [beginTraining, requestPointerLock])
@@ -120,14 +127,26 @@ export default function ShootingGame({
   const handleShotResult = useCallback(
     (didHit: boolean, reactionMs?: number) => {
       recordShot(didHit, reactionMs)
+      if (didHit) setShowTutorialTip(false)
     },
     [recordShot]
   )
 
   const handleRestart = useCallback(() => {
+    setShowTutorialTip(true)
     restartTraining()
     requestPointerLock()
   }, [requestPointerLock, restartTraining])
+
+  const handlePauseChangeDrill = useCallback(() => {
+    releasePointerLock()
+    onChangeDrill?.()
+  }, [onChangeDrill, releasePointerLock])
+
+  const handleOpenCrosshairSettings = useCallback(() => {
+    releasePointerLock()
+    setShowCrosshairSettings(true)
+  }, [releasePointerLock])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -211,6 +230,7 @@ export default function ShootingGame({
         difficulty={difficulty}
         mapId={mapId}
         modeId={modeId}
+        lookSensitivity={lookSensitivity}
         gameStarted={gameStarted}
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
@@ -264,6 +284,7 @@ export default function ShootingGame({
         drillLabel={drillLabel}
         grade={sessionGrade}
         comparison={personalBestComparison}
+        showTutorialTip={showTutorialTip && gameStarted && !gameOver}
         onRestart={handleRestart}
         onViewHistory={onViewHistory}
         onChangeDrill={onChangeDrill}
@@ -274,7 +295,15 @@ export default function ShootingGame({
       )}
 
       {needsPointerLock && !showStartOverlay && (
-        <ShootingReadyOverlay onStart={resumePointerLock} resume />
+        <ShootingPauseOverlay
+          drillLabel={drillLabel}
+          lookSensitivity={lookSensitivity}
+          onResume={resumePointerLock}
+          onRestart={handleRestart}
+          onChangeDrill={onChangeDrill ? handlePauseChangeDrill : undefined}
+          onCrosshairSettings={handleOpenCrosshairSettings}
+          onSensitivityChange={onLookSensitivityChange}
+        />
       )}
 
       {pointerLockError && (

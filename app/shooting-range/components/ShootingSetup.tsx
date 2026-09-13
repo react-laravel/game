@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import { CrosshairSettings } from './CrosshairSettings'
+import { LookSensitivityControl } from './LookSensitivityControl'
 import type { DrillPreset } from '../utils/drillPresets'
 import { drillPresets } from '../utils/drillPresets'
 import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
@@ -76,9 +77,11 @@ interface ShootingSetupProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  lookSensitivity: number
   onDifficultyChange: (difficulty: ShootingDifficulty) => void
   onMapChange: (mapId: ShootingMapId) => void
   onModeChange: (modeId: TrainingModeId) => void
+  onLookSensitivityChange: (value: number) => void
   onStart: () => void
   onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
@@ -91,9 +94,11 @@ export function ShootingSetup({
   difficulty,
   mapId,
   modeId,
+  lookSensitivity,
   onDifficultyChange,
   onMapChange,
   onModeChange,
+  onLookSensitivityChange,
   onStart,
   onQuickStart,
   onViewHistory,
@@ -113,6 +118,8 @@ export function ShootingSetup({
   }, [])
 
   const selectedMode = trainingModes[modeId]
+  const selectedDifficulty = DIFFICULTIES.find(option => option.id === difficulty) ?? DIFFICULTIES[1]
+  const selectedMap = mapOptions.find(option => option.id === mapId)
 
   return (
     <div className="flex w-full flex-1 items-center justify-center pb-10">
@@ -232,6 +239,48 @@ export function ShootingSetup({
 
             {showCustom && (
               <div className="mt-4 space-y-5 border-t border-border/60 pt-5">
+                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+                  <div className="text-[10px] font-bold tracking-[0.18em] text-primary uppercase">
+                    当前自定义配置
+                  </div>
+                  <div className="mt-1 text-sm font-semibold">
+                    {selectedMode.name} · {selectedMap?.name} · {selectedDifficulty.name}
+                  </div>
+                  <div className="text-muted-foreground mt-1 text-xs leading-5">
+                    {selectedDifficulty.label} · 灵敏度 {lookSensitivity.toFixed(1)}×
+                  </div>
+                </div>
+
+                <section>
+                  <SectionLabel icon={Gauge} title="难度" />
+                  <p className="text-muted-foreground mt-1 text-xs leading-5">
+                    难度决定同屏靶位数量与移动速度，越高越考验跟枪与切换。
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    {DIFFICULTIES.map(option => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={difficulty === option.id}
+                        onClick={() => onDifficultyChange(option.id)}
+                        className={`flex-1 rounded-xl border px-3 py-3 text-center transition-all ${
+                          difficulty === option.id
+                            ? 'border-primary bg-primary/7 ring-1 ring-primary/20'
+                            : 'border-border hover:border-primary/40'
+                        }`}
+                      >
+                        <div className="font-bold text-sm">{option.name}</div>
+                        <div className="text-muted-foreground text-[10px]">{option.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <LookSensitivityControl
+                  value={lookSensitivity}
+                  onChange={onLookSensitivityChange}
+                />
+
                 <section>
                   <SectionLabel icon={Target} title="训练模式" />
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -267,28 +316,6 @@ export function ShootingSetup({
                         />
                       )
                     })}
-                  </div>
-                </section>
-
-                <section>
-                  <SectionLabel icon={Gauge} title="难度" />
-                  <div className="mt-2 flex gap-2">
-                    {DIFFICULTIES.map(option => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        aria-pressed={difficulty === option.id}
-                        onClick={() => onDifficultyChange(option.id)}
-                        className={`flex-1 rounded-xl border px-3 py-2.5 text-center transition-all ${
-                          difficulty === option.id
-                            ? 'border-primary bg-primary/7 ring-1 ring-primary/20'
-                            : 'border-border hover:border-primary/40'
-                        }`}
-                      >
-                        <div className="font-bold text-sm">{option.name}</div>
-                        <div className="text-muted-foreground text-[10px]">{option.label}</div>
-                      </button>
-                    ))}
                   </div>
                 </section>
 

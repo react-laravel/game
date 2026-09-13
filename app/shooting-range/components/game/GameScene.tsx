@@ -23,6 +23,7 @@ import {
   decayRecoil,
   randomRecoilYaw,
 } from '../../utils/gunFeel'
+import { lookSpeedForSensitivity } from '../../utils/lookSensitivity'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../../types'
 
 interface TargetData {
@@ -57,6 +58,7 @@ interface GameSceneProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  lookSensitivity: number
   onShotResult: (didHit: boolean, reactionMs?: number) => void
   onHitFeedback?: () => void
   gameStarted: boolean
@@ -70,6 +72,7 @@ export function GameScene({
   difficulty,
   mapId,
   modeId,
+  lookSensitivity,
   onShotResult,
   onHitFeedback,
   gameStarted,
@@ -101,6 +104,11 @@ export function GameScene({
   const onShotResultRef = useRef(onShotResult)
   const onHitFeedbackRef = useRef(onHitFeedback)
   const onFpsReportRef = useRef(onFpsReport)
+  const lookSpeedRef = useRef(lookSpeedForSensitivity(lookSensitivity))
+
+  useEffect(() => {
+    lookSpeedRef.current = lookSpeedForSensitivity(lookSensitivity)
+  }, [lookSensitivity])
 
   useEffect(() => {
     onShotResultRef.current = onShotResult
@@ -279,8 +287,9 @@ export function GameScene({
 
       const rotation = lookRotation.current
       rotation.setFromQuaternion(camera.quaternion, 'YXZ')
-      rotation.y -= event.movementX * 0.002
-      rotation.x -= event.movementY * 0.002
+      const lookSpeed = lookSpeedRef.current
+      rotation.y -= event.movementX * lookSpeed
+      rotation.x -= event.movementY * lookSpeed
       rotation.x = THREE.MathUtils.clamp(
         rotation.x,
         -Math.PI / 2 + 0.05,

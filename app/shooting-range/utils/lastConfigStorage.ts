@@ -1,4 +1,5 @@
 import type { ShootingSetupConfig } from '../types'
+import { DEFAULT_LOOK_SENSITIVITY, normalizeLookSensitivity } from './lookSensitivity'
 
 export const LAST_CONFIG_KEY = 'shooting-range-last-config'
 export const LAST_DRILL_KEY = 'shooting-range-last-drill'
@@ -27,7 +28,14 @@ export function loadLastConfig(
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<ShootingSetupConfig>
     if (!parsed.difficulty || !parsed.mapId || !parsed.modeId) return null
-    return parsed as ShootingSetupConfig
+    return {
+      difficulty: parsed.difficulty,
+      mapId: parsed.mapId,
+      modeId: parsed.modeId,
+      lookSensitivity: normalizeLookSensitivity(
+        parsed.lookSensitivity ?? DEFAULT_LOOK_SENSITIVITY
+      ),
+    }
   } catch {
     return null
   }

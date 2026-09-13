@@ -782,6 +782,50 @@ function IndoorRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial color="#3f5666" metalness={0.28} roughness={0.58} />
       </mesh>
 
+      {[
+        { x: -17.62, z: -14, w: 0.04, h: 2.4, color: '#d8f0ff', label: 'A-01' },
+        { x: -17.62, z: -28, w: 0.04, h: 2.1, color: '#ffe8c8', label: 'B-02' },
+        { x: -17.62, z: -40, w: 0.04, h: 2.6, color: '#d4f7e8', label: 'C-03' },
+        { x: 17.62, z: -18, w: 0.04, h: 2.3, color: '#f0d8ff', label: 'A-02' },
+        { x: 17.62, z: -34, w: 0.04, h: 2.5, color: '#fff0c8', label: 'B-03' },
+      ].map(panel => (
+        <group key={`poster-${panel.label}`} position={[panel.x, 5.2, panel.z]}>
+          <mesh>
+            <boxGeometry args={[panel.w, panel.h, 1.8]} />
+            <meshBasicMaterial color={panel.color} toneMapped={false} />
+          </mesh>
+          <mesh position={[panel.x > 0 ? -0.05 : 0.05, -panel.h * 0.22, 0]}>
+            <boxGeometry args={[0.7, 0.18, 0.02]} />
+            <meshBasicMaterial color="#1a2838" toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {[-17.58, 17.58].map(x => (
+        <mesh key={`side-wash-${x}`} position={[x, 6.4, -24]} rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}>
+          <planeGeometry args={[48, 9.5]} />
+          <meshBasicMaterial
+            color="#d8f4ff"
+            transparent
+            opacity={0.14}
+            toneMapped={false}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
+      <mesh position={[0, 6.8, -47.95]}>
+        <planeGeometry args={[34, 10]} />
+        <meshBasicMaterial
+          color="#e8f8ff"
+          transparent
+          opacity={0.18}
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </mesh>
+
       <AcousticFoamGrid x={-17.75} z={-24} facing="left" />
       <AcousticFoamGrid x={17.75} z={-24} facing="right" />
 

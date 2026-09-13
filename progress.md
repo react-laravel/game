@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 21 (2026-09-13): ESC pause overlay with 继续 / 重新开始 / 换训练项 / 准星 / 灵敏度 (no dead ends); setup custom panel highlights difficulty + look sensitivity with `lastConfig` persistence; indoor side/back wall poster blocks + meshBasic wash planes; first-hit tutorial tip fades after first hit. Focused tests 107/107; screenshots overwritten.
 - Shooting Range cycle 20 (2026-09-13): history chart period/metric toggles + hover tooltips; in-session score pop + streak milestone toasts; outdoor umbrella/sparse tree canopy variety. Focused tests 101/101; full suite 660/660.
 - Shooting Range gun feel pass (2026-09-13): frame-based muzzle flash curve (no setTimeout), readable camera/weapon recoil kick with smooth decay, Aimlabs-inspired hit marker (gap shrink + X + ring), brighter metallic hit SFX + soft miss thud, shorter pooled impact particles. Outdoor tree silhouettes and warehouse back-wall window depth added. Focused tests 99/99; full suite 658/658.
 - Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
@@ -160,6 +161,28 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hitting a target used to `setTargets` (snapping the drone back to its spawn prop), mount an `Explosion` plus a `pointLight`, and remount muzzle-flash lights. Three.js recompiled shaders on the light-count change, which dropped frames.
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
+
+## Shooting Range overnight polish cycle 21 (2026-09-13)
+
+Follow-up after #20 coordinator review; Aimlabs-inspired session UX without copying IP.
+
+### Pause / settings-in-session
+- `ShootingPauseOverlay` replaces the minimal ESC resume card: **继续训练**, **重新开始**, **换训练项**, **准星设置**, and in-overlay **鼠标灵敏度** slider.
+- Enter / Space still re-acquires pointer lock; bottom HUD hint updated to “ESC 暂停”.
+
+### Difficulty & sensitivity UX
+- `lookSensitivity.ts` + `LookSensitivityControl`: 0.5–2.0× presets (慢/标准/快) persisted via `lastConfigStorage`.
+- Setup custom panel leads with a config summary, difficulty explainer, and sensitivity block before mode/map/crosshair.
+
+### Indoor map readability
+- Side-wall poster blocks (meshBasic color panels) and soft side/back wall wash planes — no new point lights.
+
+### First-shot tutorial
+- Soft “新手提示” banner fades after the first hit of a run.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests: **107/107**.
 
 ## Shooting Range overnight polish cycle 20 (2026-09-13)
 

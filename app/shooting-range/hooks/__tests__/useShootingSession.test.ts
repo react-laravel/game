@@ -128,4 +128,16 @@ describe('useShootingSession', () => {
     expect(result.current.timeLeft).toBe(0)
     expect(loadSessionHistory()).toHaveLength(1)
   })
+
+  it('stores zero accuracy when the session ends without shots', () => {
+    const { result } = renderHook(() => useShootingSession(baseConfig))
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.endSessionEarly()
+    })
+
+    expect(result.current.sessionStats.accuracy).toBe(0)
+    expect(loadSessionHistory()[0]?.accuracy).toBe(0)
+  })
 })

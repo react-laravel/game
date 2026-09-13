@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, Trophy, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -17,12 +17,13 @@ import { trainingModes } from '../utils/trainingModes'
 
 interface ShootingHistoryProps {
   onClose: () => void
+  highlightLatestSession?: boolean
 }
 
 type ChartPeriod = 'daily' | 'monthly'
 type ChartMetric = 'avgAccuracy' | 'avgScore'
 
-export function ShootingHistory({ onClose }: ShootingHistoryProps) {
+export function ShootingHistory({ onClose, highlightLatestSession = false }: ShootingHistoryProps) {
   const history = useMemo(() => loadSessionHistory(), [])
   const daily = useMemo(() => aggregateDailyRecords(history), [history])
   const monthly = useMemo(() => aggregateMonthlyRecords(history), [history])
@@ -30,8 +31,24 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
   const [modeFilter, setModeFilter] = useState<TrainingModeId | 'all'>('all')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily')
   const [chartMetric, setChartMetric] = useState<ChartMetric>('avgAccuracy')
+  const [highlightSessionId, setHighlightSessionId] = useState<string | null>(null)
+  const latestRowRef = useRef<HTMLTableRowElement>(null)
 
   const latest = history[0]
+
+  useEffect(() => {
+    if (!highlightLatestSession || !latest) return
+    setModeFilter('all')
+    setHighlightSessionId(latest.id)
+    const frame = window.requestAnimationFrame(() => {
+      latestRowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    })
+    const timer = window.setTimeout(() => setHighlightSessionId(null), 2600)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+    }
+  }, [highlightLatestSession, latest])
   const filteredHistory =
     modeFilter === 'all' ? history : history.filter(record => record.modeId === modeFilter)
   const recentSessions = filteredHistory.slice(0, 10)
@@ -172,10 +189,16 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
                         </td>
                       </tr>
                     ) : (
-                      recentSessions.map(record => (
+                      recentSessions.map((record, index) => (
                         <tr
                           key={record.id}
-                          className="border-t border-border/50 transition-colors hover:bg-muted/20"
+                          ref={index === 0 && record.id === latest?.id ? latestRowRef : undefined}
+                          data-testid={
+                            record.id === highlightSessionId ? 'highlighted-session-row' : undefined
+                          }
+                          className={`border-t border-border/50 transition-colors hover:bg-muted/20 ${
+                            record.id === highlightSessionId ? 'shooting-session-highlight' : ''
+                          }`}
                         >
                           <td className="px-4 py-2.5 font-mono text-xs tabular-nums">
                             {record.date}

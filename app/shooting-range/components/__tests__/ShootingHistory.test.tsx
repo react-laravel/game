@@ -48,4 +48,10 @@ describe('ShootingHistory', () => {
 
     expect(screen.getByText(/继续加油/)).toBeInTheDocument()
   })
+
+  it('shows session grade badges in the recent table', () => {
+    render(<ShootingHistory onClose={() => {}} />)
+
+    expect(screen.getByTitle('评级 B')).toBeInTheDocument()
+  })
 })

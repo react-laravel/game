@@ -11,6 +11,9 @@ import { LookSensitivityControl } from './LookSensitivityControl'
 import { ReducedMotionControl } from './ReducedMotionControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
 
+const pauseSettingsTabTriggerClass =
+  'rounded-lg px-3 py-1.5 text-xs font-medium text-white/45 transition-all hover:bg-white/5 hover:text-white/70 data-[state=active]:bg-amber-400/18 data-[state=active]:font-semibold data-[state=active]:text-amber-50 data-[state=active]:shadow-[inset_0_0_0_1px_rgba(251,191,36,0.38)] data-[state=active]:ring-1 data-[state=active]:ring-amber-400/30'
+
 interface ShootingPauseSettingsPanelProps {
   drillLabel: string
   crosshairConfig: CrosshairConfig
@@ -72,29 +75,17 @@ export function ShootingPauseSettingsPanel({
       </div>
 
       <Tabs defaultValue="crosshair" className="flex min-h-0 flex-1 flex-col gap-0">
-        <TabsList className="mx-4 mt-3 h-auto w-auto shrink-0 flex-wrap justify-start gap-1 bg-white/5 p-1">
-          <TabsTrigger
-            value="crosshair"
-            className="text-xs data-[state=active]:border-white/15 data-[state=active]:bg-white/10 data-[state=active]:text-white"
-          >
+        <TabsList className="mx-4 mt-3 grid h-auto w-auto shrink-0 grid-cols-4 gap-1.5 rounded-xl border border-white/8 bg-slate-950/55 p-1.5">
+          <TabsTrigger value="crosshair" className={pauseSettingsTabTriggerClass}>
             准星
           </TabsTrigger>
-          <TabsTrigger
-            value="sensitivity"
-            className="text-xs data-[state=active]:border-white/15 data-[state=active]:bg-white/10 data-[state=active]:text-white"
-          >
+          <TabsTrigger value="sensitivity" className={pauseSettingsTabTriggerClass}>
             灵敏度
           </TabsTrigger>
-          <TabsTrigger
-            value="volume"
-            className="text-xs data-[state=active]:border-white/15 data-[state=active]:bg-white/10 data-[state=active]:text-white"
-          >
+          <TabsTrigger value="volume" className={pauseSettingsTabTriggerClass}>
             音量
           </TabsTrigger>
-          <TabsTrigger
-            value="other"
-            className="text-xs data-[state=active]:border-white/15 data-[state=active]:bg-white/10 data-[state=active]:text-white"
-          >
+          <TabsTrigger value="other" className={pauseSettingsTabTriggerClass}>
             其他
           </TabsTrigger>
         </TabsList>

@@ -10,7 +10,7 @@ import {
   maxBucketValue,
   type ChartBucket,
 } from '../utils/chartAggregation'
-import { summarizeByMode } from '../utils/sessionInsights'
+import { computeSessionGrade, gradeColor, summarizeByMode } from '../utils/sessionInsights'
 import { clearSessionHistory, loadSessionHistory } from '../utils/statsStorage'
 import type { TrainingModeId } from '../types'
 import { trainingModes } from '../utils/trainingModes'
@@ -180,6 +180,7 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                       <th className="px-4 py-2 font-medium">日期</th>
                       <th className="px-4 py-2 font-medium">模式</th>
                       <th className="px-4 py-2 font-medium">得分</th>
+                      <th className="hidden px-4 py-2 font-medium sm:table-cell">评级</th>
                       <th className="hidden px-4 py-2 font-medium sm:table-cell">精准度</th>
                       <th className="hidden px-4 py-2 font-medium md:table-cell">射速</th>
                     </tr>
@@ -188,14 +189,16 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                     {recentSessions.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="px-4 py-6 text-center text-muted-foreground"
                         >
                           该模式下暂无记录
                         </td>
                       </tr>
                     ) : (
-                      recentSessions.map((record, index) => (
+                      recentSessions.map((record, index) => {
+                        const grade = computeSessionGrade(record, record.modeId)
+                        return (
                         <tr
                           key={record.id}
                           ref={index === 0 && record.id === latest?.id ? latestRowRef : undefined}
@@ -217,6 +220,14 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                           <td className="px-4 py-2.5 font-mono font-bold tabular-nums">
                             {record.score}
                           </td>
+                          <td className="hidden px-4 py-2.5 sm:table-cell">
+                            <span
+                              className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted/60 px-1.5 font-mono text-xs font-black tabular-nums ${gradeColor(grade)}`}
+                              title={`评级 ${grade}`}
+                            >
+                              {grade}
+                            </span>
+                          </td>
                           <td className="hidden px-4 py-2.5 font-mono tabular-nums sm:table-cell">
                             {record.accuracy}%
                           </td>
@@ -224,7 +235,8 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                             {record.shotsPerMinute}/分
                           </td>
                         </tr>
-                      ))
+                        )
+                      })
                     )}
                   </tbody>
                 </table>

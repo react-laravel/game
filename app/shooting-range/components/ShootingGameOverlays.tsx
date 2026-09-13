@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
@@ -100,6 +100,37 @@ export function ShootingPauseOverlay({
   onMotionPreferenceChange,
 }: ShootingPauseOverlayProps) {
   const [view, setView] = useState<PauseView>('menu')
+  const resumeButtonId = 'shooting-pause-resume'
+
+  const goBackToMenu = useCallback(() => {
+    setView('menu')
+    window.requestAnimationFrame(() => {
+      document.getElementById(resumeButtonId)?.focus()
+    })
+  }, [resumeButtonId])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Escape' && view === 'settings') {
+        event.preventDefault()
+        event.stopPropagation()
+        goBackToMenu()
+        return
+      }
+
+      if (
+        view === 'menu' &&
+        (event.code === 'Enter' || event.code === 'Space') &&
+        !event.repeat
+      ) {
+        event.preventDefault()
+        onResume()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false })
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [goBackToMenu, onResume, view])
 
   return (
     <div
@@ -126,6 +157,7 @@ export function ShootingPauseOverlay({
 
           <div className="mt-4 space-y-2">
             <Button
+              id={resumeButtonId}
               className="w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
               onClick={onResume}
             >
@@ -177,7 +209,7 @@ export function ShootingPauseOverlay({
           motionPreference={motionPreference}
           onMotionPreferenceChange={onMotionPreferenceChange}
           onChangeDrill={onChangeDrill}
-          onBack={() => setView('menu')}
+          onBack={goBackToMenu}
         />
       )}
     </div>

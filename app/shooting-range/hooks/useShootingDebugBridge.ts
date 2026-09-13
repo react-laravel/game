@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react'
 import type { ShootingSceneSnapshot } from '../components/game/GameScene'
-import type { SessionStats, ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import type { SessionStats, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 
 type ShootingWindow = Window &
   typeof globalThis & {
@@ -16,6 +16,7 @@ interface ShootingDebugBridgeOptions {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  targetShape: TargetShape
   gameOver: boolean
   gameStarted: boolean
   stats: SessionStats
@@ -30,6 +31,7 @@ export function useShootingDebugBridge({
   difficulty,
   mapId,
   modeId,
+  targetShape,
   gameOver,
   gameStarted,
   stats,
@@ -46,6 +48,7 @@ export function useShootingDebugBridge({
         difficulty,
         mapId,
         modeId,
+        targetShape,
         ...stats,
         timeLeft,
         pointerLocked: document.pointerLockElement === canvasRef.current,
@@ -89,6 +92,7 @@ export function useShootingDebugBridge({
     gameStarted,
     mapId,
     modeId,
+    targetShape,
     onEndSession,
     onInjectStats,
     sceneSnapshot,

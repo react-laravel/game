@@ -154,16 +154,18 @@ function TargetComponent({
     }
 
     if (!hit) {
+      const pos = basePosition.current
+
       if (movement === 'orbit' && orbitRadius > 0) {
         const time = performance.now() * 0.001 * orbitSpeed + id * 1.7
-        basePosition.set(
+        pos.set(
           orbitAnchor.current.x + Math.cos(time) * orbitRadius,
           orbitAnchor.current.y + Math.sin(time * 0.85) * orbitRadius * 0.42,
           orbitAnchor.current.z + Math.sin(time * 1.1) * orbitRadius * 0.55
         )
       } else if (movement === 'linear' && speed > 0) {
         const directionVector = directionRef.current
-        basePosition.addScaledVector(directionVector, speed * 60 * delta)
+        pos.addScaledVector(directionVector, speed * 60 * delta)
 
         const halfWidth = gameAreaSize * 0.42
         const minY = isHumanoid ? 0.15 : 0.8
@@ -171,34 +173,34 @@ function TargetComponent({
         const nearZ = -7
         const farZ = -(gameAreaSize + 9)
 
-        if (basePosition.x < -halfWidth || basePosition.x > halfWidth) directionVector.x *= -1
-        if (basePosition.y < minY || basePosition.y > maxY) directionVector.y *= -1
-        if (basePosition.z > nearZ || basePosition.z < farZ) directionVector.z *= -1
+        if (pos.x < -halfWidth || pos.x > halfWidth) directionVector.x *= -1
+        if (pos.y < minY || pos.y > maxY) directionVector.y *= -1
+        if (pos.z > nearZ || pos.z < farZ) directionVector.z *= -1
 
-        basePosition.x = THREE.MathUtils.clamp(basePosition.x, -halfWidth, halfWidth)
-        basePosition.y = THREE.MathUtils.clamp(basePosition.y, minY, maxY)
-        basePosition.z = THREE.MathUtils.clamp(basePosition.z, farZ, nearZ)
+        pos.x = THREE.MathUtils.clamp(pos.x, -halfWidth, halfWidth)
+        pos.y = THREE.MathUtils.clamp(pos.y, minY, maxY)
+        pos.z = THREE.MathUtils.clamp(pos.z, farZ, nearZ)
 
         if (jitterChance > 0 && Math.random() < delta * jitterChance) {
           jitterRef.current.set((Math.random() - 0.5) * 0.55, (Math.random() - 0.5) * 0.35, 0)
           directionVector.add(jitterRef.current).normalize()
         }
       } else if (movement === 'static') {
-        basePosition.copy(orbitAnchor.current)
+        pos.copy(orbitAnchor.current)
       }
 
       if (isHumanoid) {
         const timeSec = performance.now() * 0.001
         const sample = stepBotMotion(botMotionState.current, delta, botMotionProfile, timeSec)
-        botOffset.set(sample.offsetX, sample.offsetY, sample.offsetZ)
+        botOffset.current.set(sample.offsetX, sample.offsetY, sample.offsetZ)
         crouchScaleRef.current = sample.crouchScale
         root.position.set(
-          basePosition.x + sample.offsetX,
-          basePosition.y + sample.offsetY,
-          basePosition.z + sample.offsetZ
+          pos.x + sample.offsetX,
+          pos.y + sample.offsetY,
+          pos.z + sample.offsetZ
         )
       } else {
-        root.position.copy(basePosition)
+        root.position.copy(pos)
       }
 
       spawnPulse.current = THREE.MathUtils.lerp(spawnPulse.current, 1, delta * 6)

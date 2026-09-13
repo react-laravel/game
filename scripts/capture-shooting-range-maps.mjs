@@ -88,26 +88,72 @@ async function captureSetup(page, filePath) {
   await page.screenshot({ path: filePath, fullPage: true })
 }
 
-async function captureTrainingHud(page, filePath) {
+async function waitForSceneReady(page, options = {}) {
+  const { requireHumanoid = false, timeout = 30000 } = options
+
+  await page.getByText('无法锁定鼠标').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
+  await page.locator('canvas[data-engine]').first().waitFor({ state: 'visible', timeout: 10000 })
+
+  await page.waitForFunction(
+    () => {
+      const state = window.render_game_to_text?.()
+      if (!state) return false
+      const parsed = JSON.parse(state)
+      if (parsed.mode !== 'playing') return false
+      if (!Array.isArray(parsed.targets) || parsed.targets.length === 0) return false
+      return true
+    },
+    { timeout }
+  )
+
+  await page.waitForFunction(
+    requireHumanoidShape => {
+      const canvas = document.querySelector('canvas[data-engine]')
+      if (!canvas || canvas.width < 8 || canvas.height < 8) return false
+
+      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
+      if (gl) {
+        const sampleW = Math.min(120, canvas.width)
+        const sampleH = Math.min(120, canvas.height)
+        const originX = Math.max(0, Math.floor(canvas.width / 2 - sampleW / 2))
+        const originY = Math.max(0, Math.floor(canvas.height / 2 - sampleH / 2))
+        const pixels = new Uint8Array(sampleW * sampleH * 4)
+        gl.readPixels(originX, originY, sampleW, sampleH, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+        let bright = 0
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 36) bright += 1
+        }
+        if (bright / (sampleW * sampleH) < 0.02) return false
+      }
+
+      if (requireHumanoidShape) {
+        const state = window.render_game_to_text?.()
+        if (!state) return false
+        const parsed = JSON.parse(state)
+        return parsed.targetShape === 'humanoid'
+      }
+
+      return true
+    },
+    requireHumanoid,
+    { timeout }
+  )
+
+  await page.evaluate(async () => {
+    if (typeof window.advanceTime === 'function') {
+      await window.advanceTime(1200)
+    }
+  }).catch(() => {})
+  await page.waitForTimeout(600)
+}
+
+async function captureTrainingHud(page, filePath, options = {}) {
   const fallback = page.getByRole('button', { name: '点击目标模式' })
   if (await fallback.isVisible({ timeout: 1500 }).catch(() => false)) {
     await fallback.click({ force: true, noWaitAfter: true, timeout: 5000 }).catch(() => {})
     await page.waitForTimeout(1200)
   }
-  await page.getByText('无法锁定鼠标').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
-  await page.locator('canvas[data-engine]').first().waitFor({ state: 'visible', timeout: 10000 })
-  await page.waitForFunction(
-    () => {
-      const qa = window.__SHOOTING_QA_FPS__
-      if (typeof qa === 'number' && qa > 0) return true
-      return Array.from(document.querySelectorAll('*')).some(el => {
-        const text = el.textContent?.trim() ?? ''
-        return text === 'FPS' && el.nextElementSibling?.textContent && Number(el.nextElementSibling.textContent) >= 30
-      })
-    },
-    { timeout: 8000 }
-  ).catch(() => {})
-  await page.waitForTimeout(800)
+  await waitForSceneReady(page, options)
   await page.screenshot({ path: filePath, fullPage: false })
 }
 
@@ -128,7 +174,7 @@ async function captureHumanoidTraining(page, filePath) {
   await page.getByRole('button', { name: /人形靶/ }).click()
   await page.getByRole('button', { name: /按当前设置开始/ }).click()
   await enterFallbackPlay(page)
-  await captureTrainingHud(page, filePath)
+  await captureTrainingHud(page, filePath, { requireHumanoid: true })
 }
 
 async function captureQuickStartTraining(page, drillName, filePath) {

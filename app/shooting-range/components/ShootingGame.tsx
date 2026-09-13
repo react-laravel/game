@@ -132,6 +132,7 @@ export default function ShootingGame({
     difficulty,
     mapId,
     modeId,
+    targetShape,
     gameOver,
     gameStarted,
     stats: sessionStats,

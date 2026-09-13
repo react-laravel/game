@@ -90,6 +90,9 @@ function TargetComponent({
     leanZ: 0,
     legSpread: 0,
     armSwing: 0,
+    strideBob: 0,
+    headTiltX: 0,
+    headTiltZ: 0,
   })
   const botOffset = useRef(new THREE.Vector3())
   const crouchScaleRef = useRef(1)

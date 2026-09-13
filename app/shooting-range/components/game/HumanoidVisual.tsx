@@ -21,6 +21,9 @@ const DEFAULT_MOTION: BotMotionSample = {
   leanZ: 0,
   legSpread: 0,
   armSwing: 0,
+  strideBob: 0,
+  headTiltX: 0,
+  headTiltZ: 0,
 }
 
 interface HumanoidVisualProps {
@@ -33,6 +36,7 @@ interface HumanoidVisualProps {
 /** Original low-poly training-bot silhouette — not based on any commercial IP. */
 export function HumanoidVisual({ modeId, hit, crouchScaleRef, motionRef }: HumanoidVisualProps) {
   const torsoRef = useRef<THREE.Group>(null)
+  const headRef = useRef<THREE.Group>(null)
   const leftLegRef = useRef<THREE.Group>(null)
   const rightLegRef = useRef<THREE.Group>(null)
   const leftArmRef = useRef<THREE.Group>(null)
@@ -40,36 +44,44 @@ export function HumanoidVisual({ modeId, hit, crouchScaleRef, motionRef }: Human
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const accent = appearance.ringColor
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const motion = motionRef.current ?? DEFAULT_MOTION
     const crouch = crouchScaleRef.current
     const spread = motion.legSpread
+    const lerpT = Math.min(1, delta * 14)
 
     if (torsoRef.current) {
-      torsoRef.current.position.y = THREE.MathUtils.lerp(1.02, 0.72, 1 - crouch)
-      torsoRef.current.rotation.z = motion.leanX * 0.22
-      torsoRef.current.rotation.x = motion.leanZ * 0.18
+      const targetY = THREE.MathUtils.lerp(1.02, 0.72, 1 - crouch)
+      torsoRef.current.position.y = THREE.MathUtils.lerp(torsoRef.current.position.y, targetY, lerpT)
+      torsoRef.current.rotation.z = THREE.MathUtils.lerp(torsoRef.current.rotation.z, motion.leanX * 0.22, lerpT)
+      torsoRef.current.rotation.x = THREE.MathUtils.lerp(torsoRef.current.rotation.x, motion.leanZ * 0.18, lerpT)
+    }
+
+    if (headRef.current) {
+      headRef.current.rotation.z = THREE.MathUtils.lerp(headRef.current.rotation.z, motion.headTiltX * 0.28, lerpT)
+      headRef.current.rotation.x = THREE.MathUtils.lerp(headRef.current.rotation.x, motion.headTiltZ * 0.22, lerpT)
     }
 
     const legBend = (1 - crouch) * 0.55 + spread * 0.35
     const legX = 0.18 + spread * 0.12
+    const gait = motion.armSwing
 
     if (leftLegRef.current) {
       leftLegRef.current.position.set(-legX, 0.38 - spread * 0.08, 0)
-      leftLegRef.current.rotation.x = legBend
+      leftLegRef.current.rotation.x = THREE.MathUtils.lerp(leftLegRef.current.rotation.x, legBend + gait * 0.32, lerpT)
     }
     if (rightLegRef.current) {
       rightLegRef.current.position.set(legX, 0.38 - spread * 0.08, 0)
-      rightLegRef.current.rotation.x = legBend
+      rightLegRef.current.rotation.x = THREE.MathUtils.lerp(rightLegRef.current.rotation.x, legBend - gait * 0.32, lerpT)
     }
 
-    const armLift = motion.armSwing * 0.28
+    const armLift = gait * 0.32
     if (leftArmRef.current) {
-      leftArmRef.current.rotation.x = -armLift
+      leftArmRef.current.rotation.x = THREE.MathUtils.lerp(leftArmRef.current.rotation.x, -armLift, lerpT)
       leftArmRef.current.position.x = -0.48
     }
     if (rightArmRef.current) {
-      rightArmRef.current.rotation.x = armLift
+      rightArmRef.current.rotation.x = THREE.MathUtils.lerp(rightArmRef.current.rotation.x, armLift, lerpT)
       rightArmRef.current.position.x = 0.48
     }
   })
@@ -148,14 +160,16 @@ export function HumanoidVisual({ modeId, hit, crouchScaleRef, motionRef }: Human
         </group>
 
         {/* Head */}
-        <mesh position={[0, 0.72, 0]} userData={{ hitZone: 'head' }}>
-          <boxGeometry args={[0.4, 0.4, 0.4]} />
-          <meshBasicMaterial color={headHit} toneMapped={false} />
-        </mesh>
-        <mesh position={[0, 0.92, 0]} userData={{ hitZone: 'head' }}>
-          <boxGeometry args={[0.24, 0.12, 0.24]} />
-          <meshBasicMaterial color={hit ? '#ffd0d0' : accent} toneMapped={false} />
-        </mesh>
+        <group ref={headRef} position={[0, 0.72, 0]}>
+          <mesh userData={{ hitZone: 'head' }}>
+            <boxGeometry args={[0.4, 0.4, 0.4]} />
+            <meshBasicMaterial color={headHit} toneMapped={false} />
+          </mesh>
+          <mesh position={[0, 0.2, 0]} userData={{ hitZone: 'head' }}>
+            <boxGeometry args={[0.24, 0.12, 0.24]} />
+            <meshBasicMaterial color={hit ? '#ffd0d0' : accent} toneMapped={false} />
+          </mesh>
+        </group>
       </group>
 
       {/* Base shadow disc */}

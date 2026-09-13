@@ -43,6 +43,18 @@ describe('humanoidMotion', () => {
     expect(sample.legSpread).toBeGreaterThan(0.2)
   })
 
+  it('strafe phase produces stride bob and head tilt', () => {
+    const state = createBotMotionState(9)
+    const profile = getBotMotionProfile('moving')
+    state.phase = 'strafe'
+    state.phaseElapsed = 0.25
+    state.phaseDuration = 1
+
+    const sample = stepBotMotion(state, 0, profile, 1)
+    expect(sample.strideBob).toBeGreaterThan(0)
+    expect(Math.abs(sample.headTiltX)).toBeGreaterThan(0)
+  })
+
   it('advances to a new phase after duration elapses', () => {
     const state = createBotMotionState(7)
     const profile = getBotMotionProfile('timed')

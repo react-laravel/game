@@ -581,10 +581,10 @@ function BushClump({ position, scale = 1 }: { position: [number, number, number]
 function OutdoorSky() {
   const cloudBanks = useMemo(
     () => [
-      { pos: [-24, 28, -82] as [number, number, number], scale: [14, 3.2, 5] as [number, number, number], opacity: 0.22 },
-      { pos: [18, 30, -78] as [number, number, number], scale: [12, 2.8, 4.5] as [number, number, number], opacity: 0.18 },
-      { pos: [-6, 32, -92] as [number, number, number], scale: [18, 3.5, 6] as [number, number, number], opacity: 0.2 },
-      { pos: [32, 26, -68] as [number, number, number], scale: [10, 2.4, 4] as [number, number, number], opacity: 0.15 },
+      { pos: [-24, 28, -82] as [number, number, number], scale: [14, 3.2, 5] as [number, number, number], opacity: 0.12 },
+      { pos: [18, 30, -78] as [number, number, number], scale: [12, 2.8, 4.5] as [number, number, number], opacity: 0.1 },
+      { pos: [-6, 32, -92] as [number, number, number], scale: [18, 3.5, 6] as [number, number, number], opacity: 0.11 },
+      { pos: [32, 26, -68] as [number, number, number], scale: [10, 2.4, 4] as [number, number, number], opacity: 0.08 },
     ],
     []
   )
@@ -604,22 +604,18 @@ function OutdoorSky() {
         <meshBasicMaterial color="#8ab8d8" transparent opacity={0.28} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[38, 34, -72]}>
-        <sphereGeometry args={[5.5, 12, 12]} />
-        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.07} toneMapped={false} depthWrite={false} />
-      </mesh>
-      <mesh position={[38, 34, -72]}>
-        <sphereGeometry args={[2.2, 10, 10]} />
-        <meshBasicMaterial color="#fff4e8" transparent opacity={0.28} toneMapped={false} depthWrite={false} />
+        <sphereGeometry args={[2.0, 10, 10]} />
+        <meshBasicMaterial color="#fff4e8" transparent opacity={0.14} toneMapped={false} depthWrite={false} />
       </mesh>
       {cloudBanks.map((bank, i) => (
         <group key={i} position={bank.pos} rotation={[0.04, i * 0.7, 0.02]}>
           {[0, 0.35, -0.3].map((xOff, j) => (
             <mesh key={j} position={[xOff * bank.scale[0] * 0.25, 0, j * 0.8]}>
-              <sphereGeometry args={[bank.scale[0] * 0.22, 8, 8]} />
+              <boxGeometry args={[bank.scale[0] * 0.42, bank.scale[1] * 0.55, bank.scale[2] * 0.35]} />
               <meshBasicMaterial
-                color="#f4f8fc"
+                color="#eef4f8"
                 transparent
-                opacity={bank.opacity}
+                opacity={bank.opacity * 0.55}
                 toneMapped={false}
                 depthWrite={false}
               />
@@ -1184,13 +1180,45 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial color="#3a3028" metalness={0.3} roughness={0.68} />
       </mesh>
 
-      {/* Back-wall window silhouettes for depth */}
+      {/* Back-wall window silhouettes + warm wash for rear depth */}
       {[-8, -2.5, 2.5, 8].map(x => (
-        <mesh key={`wh-window-${x}`} position={[x, 5.2, -47.55]}>
-          <planeGeometry args={[3.2, 2.4]} />
-          <meshBasicMaterial color="#0c1018" transparent opacity={0.55} toneMapped={false} />
+        <group key={`wh-window-${x}`}>
+          <mesh position={[x, 5.2, -47.55]}>
+            <planeGeometry args={[3.2, 2.4]} />
+            <meshBasicMaterial color="#0c1018" transparent opacity={0.55} toneMapped={false} />
+          </mesh>
+          <mesh position={[x, 5.2, -47.48]}>
+            <planeGeometry args={[2.6, 1.8]} />
+            <meshBasicMaterial color="#ffe8c0" transparent opacity={0.08} toneMapped={false} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Distant rack + forklift silhouettes — cheap depth read without new lights */}
+      {[-12, -4, 4, 12].map(x => (
+        <mesh key={`rear-rack-${x}`} position={[x, 3.8, -47.35]}>
+          <boxGeometry args={[2.8, 6.8, 0.35]} />
+          <meshBasicMaterial color="#14100c" transparent opacity={0.72} toneMapped={false} />
         </mesh>
       ))}
+      <group position={[-10, -1.2, -46.8]}>
+        <mesh>
+          <boxGeometry args={[2.4, 0.9, 1.4]} />
+          <meshBasicMaterial color="#181410" transparent opacity={0.78} toneMapped={false} />
+        </mesh>
+        <mesh position={[0.35, 1.35, 0]}>
+          <boxGeometry args={[0.18, 1.6, 0.18]} />
+          <meshBasicMaterial color="#1a1612" transparent opacity={0.75} toneMapped={false} />
+        </mesh>
+        <mesh position={[0.35, 2.15, 0.35]} rotation={[-0.35, 0, 0]}>
+          <boxGeometry args={[1.1, 0.12, 0.55]} />
+          <meshBasicMaterial color="#1c1814" transparent opacity={0.72} toneMapped={false} />
+        </mesh>
+      </group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 6.2, -47.2]}>
+        <planeGeometry args={[30, 5.5]} />
+        <meshBasicMaterial color="#ffe0b0" transparent opacity={0.07} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
 
       <group position={[0, 4.5, -47.85]}>
         <mesh>

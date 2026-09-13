@@ -1,5 +1,6 @@
 import type { PersonalBestComparison, SessionGrade } from '../../utils/sessionInsights'
 import {
+  buildAccuracyBreakdown,
   buildPerformanceHighlights,
   gradeColor,
   gradeLabel,
@@ -43,6 +44,8 @@ export function GameUI({
   const elapsedSeconds = Math.max(0, durationSeconds - timeLeft)
   const performanceHighlights =
     gameOver && grade ? buildPerformanceHighlights(stats, modeId) : []
+  const accuracyBreakdown =
+    gameOver && grade ? buildAccuracyBreakdown(stats) : null
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
@@ -143,9 +146,37 @@ export function GameUI({
               <div className="mt-1 text-sm text-white/55">本场得分</div>
             </div>
 
-            {stats.shots === 0 && (
-              <div className="mt-4 rounded-xl border border-white/8 bg-white/4 px-4 py-2 text-center text-sm text-white/60">
-                本场未记录射击。再来一局，专注第一眼定位与稳定跟枪。
+            {accuracyBreakdown && (
+              <div className="mt-4 rounded-xl border border-white/8 bg-white/4 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-semibold text-white/85">{accuracyBreakdown.summary}</span>
+                  <span className="font-mono text-xs tabular-nums text-white/55">
+                    {stats.shots > 0 ? `${accuracy}% 精准` : '—'}
+                  </span>
+                </div>
+                <div className="mt-2.5 flex h-2.5 overflow-hidden rounded-full bg-white/10">
+                  {stats.shots > 0 ? (
+                    <>
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-[width] duration-700"
+                        style={{ width: `${accuracyBreakdown.hitPercent}%` }}
+                        title={`命中 ${accuracyBreakdown.hits}`}
+                      />
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500/90 to-orange-400/80 transition-[width] duration-700"
+                        style={{ width: `${accuracyBreakdown.missPercent}%` }}
+                        title={`未中 ${accuracyBreakdown.misses}`}
+                      />
+                    </>
+                  ) : (
+                    <div className="h-full w-full bg-white/8" />
+                  )}
+                </div>
+                <div className="mt-2 flex justify-between text-[11px] text-white/45">
+                  <span>命中 {accuracyBreakdown.hits}</span>
+                  <span>未中 {accuracyBreakdown.misses}</span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-white/55">{accuracyBreakdown.tip}</p>
               </div>
             )}
 

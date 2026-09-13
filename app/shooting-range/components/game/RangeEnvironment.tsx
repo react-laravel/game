@@ -111,7 +111,7 @@ function useGrassTexture() {
           const bladeH = 1.2 + rand() * 3.2
           ctx.fillRect(x, y, bladeW, bladeH)
         }
-      }, 1.42),
+      }, 28),
     []
   )
 }
@@ -956,9 +956,9 @@ function OutdoorRange({
         <meshStandardMaterial
           map={grassTexture}
           color={grassTint}
-          emissive={showRangeLights ? '#2a3830' : '#000000'}
-          emissiveIntensity={showRangeLights ? 0.24 : 0}
-          roughness={0.94}
+          emissive={showRangeLights ? '#3a4840' : '#000000'}
+          emissiveIntensity={showRangeLights ? 0.34 : 0}
+          roughness={0.92}
           metalness={0.01}
         />
       </mesh>

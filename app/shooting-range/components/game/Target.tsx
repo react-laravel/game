@@ -74,6 +74,8 @@ function TargetComponent({
   const hitElapsed = useRef(0)
   const previousHit = useRef(false)
   const spawnPulse = useRef(1)
+  const burstRingRef = useRef<THREE.Mesh>(null)
+  const burstMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
 
   useEffect(() => {
     const root = rootRef.current
@@ -100,6 +102,10 @@ function TargetComponent({
       previousHit.current = hit
       hitElapsed.current = 0
       visual.visible = true
+      if (hit && burstRingRef.current) {
+        burstRingRef.current.visible = true
+        burstRingRef.current.scale.setScalar(0.85)
+      }
       if (!hit) spawnPulse.current = 1.35
       applyTargetLook(
         hit,
@@ -150,9 +156,23 @@ function TargetComponent({
       visual.scale.setScalar(pulse)
     } else {
       hitElapsed.current += delta
-      const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2 - hitElapsed.current ** 2 * 45)
+      const impactScale = Math.max(0.001, 1 + hitElapsed.current * 2.4 - hitElapsed.current ** 2 * 52)
       visual.scale.setScalar(impactScale)
-      visual.visible = hitElapsed.current < 0.15
+      visual.visible = hitElapsed.current < 0.16
+
+      const burstRing = burstRingRef.current
+      const burstMaterial = burstMaterialRef.current
+      if (burstRing && burstMaterial) {
+        const burstT = hitElapsed.current / 0.22
+        if (burstT < 1) {
+          burstRing.visible = true
+          const ringScale = 0.85 + burstT * 1.35
+          burstRing.scale.setScalar(ringScale)
+          burstMaterial.opacity = Math.max(0, 0.82 * (1 - burstT ** 1.35))
+        } else {
+          burstRing.visible = false
+        }
+      }
     }
 
     if (faceCamera) root.lookAt(camera.position)
@@ -171,6 +191,18 @@ function TargetComponent({
       onClick={handleClick}
     >
       <group ref={visualRef}>
+        <mesh ref={burstRingRef} position={[0, 0, 0.14]} visible={false}>
+          <ringGeometry args={[0.92, 1.08, 32]} />
+          <meshBasicMaterial
+            ref={burstMaterialRef}
+            color="#ffd080"
+            transparent
+            opacity={0}
+            toneMapped={false}
+            depthWrite={false}
+          />
+        </mesh>
+
         <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[1.05, 1.05, 0.16, 32]} />
           <meshStandardMaterial color="#142738" metalness={0.8} roughness={0.28} />

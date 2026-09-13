@@ -109,7 +109,7 @@ export function GameUI({
 
       {!gameOver && (
         <div className="absolute bottom-4 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/55 px-4 py-1.5 text-xs text-white/55 backdrop-blur sm:block">
-          移动鼠标瞄准 · 左键射击 · ESC 暂停
+          移动鼠标瞄准 · 左键射击 · ESC 暂停 · ? 帮助
         </div>
       )}
 

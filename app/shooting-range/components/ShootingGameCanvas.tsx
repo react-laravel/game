@@ -12,6 +12,7 @@ interface ShootingGameCanvasProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity: number
+  reducedMotion?: boolean
   gameStarted: boolean
   gameOver: boolean
   useFallbackControls: boolean
@@ -27,6 +28,7 @@ function ShootingGameCanvasComponent({
   mapId,
   modeId,
   lookSensitivity,
+  reducedMotion = false,
   gameStarted,
   gameOver,
   useFallbackControls,
@@ -57,6 +59,7 @@ function ShootingGameCanvasComponent({
         mapId={mapId}
         modeId={modeId}
         lookSensitivity={lookSensitivity}
+        reducedMotion={reducedMotion}
         onShotResult={onShotResult}
         onHitFeedback={onHitFeedback}
         gameStarted={gameStarted && !gameOver}

@@ -15,6 +15,11 @@ describe('gunFeel', () => {
     expect(muzzleFlashIntensity(MUZZLE_FLASH_DURATION + 0.01)).toBe(0)
   })
 
+  it('scales muzzle flash intensity for reduced motion', () => {
+    expect(muzzleFlashIntensity(0.01, 0.3)).toBeLessThan(muzzleFlashIntensity(0.01, 1))
+    expect(muzzleFlashIntensity(0.01, 0)).toBe(0)
+  })
+
   it('decays recoil toward zero without allocations', () => {
     let kick = 0.02
     for (let i = 0; i < 30; i += 1) {

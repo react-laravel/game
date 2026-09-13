@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { LogOut, Settings2 } from 'lucide-react'
+import { CircleHelp, LogOut, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { primeShootingAudio, setShootingSfxSettings } from '../utils/audioUtils'
 import { useFpsMeter } from '../hooks/useFpsMeter'
@@ -16,7 +16,9 @@ import {
 } from '../utils/sessionInsights'
 import { loadSessionHistory } from '../utils/statsStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import { useMotionPreference } from '../hooks/useMotionPreference'
 import { CrosshairSettings } from './CrosshairSettings'
+import { ShootingHelpSheet } from './ShootingHelpSheet'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
 import { SessionFeedback } from './game/SessionFeedback'
@@ -65,7 +67,10 @@ export default function ShootingGame({
   onChangeDrill,
 }: ShootingGameProps) {
   const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
+  const [showHelpSheet, setShowHelpSheet] = useState(false)
   const [showTutorialTip, setShowTutorialTip] = useState(true)
+  const { preference: motionPreference, reducedMotion, setPreference: setMotionPreference } =
+    useMotionPreference()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneSnapshot = useRef<ShootingSceneSnapshot>({
     camera: { yaw: 0, pitch: 0 },
@@ -168,6 +173,18 @@ export default function ShootingGame({
     setShowCrosshairSettings(true)
   }, [releasePointerLock])
 
+  const handleOpenHelp = useCallback(() => {
+    releasePointerLock()
+    setShowHelpSheet(true)
+  }, [releasePointerLock])
+
+  const handleCloseHelp = useCallback(() => {
+    setShowHelpSheet(false)
+    if (gameStarted && !gameOver && !browserSupport.useFallback) {
+      requestPointerLock()
+    }
+  }, [browserSupport.useFallback, gameOver, gameStarted, requestPointerLock])
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'Space') event.preventDefault()
@@ -183,10 +200,23 @@ export default function ShootingGame({
         (event.code === 'Enter' || event.code === 'Space') &&
         needsPointerLock &&
         !showStartOverlay &&
-        !pointerLockError
+        !pointerLockError &&
+        !showHelpSheet
       ) {
         event.preventDefault()
         resumePointerLock()
+      }
+      if (event.key === '?' && gameStarted && !gameOver) {
+        event.preventDefault()
+        if (showHelpSheet) {
+          handleCloseHelp()
+        } else {
+          handleOpenHelp()
+        }
+      }
+      if (event.code === 'Escape' && showHelpSheet) {
+        event.preventDefault()
+        handleCloseHelp()
       }
     }
 
@@ -199,6 +229,9 @@ export default function ShootingGame({
     pointerLockError,
     resumePointerLock,
     showStartOverlay,
+    showHelpSheet,
+    handleCloseHelp,
+    handleOpenHelp,
     startGame,
   ])
 
@@ -251,6 +284,7 @@ export default function ShootingGame({
         mapId={mapId}
         modeId={modeId}
         lookSensitivity={lookSensitivity}
+        reducedMotion={reducedMotion}
         gameStarted={gameStarted}
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
@@ -262,12 +296,20 @@ export default function ShootingGame({
       {gameStarted && !gameOver && isPointerLocked && (
         <>
           <Crosshair config={crosshairConfig} hit={hitMarker} />
-          <SessionFeedback hitPulse={hitPulse} streakToast={streakToast} />
+          <SessionFeedback
+            hitPulse={hitPulse}
+            streakToast={streakToast}
+            reducedMotion={reducedMotion}
+          />
         </>
       )}
 
       {gameStarted && !gameOver && browserSupport.useFallback && (
-        <SessionFeedback hitPulse={hitPulse} streakToast={streakToast} />
+        <SessionFeedback
+          hitPulse={hitPulse}
+          streakToast={streakToast}
+          reducedMotion={reducedMotion}
+        />
       )}
 
       {gameStarted && (
@@ -290,6 +332,14 @@ export default function ShootingGame({
             aria-label="准星设置"
           >
             <Settings2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            onClick={handleOpenHelp}
+            aria-label="操作说明"
+          >
+            <CircleHelp className="h-4 w-4" />
           </Button>
         </div>
       )}
@@ -324,11 +374,16 @@ export default function ShootingGame({
           onRestart={handleRestart}
           onChangeDrill={onChangeDrill ? handlePauseChangeDrill : undefined}
           onCrosshairSettings={handleOpenCrosshairSettings}
+          onOpenHelp={handleOpenHelp}
+          motionPreference={motionPreference}
           onSensitivityChange={onLookSensitivityChange}
           onSfxVolumeChange={onSfxVolumeChange}
           onSfxMutedChange={onSfxMutedChange}
+          onMotionPreferenceChange={setMotionPreference}
         />
       )}
+
+      {showHelpSheet && <ShootingHelpSheet onClose={handleCloseHelp} />}
 
       {pointerLockError && (
         <ShootingPointerLockError

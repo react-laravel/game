@@ -75,7 +75,7 @@ export function useShootingSession(
 
   const buildSessionStats = useCallback((): SessionStats => {
     const elapsedSeconds = Math.max(1, durationSeconds - timeLeft)
-    const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 100
+    const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 0
     const shotsPerMinute = Math.round((shots / elapsedSeconds) * 60)
 
     return {

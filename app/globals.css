@@ -179,12 +179,33 @@
   text-shadow: 2px 2px 4px rgb(0 0 0 / 0.5);
 }
 
+@keyframes session-highlight {
+  0% {
+    background-color: color-mix(in oklab, var(--primary) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+.shooting-session-highlight {
+  animation: session-highlight 2.4s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float-up,
   .animate-pulse,
   .animate-score-pop,
-  .animate-streak-toast {
+  .animate-streak-toast,
+  .shooting-session-highlight {
     animation: none;
+  }
+
+  .shooting-session-highlight {
+    background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent);
   }
 }
 

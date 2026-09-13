@@ -92,27 +92,31 @@ export function ShootingPauseOverlay({
   onMotionPreferenceChange,
 }: ShootingPauseOverlayProps) {
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-slate-900/96 p-6 text-white shadow-2xl">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-300/10 ring-1 ring-amber-200/20">
-            <Crosshair className="h-6 w-6 text-amber-200" />
+    <div
+      className="absolute inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/72 p-3 backdrop-blur-sm sm:p-4"
+      data-testid="shooting-pause-overlay"
+    >
+      <div className="mx-auto flex w-full max-w-md min-h-full items-start py-2 sm:min-h-0 sm:items-center sm:py-4">
+        <div className="my-auto w-full shrink-0 rounded-3xl border border-white/10 bg-slate-900/96 p-4 text-white shadow-2xl sm:p-5">
+        <div className="flex items-start gap-2.5 sm:gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-300/10 ring-1 ring-amber-200/20 sm:h-12 sm:w-12">
+            <Crosshair className="h-5 w-5 text-amber-200 sm:h-6 sm:w-6" />
           </div>
           <div className="min-w-0">
             <div className="text-xs font-semibold tracking-[0.2em] text-cyan-200/70 uppercase">
               训练暂停
             </div>
-            <h2 className="mt-1 text-xl font-black">已释放鼠标</h2>
-            <p className="mt-1 text-sm leading-6 text-white/55">{drillLabel}</p>
-            <p className="mt-2 text-xs leading-5 text-white/45">
-              按 ESC 或点击「继续训练」可重新锁定鼠标。按 ? 查看操作说明，下方可调整灵敏度与音量。
+            <h2 className="mt-0.5 text-lg font-black sm:mt-1 sm:text-xl">已释放鼠标</h2>
+            <p className="mt-0.5 text-sm leading-5 text-white/55 sm:mt-1 sm:leading-6">{drillLabel}</p>
+            <p className="mt-1.5 text-xs leading-5 text-white/45 sm:mt-2">
+              按 ESC 或点击「继续训练」可重新锁定鼠标。按 ? 查看操作说明，下方可调整灵敏度、音量与动态效果。
             </p>
           </div>
         </div>
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-3 space-y-2 sm:mt-4">
           <Button
-            className="w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
+            className="w-full bg-amber-400 py-4 font-bold text-slate-950 hover:bg-amber-300 sm:py-5"
             onClick={onResume}
           >
             <MousePointer2 className="h-4 w-4" />
@@ -169,7 +173,7 @@ export function ShootingPauseOverlay({
           )}
         </div>
 
-        <div className="mt-5 space-y-4 rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+        <div className="mt-3 space-y-3 rounded-2xl border border-white/10 bg-slate-950/55 p-3 sm:mt-4 sm:space-y-3.5 sm:p-4">
           <LookSensitivityControl
             compact
             variant="dark"
@@ -190,6 +194,7 @@ export function ShootingPauseOverlay({
             value={motionPreference}
             onChange={onMotionPreferenceChange}
           />
+        </div>
         </div>
       </div>
     </div>

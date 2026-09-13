@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 24 (2026-09-13, overnight window ending ~10:45 Asia/Shanghai): ESC pause overlay scrolls on short viewports with tighter spacing so SFX / reduced-motion controls stay reachable; results「查看进步」lands on history with a subtle highlight on the latest session row; zero-shot sessions persist `accuracy: 0` (not 100) for chart averages; Enter/Space no longer re-locks pointer while crosshair settings are open. Focused tests 123/123; full suite 682/682; screenshots refreshed.
 - Shooting Range cycle 23 (2026-09-13): compact Chinese help sheet (`?` HUD + pause「操作说明」); `prefers-reduced-motion` + pause「动态效果」toggle for score pop / combo toast / muzzle flash / impact particles; target hit ring-burst on despawn; outdoor lane gravel shoulders + fence concrete footings. Focused tests 119/119; screenshots refreshed (pause-overlay retained).
 - Shooting Range cycle 22 (2026-09-13): master SFX volume + mute toggle on setup custom panel and ESC pause overlay, persisted via `lastConfigStorage`; shot/hit/miss Web Audio respects volume + mute. Crosshair settings: dot/circle/cross quick presets, Chinese color/size labels, live preview retained. Added `pause-overlay.png` to `docs/shooting-range-screenshots/`. Focused tests 113/113; screenshots overwritten.
 - Shooting Range cycle 21 (2026-09-13): ESC pause overlay with 继续 / 重新开始 / 换训练项 / 准星 / 灵敏度 (no dead ends); setup custom panel highlights difficulty + look sensitivity with `lastConfig` persistence; indoor side/back wall poster blocks + meshBasic wash planes; first-hit tutorial tip fades after first hit. Focused tests 107/107; screenshots overwritten.
@@ -182,6 +183,26 @@ Follow-up after #21 coordinator review; Aimlabs-inspired audio/crosshair UX with
 - `docs/shooting-range-screenshots/pause-overlay.png` added for ESC menu visual QA.
 - All screenshots overwritten via `node scripts/capture-shooting-range-maps.mjs`.
 - Focused shooting-range tests: **113/113**.
+
+## Shooting Range overnight polish cycle 24 (2026-09-13)
+
+Final overnight polish before ~10:45 Asia/Shanghai deadline; tight scope after #23.
+
+### Pause overlay layout
+- Outer shell is `overflow-y-auto` with compact padding so short viewports can scroll to SFX volume +「动态效果」controls without clipping.
+- Reduced vertical spacing on action buttons and settings panel; Chinese copy mentions dynamic effects.
+
+### Results → progress handoff
+-「查看进步」from the post-run card sets `highlightLatestSession` on `ShootingHistory`.
+- Latest row gets a brief `shooting-session-highlight` fade; mode filter resets to「全部」.
+
+### Bugfix pass
+- `useShootingSession`: zero-shot runs store `accuracy: 0` (fixes inflated chart averages).
+- `ShootingGame`: block Enter/Space pointer-lock resume while crosshair settings overlay is open.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests: **123/123**; full suite **682/682**.
 
 ## Shooting Range overnight polish cycle 23 (2026-09-13)
 

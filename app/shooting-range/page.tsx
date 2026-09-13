@@ -26,6 +26,7 @@ const ShootingGame = dynamic(() => import('./components/ShootingGame'), {
 export default function ShootingRangePage() {
   const [isStarted, setIsStarted] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [highlightLatestSession, setHighlightLatestSession] = useState(false)
   const [difficulty, setDifficulty] = useState<ShootingDifficulty>('medium')
   const [mapId, setMapId] = useState<ShootingMapId>('indoor')
   const [modeId, setModeId] = useState<TrainingModeId>('moving')
@@ -147,7 +148,13 @@ export default function ShootingRangePage() {
 
       {!isStarted ? (
         showHistory ? (
-          <ShootingHistory onClose={() => setShowHistory(false)} />
+          <ShootingHistory
+            highlightLatestSession={highlightLatestSession}
+            onClose={() => {
+              setShowHistory(false)
+              setHighlightLatestSession(false)
+            }}
+          />
         ) : (
           <ShootingSetup
             difficulty={difficulty}
@@ -164,7 +171,10 @@ export default function ShootingRangePage() {
             onSfxMutedChange={handleSfxMutedChange}
             onStart={handleStart}
             onQuickStart={handleQuickStart}
-            onViewHistory={() => setShowHistory(true)}
+            onViewHistory={() => {
+              setHighlightLatestSession(false)
+              setShowHistory(true)
+            }}
             crosshairConfig={crosshairConfig}
             onCrosshairChange={updateCrosshair}
             onCrosshairReset={resetCrosshair}
@@ -195,6 +205,7 @@ export default function ShootingRangePage() {
               setGameStarted={setIsStarted}
               onViewHistory={() => {
                 setIsStarted(false)
+                setHighlightLatestSession(true)
                 setShowHistory(true)
               }}
               onChangeDrill={handleReturnToSetup}

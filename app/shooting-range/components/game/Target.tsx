@@ -25,36 +25,56 @@ interface TargetProps {
   orbitRadius: number
   orbitSpeed: number
   modeId: TrainingModeId
+  lowLightBoost?: number
   onClick: (id: number) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
 }
 
-const plateIdleColor = new THREE.Color('#e8f0f7')
-const plateHitColor = new THREE.Color('#ff3b3b')
-const plateIdleEmissive = new THREE.Color('#07131d')
-const plateHitEmissive = new THREE.Color('#7f1010')
-const ringHitColor = new THREE.Color('#ffb020')
-const innerIdleColor = new THREE.Color('#0a1a28')
-const innerHitColor = new THREE.Color('#fff1c2')
-const centerIdleColor = new THREE.Color('#ffb830')
-const centerHitColor = new THREE.Color('#ffffff')
+const plateIdleColor = new THREE.Color('#e2dcd0')
+const plateLitColor = new THREE.Color('#ece6da')
+const plateHitColor = new THREE.Color('#d84848')
+const plateHitEmissive = new THREE.Color('#5a1010')
+const ringHitColor = new THREE.Color('#c88830')
+const innerIdleColor = new THREE.Color('#1a2228')
+const innerHitColor = new THREE.Color('#f0e8d0')
+const centerIdleColor = new THREE.Color('#c89838')
+const centerHitColor = new THREE.Color('#f0ece0')
+const MATTE = { metalness: 0.04, roughness: 0.9 }
 
 function applyTargetLook(
   hit: boolean,
   ringIdleHex: string,
   plate: THREE.MeshStandardMaterial | null,
-  ring: THREE.MeshBasicMaterial | null,
-  inner: THREE.MeshBasicMaterial | null,
-  center: THREE.MeshBasicMaterial | null
+  ring: THREE.MeshStandardMaterial | null,
+  inner: THREE.MeshStandardMaterial | null,
+  center: THREE.MeshStandardMaterial | null,
+  lowLightBoost = 0
 ) {
   if (!plate || !ring || !inner || !center) return
-  plate.color.copy(hit ? plateHitColor : plateIdleColor)
-  plate.emissive.copy(hit ? plateHitEmissive : plateIdleEmissive)
-  plate.emissiveIntensity = hit ? 2.5 : 0.35
+  if (hit) {
+    plate.color.copy(plateHitColor)
+    plate.emissive.copy(plateHitEmissive)
+    plate.emissiveIntensity = 0.35
+  } else {
+    plate.color.copy(plateIdleColor)
+    if (lowLightBoost > 0) {
+      plate.color.lerp(plateLitColor, lowLightBoost * 0.35)
+    }
+    plate.emissive.set('#000000')
+    plate.emissiveIntensity = 0
+  }
+  plate.metalness = MATTE.metalness
+  plate.roughness = MATTE.roughness
   ring.color.set(hit ? ringHitColor : ringIdleHex)
+  ring.metalness = 0.02
+  ring.roughness = 0.92
   inner.color.copy(hit ? innerHitColor : innerIdleColor)
+  inner.metalness = 0.02
+  inner.roughness = 0.94
   center.color.copy(hit ? centerHitColor : centerIdleColor)
+  center.metalness = 0.03
+  center.roughness = 0.88
 }
 
 /** A moving range drone. Movement is applied directly to Three.js objects. */
@@ -71,11 +91,13 @@ function TargetComponent({
   orbitSpeed,
   modeId,
   targetShape,
+  lowLightBoost = 0,
   onClick,
   onReady,
   id,
 }: TargetProps) {
   const isHumanoid = targetShape === 'humanoid'
+  const nightBoost = Math.max(0, Math.min(1, lowLightBoost))
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
   const botMotionProfile = useMemo(() => getBotMotionProfile(modeId), [modeId])
   const botMotionState = useRef(createBotMotionState(id))
@@ -100,9 +122,11 @@ function TargetComponent({
   const rootRef = useRef<THREE.Group>(null)
   const visualRef = useRef<THREE.Group>(null)
   const plateMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
-  const ringMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const innerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const centerMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const innerMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const centerMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const outerRingMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const frameRingMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
   const spawnFlashRef = useRef<THREE.Mesh>(null)
   const spawnFlashMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
@@ -135,7 +159,20 @@ function TargetComponent({
     spawnFlashElapsed.current = 0
     onReady?.(id, root)
     return () => onReady?.(id, null)
-  }, [appearance.spawnPop, id, onReady, position])
+  }, [appearance.spawnPop, id, nightBoost, onReady, position])
+
+  useEffect(() => {
+    if (isHumanoid || nightBoost <= 0) return
+    applyTargetLook(
+      false,
+      appearance.ringColor,
+      plateMaterialRef.current,
+      ringMaterialRef.current,
+      innerMaterialRef.current,
+      centerMaterialRef.current,
+      nightBoost
+    )
+  }, [appearance.ringColor, isHumanoid, nightBoost])
 
   useFrame(({ camera }, delta) => {
     const root = rootRef.current
@@ -164,8 +201,15 @@ function TargetComponent({
           plateMaterialRef.current,
           ringMaterialRef.current,
           innerMaterialRef.current,
-          centerMaterialRef.current
+          centerMaterialRef.current,
+          nightBoost
         )
+        if (outerRingMaterialRef.current) {
+          outerRingMaterialRef.current.color.set('#141a20')
+        }
+        if (frameRingMaterialRef.current) {
+          frameRingMaterialRef.current.color.set('#1a2228')
+        }
       }
     }
 
@@ -310,6 +354,7 @@ function TargetComponent({
           <HumanoidVisual
             modeId={modeId}
             hit={humanoidHit}
+            lowLightBoost={nightBoost}
             crouchScaleRef={crouchScaleRef}
             motionRef={botMotionSample}
           />
@@ -341,52 +386,56 @@ function TargetComponent({
 
         <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[1.05, 1.05, 0.16, 32]} />
-          <meshStandardMaterial color="#142738" metalness={0.8} roughness={0.28} />
+          <meshStandardMaterial color="#2a3238" metalness={0.12} roughness={0.82} />
         </mesh>
 
         <mesh position={[0, 0, 0.092]}>
           <ringGeometry args={[0.96, 1.02, 32]} />
-          <meshBasicMaterial color="#050a10" toneMapped={false} />
+          <meshStandardMaterial ref={outerRingMaterialRef} color="#141a20" metalness={0.05} roughness={0.92} />
         </mesh>
 
         <mesh position={[0, 0, 0.095]}>
           <ringGeometry args={[0.88, 0.98, 32]} />
-          <meshBasicMaterial color="#0a1520" toneMapped={false} />
+          <meshStandardMaterial ref={frameRingMaterialRef} color="#1a2228" metalness={0.05} roughness={0.92} />
         </mesh>
 
         <mesh position={[0, 0, 0.1]}>
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial
             ref={plateMaterialRef}
-            color="#f0f6fc"
-            emissive="#0a1824"
-            emissiveIntensity={0.42}
-            roughness={0.48}
+            color="#e2dcd0"
+            metalness={0.04}
+            roughness={0.9}
           />
         </mesh>
 
         <mesh position={[0, 0, 0.115]}>
           <ringGeometry args={[0.55, 0.73, 32]} />
-          <meshBasicMaterial ref={ringMaterialRef} color={appearance.ringColor} toneMapped={false} />
+          <meshStandardMaterial
+            ref={ringMaterialRef}
+            color={appearance.ringColor}
+            metalness={0.02}
+            roughness={0.92}
+          />
         </mesh>
 
         <mesh position={[0, 0, 0.125]}>
           <circleGeometry args={[0.33, 32]} />
-          <meshBasicMaterial ref={innerMaterialRef} color="#0a1a28" toneMapped={false} />
+          <meshStandardMaterial ref={innerMaterialRef} color="#1a2228" metalness={0.02} roughness={0.94} />
         </mesh>
 
         <mesh position={[0, 0, 0.135]}>
           <circleGeometry args={[0.13, 24]} />
-          <meshBasicMaterial ref={centerMaterialRef} color="#ffb830" toneMapped={false} />
+          <meshStandardMaterial ref={centerMaterialRef} color="#c89838" metalness={0.03} roughness={0.88} />
         </mesh>
 
         <mesh position={[-1.18, 0, 0]}>
           <boxGeometry args={[0.24, 0.42, 0.22]} />
-          <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
+          <meshStandardMaterial color="#3a4248" metalness={0.18} roughness={0.78} />
         </mesh>
         <mesh position={[1.18, 0, 0]}>
           <boxGeometry args={[0.24, 0.42, 0.22]} />
-          <meshStandardMaterial color="#263d4d" metalness={0.75} roughness={0.3} />
+          <meshStandardMaterial color="#3a4248" metalness={0.18} roughness={0.78} />
         </mesh>
 
         {appearance.showSpawnBrackets && (
@@ -400,11 +449,11 @@ function TargetComponent({
               <group key={index} position={[bx, by, bz]}>
                 <mesh position={[bx > 0 ? -0.18 : 0.18, 0, 0]}>
                   <boxGeometry args={[0.36, 0.06, 0.04]} />
-                  <meshBasicMaterial color={appearance.ringColor} toneMapped={false} />
+                  <meshStandardMaterial color={appearance.ringColor} metalness={0.02} roughness={0.9} />
                 </mesh>
                 <mesh position={[0, by > 0 ? -0.18 : 0.18, 0]}>
                   <boxGeometry args={[0.06, 0.36, 0.04]} />
-                  <meshBasicMaterial color={appearance.ringColor} toneMapped={false} />
+                  <meshStandardMaterial color={appearance.ringColor} metalness={0.02} roughness={0.9} />
                 </mesh>
               </group>
             ))}
@@ -421,11 +470,12 @@ function TargetComponent({
             ].map(([cx, cy, cz], index) => (
               <mesh key={`aim-cross-${index}`} position={[cx, cy, cz]}>
                 <boxGeometry args={[index < 2 ? 0.05 : 0.42, index < 2 ? 0.42 : 0.05, 0.02]} />
-                <meshBasicMaterial
+                <meshStandardMaterial
                   color={appearance.ringColor}
                   transparent
-                  opacity={0.55}
-                  toneMapped={false}
+                  opacity={0.42}
+                  metalness={0.02}
+                  roughness={0.9}
                   depthWrite={false}
                 />
               </mesh>

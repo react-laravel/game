@@ -479,9 +479,11 @@ function BushClump({ position, scale = 1 }: { position: [number, number, number]
 function OutdoorSky({
   sky,
   horizonWash,
+  crispNight = false,
 }: {
   sky: OutdoorSkyParams
   horizonWash?: { color: string; opacity: number }
+  crispNight?: boolean
 }) {
   const cloudBanks = useMemo(
     () => [
@@ -492,6 +494,8 @@ function OutdoorSky({
     ],
     []
   )
+  const cloudOpacityScale = crispNight ? 0.28 : 1
+  const sunGlowOpacity = crispNight ? 0.04 : 0.14
 
   return (
     <>
@@ -518,7 +522,13 @@ function OutdoorSky({
       ) : null}
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[2.0, 10, 10]} />
-        <meshBasicMaterial color="#fff4e8" transparent opacity={0.14} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial
+          color={crispNight ? '#c8d0d8' : '#fff4e8'}
+          transparent
+          opacity={sunGlowOpacity}
+          toneMapped={false}
+          depthWrite={false}
+        />
       </mesh>
       {cloudBanks.map((bank, i) => (
         <group key={i} position={bank.pos} rotation={[0.04, i * 0.7, 0.02]}>
@@ -526,9 +536,9 @@ function OutdoorSky({
             <mesh key={j} position={[xOff * bank.scale[0] * 0.25, 0, j * 0.8]}>
               <boxGeometry args={[bank.scale[0] * 0.42, bank.scale[1] * 0.55, bank.scale[2] * 0.35]} />
               <meshBasicMaterial
-                color="#eef4f8"
+                color={crispNight ? '#8898a8' : '#eef4f8'}
                 transparent
-                opacity={bank.opacity * 0.55}
+                opacity={bank.opacity * 0.55 * cloudOpacityScale}
                 toneMapped={false}
                 depthWrite={false}
               />
@@ -791,13 +801,13 @@ function OutdoorRangeLight({ position }: { position: [number, number, number] })
       <mesh position={[0, 5.45, 0.12]}>
         <boxGeometry args={[0.38, 0.1, 0.28]} />
         <meshStandardMaterial
-          color="#fff8e8"
+          color="#fff0d8"
           emissive="#ffd878"
-          emissiveIntensity={1.25}
+          emissiveIntensity={0.62}
           toneMapped={false}
         />
       </mesh>
-      <pointLight position={[0, 5.2, 0.2]} intensity={1.85} color="#ffd890" distance={22} decay={2} />
+      <pointLight position={[0, 5.2, 0.2]} intensity={2.55} color="#ffd890" distance={28} decay={2} />
     </group>
   )
 }
@@ -814,16 +824,14 @@ function OutdoorRange({
   horizonWash?: { color: string; opacity: number }
 }) {
   const grassTexture = useGrassTexture()
-  const gravelTexture = useGravelTexture()
   const earthTexture = useEarthTexture()
 
   useEffect(() => {
     return () => {
       grassTexture?.dispose()
-      gravelTexture?.dispose()
       earthTexture?.dispose()
     }
-  }, [grassTexture, gravelTexture, earthTexture])
+  }, [grassTexture, earthTexture])
 
   /** Flat ground-color patches — rotation locked to horizontal, no tilted slabs. */
   const grassPatches = useMemo(
@@ -836,16 +844,6 @@ function OutdoorRange({
       { x: 8, z: -52, w: 13, d: 9, color: '#4a8248', opacity: 0.28 },
       { x: -6, z: -8, w: 8, d: 6, color: '#5a8a52', opacity: 0.22 },
       { x: 20, z: -10, w: 9, d: 7, color: '#3e7240', opacity: 0.26 },
-    ],
-    []
-  )
-
-  const dirtPatches = useMemo(
-    () => [
-      { x: -9, z: -20, w: 5, d: 4, color: '#6a5840' },
-      { x: 10, z: -28, w: 4.5, d: 3.5, color: '#5a4838' },
-      { x: -7, z: -38, w: 4, d: 3, color: '#625040' },
-      { x: 8, z: -16, w: 3.5, d: 3, color: '#584838' },
     ],
     []
   )
@@ -884,9 +882,12 @@ function OutdoorRange({
     []
   )
 
+  const crispNight = showRangeLights
+  const hillOpacityScale = crispNight ? 0.22 : 1
+
   return (
     <>
-      <OutdoorSky sky={sky} horizonWash={horizonWash} />
+      <OutdoorSky sky={sky} horizonWash={horizonWash} crispNight={crispNight} />
 
       {[-38, -58, -78, -98].map((z, index) => (
         <mesh key={z} position={[0, 0.6 + index * 0.55, z]} scale={[1.5 - index * 0.1, 1, 1]}>
@@ -896,7 +897,7 @@ function OutdoorRange({
             roughness={0.98}
             metalness={0.01}
             transparent
-            opacity={0.52 - index * 0.04}
+            opacity={(0.52 - index * 0.04) * hillOpacityScale}
             flatShading
           />
         </mesh>
@@ -928,75 +929,6 @@ function OutdoorRange({
           />
         </mesh>
       ))}
-
-      {dirtPatches.map((patch, i) => (
-        <mesh
-          key={`dirt-patch-${i}`}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[patch.x, -1.984, patch.z]}
-        >
-          <planeGeometry args={[patch.w, patch.d]} />
-          <meshStandardMaterial map={earthTexture} color={patch.color} roughness={0.94} transparent opacity={0.55} />
-        </mesh>
-      ))}
-
-      {/* Main gravel shooting lane — firing line to berm */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.968, -24]} receiveShadow>
-        <planeGeometry args={[12, 50]} />
-        <meshStandardMaterial map={gravelTexture} color="#9a8a72" roughness={0.88} />
-      </mesh>
-
-      {/* Inner packed-dirt center strip */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.967, -24]}>
-        <planeGeometry args={[5.5, 48]} />
-        <meshStandardMaterial map={earthTexture} color="#756048" roughness={0.9} />
-      </mesh>
-
-      {/* Center chalk line for lane alignment */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.966, -24]}>
-        <planeGeometry args={[0.14, 48]} />
-        <meshStandardMaterial color="#e8e4d8" emissive="#d8d4c8" emissiveIntensity={0.08} roughness={0.82} />
-      </mesh>
-
-      {/* Lane edge borders + gravel shoulders */}
-      {[-6.2, 6.2].map(x => (
-        <mesh key={`lane-edge-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.966, -24]}>
-          <planeGeometry args={[0.45, 50]} />
-          <meshStandardMaterial color="#4a4038" roughness={0.9} />
-        </mesh>
-      ))}
-      {[-8.4, 8.4].map(x => (
-        <mesh key={`lane-shoulder-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.967, -24]}>
-          <planeGeometry args={[2.8, 50]} />
-          <meshStandardMaterial map={gravelTexture} color="#8a7a64" roughness={0.9} />
-        </mesh>
-      ))}
-
-      {/* Firing line and lane floor distance ticks */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, -2.5]}>
-        <planeGeometry args={[12.5, 0.45]} />
-        <meshStandardMaterial color="#e8d848" emissive="#c8b028" emissiveIntensity={0.12} roughness={0.75} />
-      </mesh>
-      {distanceMarkers.map(marker => (
-        <group key={`lane-tick-${marker.z}`}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.965, marker.z]}>
-            <planeGeometry args={[12.5, 0.12]} />
-            <meshStandardMaterial color="#7a7068" roughness={0.85} />
-          </mesh>
-          {[-6.35, 6.35].map(laneX => (
-            <mesh key={laneX} position={[laneX, -1.78, marker.z]}>
-              <cylinderGeometry args={[0.07, 0.09, 0.32, 6]} />
-              <meshStandardMaterial color="#6a6458" roughness={0.88} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-
-      {/* Berm approach gravel pad */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.966, -42]}>
-        <planeGeometry args={[14, 6]} />
-        <meshStandardMaterial map={gravelTexture} color="#7a6a52" roughness={0.88} />
-      </mesh>
 
       {[0, 1, 2].map(layer => (
         <mesh key={`berm-tier-${layer}`} position={[0, 0.55 + layer * 0.48, -44.35 - layer * 0.14]}>
@@ -1117,11 +1049,11 @@ function OutdoorRange({
             <meshStandardMaterial
               color="#fff0d0"
               emissive="#ffb347"
-              emissiveIntensity={0.95}
+              emissiveIntensity={0.55}
               toneMapped={false}
             />
           </mesh>
-          <pointLight position={[0, 3.6, -45.5]} intensity={1.35} color="#ffd8a0" distance={28} decay={2} />
+          <pointLight position={[0, 3.6, -45.5]} intensity={2.1} color="#ffd8a0" distance={34} decay={2} />
         </>
       ) : null}
 

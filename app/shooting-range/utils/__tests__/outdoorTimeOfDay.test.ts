@@ -42,4 +42,17 @@ describe('outdoorTimeOfDay', () => {
     expect(dusk.config.fog.color).toBe(getOutdoorTimePreset('dusk').fog.color)
     expect(dusk.grassTint).toBe(getOutdoorTimePreset('dusk').grassTint)
   })
+
+  it('pushes night fog past the play space and boosts target readability', () => {
+    const night = getOutdoorTimePreset('night')
+    const resolved = resolveOutdoorEnvironment(mapConfigs.outdoor, 'night')
+
+    expect(night.fog.near).toBeGreaterThan(100)
+    expect(night.fog.far).toBeGreaterThan(180)
+    expect(night.fog.color).toBe(night.background)
+    expect(night.horizonWash).toBeUndefined()
+    expect(night.targetReadabilityBoost).toBeGreaterThan(0)
+    expect(resolved.targetReadabilityBoost).toBe(night.targetReadabilityBoost)
+    expect(night.toneMappingExposure).toBeGreaterThan(0.85)
+  })
 })

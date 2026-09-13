@@ -27,6 +27,8 @@ export interface OutdoorTimePreset {
   grassTint: string
   horizonWash?: { color: string; opacity: number }
   showRangeLights: boolean
+  /** 0–1 boost for target plate emissive in low light (night only). */
+  targetReadabilityBoost: number
 }
 
 export const OUTDOOR_TIME_OPTIONS: OutdoorTimePreset[] = [
@@ -51,6 +53,7 @@ export const OUTDOOR_TIME_OPTIONS: OutdoorTimePreset[] = [
     grassTint: '#4a7a48',
     horizonWash: { color: '#8ab8d8', opacity: 0.28 },
     showRangeLights: false,
+    targetReadabilityBoost: 0,
   },
   {
     id: 'noon',
@@ -73,6 +76,7 @@ export const OUTDOOR_TIME_OPTIONS: OutdoorTimePreset[] = [
     grassTint: '#5a8a50',
     horizonWash: { color: '#b8d8f0', opacity: 0.18 },
     showRangeLights: false,
+    targetReadabilityBoost: 0,
   },
   {
     id: 'dusk',
@@ -95,29 +99,31 @@ export const OUTDOOR_TIME_OPTIONS: OutdoorTimePreset[] = [
     grassTint: '#456838',
     horizonWash: { color: '#e8a868', opacity: 0.32 },
     showRangeLights: false,
+    targetReadabilityBoost: 0,
   },
   {
     id: 'night',
     label: '晚上',
     hint: '夜间靶场 · 灯柱与背坡照明',
-    background: '#0a1420',
-    fog: { color: '#1a2838', near: 72, far: 145 },
-    hemisphere: { sky: '#283848', ground: '#1a2818', intensity: 0.42 },
-    directional: { color: '#a8c8e8', intensity: 0.35, position: [-18, 14, -8] },
-    rimLight: { color: '#6888a8', intensity: 0.22, position: [12, 6, 14] },
-    fillLight: { color: '#ffe8c8', intensity: 0.28, position: [0, 4, -18] },
-    toneMappingExposure: 0.72,
+    background: '#060c14',
+    // Match background and push fog past the play space — avoids muddy mid-frame haze.
+    fog: { color: '#060c14', near: 118, far: 228 },
+    hemisphere: { sky: '#1a2838', ground: '#141e18', intensity: 0.58 },
+    directional: { color: '#b0c8e0', intensity: 0.52, position: [-18, 14, -8] },
+    rimLight: { color: '#7088a0', intensity: 0.3, position: [12, 6, 14] },
+    fillLight: { color: '#ffe8c8', intensity: 0.48, position: [0, 5, -12] },
+    toneMappingExposure: 0.94,
     sky: {
-      sunPosition: [-40, 6, -60],
-      mieCoefficient: 0.002,
-      mieDirectionalG: 0.75,
-      rayleigh: 0.65,
-      turbidity: 2.4,
+      sunPosition: [-40, 4, -60],
+      mieCoefficient: 0.001,
+      mieDirectionalG: 0.72,
+      rayleigh: 0.42,
+      turbidity: 1.6,
     },
-    groundTint: '#2a4030',
-    grassTint: '#2a4830',
-    horizonWash: { color: '#283848', opacity: 0.22 },
+    groundTint: '#2e4434',
+    grassTint: '#2e4834',
     showRangeLights: true,
+    targetReadabilityBoost: 0.28,
   },
 ]
 
@@ -147,6 +153,7 @@ export interface ResolvedOutdoorEnvironment {
   toneMappingExposure: number
   showRangeLights: boolean
   horizonWash?: { color: string; opacity: number }
+  targetReadabilityBoost: number
 }
 
 export function resolveOutdoorEnvironment(
@@ -171,5 +178,10 @@ export function resolveOutdoorEnvironment(
     toneMappingExposure: preset.toneMappingExposure,
     showRangeLights: preset.showRangeLights,
     horizonWash: preset.horizonWash,
+    targetReadabilityBoost: preset.targetReadabilityBoost,
   }
+}
+
+export function getOutdoorTargetReadabilityBoost(timeOfDay: OutdoorTimeOfDay): number {
+  return getOutdoorTimePreset(timeOfDay).targetReadabilityBoost
 }

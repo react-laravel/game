@@ -84,6 +84,7 @@ vi.mock('../../../utils/mapConfigs', () => ({
 vi.mock('../../../utils/audioUtils', () => ({
   playShotSound: vi.fn(),
   playHitSound: vi.fn(),
+  playMissSound: vi.fn(),
 }))
 
 // Mock navigator.vibrate

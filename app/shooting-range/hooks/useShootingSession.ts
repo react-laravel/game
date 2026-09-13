@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionStats, ShootingSetupConfig } from '../types'
+import { HIT_MARKER_DURATION_MS } from '../utils/gunFeel'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
-
-const HIT_MARKER_DURATION_MS = 85
 
 export function useShootingSession(
   config: ShootingSetupConfig,

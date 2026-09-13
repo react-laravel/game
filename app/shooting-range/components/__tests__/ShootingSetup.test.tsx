@@ -43,7 +43,7 @@ describe('ShootingSetup', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /自定义场景与难度/ }))
-    fireEvent.click(screen.getByRole('button', { name: /专家/ }))
+    fireEvent.click(screen.getByRole('button', { name: /专家.*16 靶/ }))
     expect(onDifficultyChange).toHaveBeenCalledWith('hard')
 
     fireEvent.click(screen.getByRole('button', { name: /户外靶场/ }))
@@ -57,5 +57,9 @@ describe('ShootingSetup', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '训练记录与进步' }))
     expect(onViewHistory).toHaveBeenCalledOnce()
+
+    fireEvent.click(screen.getByRole('button', { name: '准星设置' }))
+    expect(screen.getByRole('dialog', { name: /准星设置/ })).toBeInTheDocument()
+    expect(screen.queryByText('常用预设')).toBeInTheDocument()
   })
 })

@@ -51,11 +51,12 @@ export function GameUI({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
-      <div className="absolute top-[4.75rem] left-5 hidden max-w-[11rem] rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md sm:block">
+      <div className="absolute top-[4.75rem] left-5 hidden max-w-[12.5rem] rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md sm:block">
         <div className="text-[10px] font-semibold tracking-[0.16em] text-cyan-200/70 uppercase">
           {mode.focus}
         </div>
         <div className="mt-0.5 text-sm leading-snug font-semibold">{drillLabel}</div>
+        <div className="mt-1 text-[11px] leading-4 text-white/50">{mode.hudHint}</div>
       </div>
 
       <div className="absolute top-4 right-4 flex flex-wrap justify-end gap-2 sm:top-5 sm:right-5">

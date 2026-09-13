@@ -9,15 +9,16 @@ import {
   type MotionPreference,
 } from '../utils/motionPrefs'
 
-export function useMotionPreference() {
-  const [preference, setPreference] = useState<MotionPreference>('auto')
-  const [reducedMotion, setReducedMotion] = useState(false)
+function readInitialMotionPreference(): MotionPreference {
+  if (typeof window === 'undefined') return 'auto'
+  return loadMotionPreference()
+}
 
-  useEffect(() => {
-    const stored = loadMotionPreference()
-    setPreference(stored)
-    setReducedMotion(resolveReducedMotion(stored))
-  }, [])
+export function useMotionPreference() {
+  const [preference, setPreference] = useState<MotionPreference>(readInitialMotionPreference)
+  const [reducedMotion, setReducedMotion] = useState(() =>
+    resolveReducedMotion(readInitialMotionPreference())
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return

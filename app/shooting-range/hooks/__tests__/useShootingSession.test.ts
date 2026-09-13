@@ -79,6 +79,22 @@ describe('useShootingSession', () => {
     expect(loadSessionHistory()).toHaveLength(1)
   })
 
+  it('briefly shows miss marker on missed shots', () => {
+    const { result } = renderHook(() => useShootingSession(baseConfig))
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.recordShot(false)
+    })
+
+    expect(result.current.missMarker).toBe(true)
+
+    act(() => {
+      vi.advanceTimersByTime(90)
+    })
+    expect(result.current.missMarker).toBe(false)
+  })
+
   it('expires hit feedback without causing render-loop state updates', () => {
     const { result } = renderHook(() => useShootingSession(baseConfig))
 

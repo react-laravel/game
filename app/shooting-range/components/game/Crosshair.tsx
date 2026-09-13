@@ -9,15 +9,16 @@ import {
 interface CrosshairProps {
   config: CrosshairConfig
   hit?: boolean
+  miss?: boolean
   className?: string
 }
 
 const HIT_X_INSET = 14
 const HIT_X_OUTSET = 30
 
-export function Crosshair({ config, hit = false, className = '' }: CrosshairProps) {
-  const color = hit ? '#fff6d8' : config.color
-  const opacity = hit ? Math.min(1, config.opacity + 0.18) : config.opacity
+export function Crosshair({ config, hit = false, miss = false, className = '' }: CrosshairProps) {
+  const color = hit ? '#fff6d8' : miss ? '#ffb4b4' : config.color
+  const opacity = hit || miss ? Math.min(1, config.opacity + 0.15) : config.opacity
   const segments = getCrosshairSegments(config)
   const circleRadius = getCrosshairCircleRadius(config)
   const center = getCrosshairViewboxSize() / 2
@@ -31,12 +32,18 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
     >
       <svg
         viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
-        className={`transition-transform duration-75 ease-out ${hit ? 'scale-[1.08]' : 'scale-100'}`}
+        className={`transition-transform duration-75 ease-out ${
+          hit ? 'scale-[1.08]' : miss ? 'scale-[0.94]' : 'scale-100'
+        }`}
         style={{
           width: `${config.size * 2.8}px`,
           height: `${config.size * 2.8}px`,
           opacity,
-          filter: hit ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))' : undefined,
+          filter: hit
+            ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))'
+            : miss
+              ? 'drop-shadow(0 0 5px rgba(255, 90, 90, 0.45))'
+              : undefined,
         }}
       >
         {hit && (
@@ -117,6 +124,31 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
               cy={center}
               r={config.style === 'dot' ? config.thickness + 1.1 : config.thickness * 0.75}
               fill={color}
+            />
+          </>
+        )}
+
+        {miss && !hit && (
+          <>
+            <line
+              x1={center - 10}
+              y1={center}
+              x2={center + 10}
+              y2={center}
+              stroke="#ff8a8a"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeOpacity={0.9}
+            />
+            <line
+              x1={center}
+              y1={center - 10}
+              x2={center}
+              y2={center + 10}
+              stroke="#ff8a8a"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeOpacity={0.9}
             />
           </>
         )}

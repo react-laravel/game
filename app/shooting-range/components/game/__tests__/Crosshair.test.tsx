@@ -15,4 +15,12 @@ describe('Crosshair', () => {
     })
     expect(result).toBeDefined()
   })
+
+  it('should render miss feedback state', () => {
+    const result = Crosshair({
+      config: DEFAULT_CROSSHAIR_CONFIG,
+      miss: true,
+    })
+    expect(result).toBeDefined()
+  })
 })

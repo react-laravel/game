@@ -12,7 +12,10 @@ vi.mock('next/image', () => ({
     src: string
     alt: string
     className?: string
-  }) => <img src={src} alt={alt} className={className} {...props} />,
+  }) => (
+    // eslint-disable-next-line @next/next/no-img-element -- test stub for next/image
+    <img src={src} alt={alt} className={className} {...props} />
+  ),
 }))
 
 describe('MoonDiceDie', () => {

@@ -23,6 +23,8 @@ export interface TrainingModeConfig {
   spawnPattern?: SpawnPattern
   /** Short skill tag for HUD / results */
   focus: string
+  /** One-line behavior hint for in-session HUD */
+  hudHint: string
 }
 
 export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
@@ -31,6 +33,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     name: '静态精准',
     description: '全场多靶同时静止，练稳定瞄准与准度',
     focus: 'Precision',
+    hudHint: '多靶静止 · 练稳定瞄准',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 1,
@@ -45,6 +48,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     name: '动态追踪',
     description: '多靶高速反弹乱窜，练预判与持续跟枪',
     focus: 'Strafe',
+    hudHint: '多靶乱窜 · 练预判跟枪',
     durationSeconds: 60,
     baseSpeed: 0.055,
     targetCountMultiplier: 1,
@@ -59,6 +63,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     name: '甩枪反应',
     description: '单靶闪现换点，练第一眼定位与反应',
     focus: 'Flick',
+    hudHint: '单靶闪现 · 练第一眼定位',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 1,
@@ -74,6 +79,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     name: '环绕跟枪',
     description: '少量靶沿圆形轨迹匀速环绕，练平滑追踪',
     focus: 'Tracking',
+    hudHint: '轨道环绕 · 练平滑追踪',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 0.55,
@@ -90,6 +96,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     name: '速射挑战',
     description: '45 秒高密度移动靶，射速与精度并重',
     focus: 'Speed',
+    hudHint: '限时高密度 · 射速与精度',
     durationSeconds: 45,
     baseSpeed: 0.065,
     targetCountMultiplier: 1.15,
@@ -114,6 +121,7 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
     faceCamera: false,
     spawnPattern: 'grid',
     focus: 'Grid',
+    hudHint: '网格顺序 · 练准度手速',
   },
 }
 

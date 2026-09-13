@@ -31,15 +31,14 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
   const [modeFilter, setModeFilter] = useState<TrainingModeId | 'all'>('all')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily')
   const [chartMetric, setChartMetric] = useState<ChartMetric>('avgAccuracy')
-  const [highlightSessionId, setHighlightSessionId] = useState<string | null>(null)
-  const latestRowRef = useRef<HTMLTableRowElement>(null)
-
   const latest = history[0]
+  const [highlightSessionId, setHighlightSessionId] = useState<string | null>(() =>
+    highlightLatestSession && latest ? latest.id : null
+  )
+  const latestRowRef = useRef<HTMLTableRowElement>(null)
 
   useEffect(() => {
     if (!highlightLatestSession || !latest) return
-    setModeFilter('all')
-    setHighlightSessionId(latest.id)
     const frame = window.requestAnimationFrame(() => {
       latestRowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     })
@@ -73,6 +72,13 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
         </div>
 
         <div className="space-y-6 p-6 sm:p-8">
+          {history.length > 0 && history.length <= 2 && (
+            <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-3 text-sm leading-6 text-foreground/85">
+              <span className="font-semibold text-cyan-700 dark:text-cyan-200">继续加油！</span>
+              多完成几场训练，趋势图和各模式最佳成绩会更清晰。试试不同专项卡片感受差异。
+            </div>
+          )}
+
           {latest ? (
             <div className="grid gap-3 sm:grid-cols-4">
               <StatCard label="最近得分" value={`${latest.score}`} />

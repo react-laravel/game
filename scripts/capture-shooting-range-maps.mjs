@@ -189,7 +189,7 @@ async function capturePauseOverlay(page, filePath) {
     await page.waitForTimeout(1200)
   }
 
-  await page.getByText('训练暂停').waitFor({ state: 'visible', timeout: 20000 })
+  await page.getByTestId('shooting-pause-menu').waitFor({ state: 'visible', timeout: 20000 })
   await page.getByText('音效音量').waitFor({ state: 'visible', timeout: 10000 })
   await page.waitForTimeout(600)
   await page.screenshot({ path: filePath, fullPage: false })

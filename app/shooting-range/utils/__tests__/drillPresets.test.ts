@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   defaultDrillPreset,
   drillLabelForConfig,
+  drillMetaForPreset,
   drillPresets,
   findDrillPreset,
+  isRecommendedEntryDrill,
 } from '../drillPresets'
 
 describe('drillPresets', () => {
@@ -22,5 +24,19 @@ describe('drillPresets', () => {
     expect(
       drillLabelForConfig('precision', 'indoor', 'medium')
     ).toBe('网格速点')
+  })
+
+  it('labels custom configs with Chinese mode and map names', () => {
+    expect(drillLabelForConfig('moving', 'indoor', 'medium')).toBe(
+      '动态追踪 · 室内靶场'
+    )
+  })
+
+  it('exposes duration and difficulty meta for quick-start cards', () => {
+    const preset = findDrillPreset('speed-burst')
+    expect(preset).toBeDefined()
+    expect(drillMetaForPreset(preset!)).toEqual({ duration: 45, difficulty: '专家' })
+    expect(isRecommendedEntryDrill(defaultDrillPreset, 0)).toBe(true)
+    expect(isRecommendedEntryDrill(defaultDrillPreset, 1)).toBe(false)
   })
 })

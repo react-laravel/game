@@ -1,6 +1,7 @@
 import { Crosshair, LogOut, MousePointer2, RotateCcw, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LookSensitivityControl } from './LookSensitivityControl'
+import { SfxVolumeControl } from './SfxVolumeControl'
 
 export function UnsupportedShootingDevice({ message }: { message: string }) {
   return (
@@ -58,21 +59,29 @@ interface ShootingPointerLockErrorProps {
 interface ShootingPauseOverlayProps {
   drillLabel: string
   lookSensitivity: number
+  sfxVolume: number
+  sfxMuted: boolean
   onResume: () => void
   onRestart: () => void
   onChangeDrill?: () => void
   onCrosshairSettings?: () => void
   onSensitivityChange: (value: number) => void
+  onSfxVolumeChange: (value: number) => void
+  onSfxMutedChange: (muted: boolean) => void
 }
 
 export function ShootingPauseOverlay({
   drillLabel,
   lookSensitivity,
+  sfxVolume,
+  sfxMuted,
   onResume,
   onRestart,
   onChangeDrill,
   onCrosshairSettings,
   onSensitivityChange,
+  onSfxVolumeChange,
+  onSfxMutedChange,
 }: ShootingPauseOverlayProps) {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm">
@@ -142,12 +151,20 @@ export function ShootingPauseOverlay({
           )}
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+        <div className="mt-5 space-y-4 rounded-2xl border border-white/10 bg-slate-950/55 p-4">
           <LookSensitivityControl
             compact
             variant="dark"
             value={lookSensitivity}
             onChange={onSensitivityChange}
+          />
+          <SfxVolumeControl
+            compact
+            variant="dark"
+            volume={sfxVolume}
+            muted={sfxMuted}
+            onVolumeChange={onSfxVolumeChange}
+            onMutedChange={onSfxMutedChange}
           />
         </div>
       </div>

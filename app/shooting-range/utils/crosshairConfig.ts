@@ -30,6 +30,61 @@ export const CROSSHAIR_STYLE_OPTIONS: Array<{ id: CrosshairStyle; label: string 
   { id: 't-shape', label: 'T 形' },
 ]
 
+export const CROSSHAIR_QUICK_PRESETS: Array<{
+  id: 'dot' | 'circle' | 'cross'
+  label: string
+  hint: string
+  patch: Partial<CrosshairConfig>
+}> = [
+  {
+    id: 'dot',
+    label: '圆点',
+    hint: '小点 · 精准点射',
+    patch: {
+      style: 'dot',
+      size: 10,
+      thickness: 3,
+      gap: 0,
+      showCenterDot: true,
+    },
+  },
+  {
+    id: 'circle',
+    label: '圆环',
+    hint: '空心环 · 跟枪追踪',
+    patch: {
+      style: 'circle',
+      size: 16,
+      thickness: 2,
+      gap: 6,
+      showCenterDot: false,
+    },
+  },
+  {
+    id: 'cross',
+    label: '十字',
+    hint: '四向线 · 甩枪切换',
+    patch: {
+      style: 'cross',
+      size: 14,
+      thickness: 2,
+      gap: 5,
+      showCenterDot: true,
+    },
+  },
+]
+
+export const CROSSHAIR_SIZE_LABELS: Array<{ min: number; label: string }> = [
+  { min: 20, label: '大号' },
+  { min: 14, label: '中号' },
+  { min: 0, label: '小号' },
+]
+
+export function crosshairSizeLabel(size: number): string {
+  const clamped = clampCrosshairValue(size, 8, 28)
+  return CROSSHAIR_SIZE_LABELS.find(option => clamped >= option.min)?.label ?? '小号'
+}
+
 export const DEFAULT_CROSSHAIR_CONFIG: CrosshairConfig = {
   style: 'cross-circle',
   color: '#dff9ff',

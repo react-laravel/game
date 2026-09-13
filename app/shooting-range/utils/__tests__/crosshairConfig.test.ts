@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CROSSHAIR_QUICK_PRESETS,
+  crosshairSizeLabel,
   DEFAULT_CROSSHAIR_CONFIG,
   getCrosshairArms,
   getCrosshairCircleRadius,
@@ -25,6 +27,12 @@ describe('crosshairConfig', () => {
     expect(normalized.thickness).toBe(1)
     expect(normalized.gap).toBe(0)
     expect(normalized.opacity).toBe(1)
+  })
+
+  it('exposes readable quick presets and size labels', () => {
+    expect(CROSSHAIR_QUICK_PRESETS.map(preset => preset.label)).toEqual(['圆点', '圆环', '十字'])
+    expect(crosshairSizeLabel(22)).toBe('大号')
+    expect(crosshairSizeLabel(10)).toBe('小号')
   })
 
   it('renders different arm layouts per style', () => {

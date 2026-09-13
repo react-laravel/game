@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LogOut, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { primeShootingAudio } from '../utils/audioUtils'
+import { primeShootingAudio, setShootingSfxSettings } from '../utils/audioUtils'
 import { useFpsMeter } from '../hooks/useFpsMeter'
 import { usePointerLock } from '../hooks/usePointerLock'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
@@ -34,7 +34,11 @@ interface ShootingGameProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity: number
+  sfxVolume: number
+  sfxMuted: boolean
   onLookSensitivityChange: (value: number) => void
+  onSfxVolumeChange: (value: number) => void
+  onSfxMutedChange: (muted: boolean) => void
   crosshairConfig: CrosshairConfig
   onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
   onCrosshairReset: () => void
@@ -48,7 +52,11 @@ export default function ShootingGame({
   mapId,
   modeId,
   lookSensitivity,
+  sfxVolume,
+  sfxMuted,
   onLookSensitivityChange,
+  onSfxVolumeChange,
+  onSfxMutedChange,
   crosshairConfig,
   onCrosshairChange,
   onCrosshairReset,
@@ -92,12 +100,19 @@ export default function ShootingGame({
     releasePointerLock,
   } = usePointerLock(canvasRef)
 
+  const forcePauseOverlay =
+    typeof window !== 'undefined' &&
+    Boolean((window as Window & { __SHOOTING_QA_FORCE_PAUSE__?: boolean }).__SHOOTING_QA_FORCE_PAUSE__)
+
   const needsPointerLock =
     gameStarted &&
     !gameOver &&
     !browserSupport.useFallback &&
     !isPointerLocked &&
     !pointerLockError
+
+  const showPauseOverlay =
+    (needsPointerLock && !showStartOverlay) || (forcePauseOverlay && gameStarted && !gameOver)
 
   useShootingDebugBridge({
     canvasRef,
@@ -113,12 +128,17 @@ export default function ShootingGame({
     onInjectStats: injectSessionStats,
   })
 
+  useEffect(() => {
+    setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
+  }, [sfxMuted, sfxVolume])
+
   const startGame = useCallback(() => {
+    setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })
     primeShootingAudio()
     setShowTutorialTip(true)
     beginTraining()
     requestPointerLock()
-  }, [beginTraining, requestPointerLock])
+  }, [beginTraining, requestPointerLock, sfxMuted, sfxVolume])
 
   const resumePointerLock = useCallback(() => {
     requestPointerLock()
@@ -294,15 +314,19 @@ export default function ShootingGame({
         <ShootingReadyOverlay onStart={startGame} />
       )}
 
-      {needsPointerLock && !showStartOverlay && (
+      {showPauseOverlay && (
         <ShootingPauseOverlay
           drillLabel={drillLabel}
           lookSensitivity={lookSensitivity}
+          sfxVolume={sfxVolume}
+          sfxMuted={sfxMuted}
           onResume={resumePointerLock}
           onRestart={handleRestart}
           onChangeDrill={onChangeDrill ? handlePauseChangeDrill : undefined}
           onCrosshairSettings={handleOpenCrosshairSettings}
           onSensitivityChange={onLookSensitivityChange}
+          onSfxVolumeChange={onSfxVolumeChange}
+          onSfxMutedChange={onSfxMutedChange}
         />
       )}
 

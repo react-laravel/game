@@ -12,11 +12,16 @@ const MAPS = [
   { label: '工业仓库', id: 'warehouse' },
 ]
 
-async function installQaFallback(page) {
-  await page.addInitScript(() => {
-    window.__SHOOTING_FORCE_FALLBACK__ = true
-    window.__SHOOTING_QA_FPS__ = 60
-  })
+async function installQaFallback(page, options = {}) {
+  const { forceFallback = true, forcePause = false } = options
+  await page.addInitScript(
+    ({ forceFallback: useFallback, forcePause: usePause }) => {
+      if (useFallback) window.__SHOOTING_FORCE_FALLBACK__ = true
+      if (usePause) window.__SHOOTING_QA_FORCE_PAUSE__ = true
+      window.__SHOOTING_QA_FPS__ = 60
+    },
+    { forceFallback, forcePause }
+  )
 }
 
 async function mockAuth(page) {
@@ -165,6 +170,31 @@ async function injectQaSessionStats(page) {
   })
 }
 
+async function capturePauseOverlay(page, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  await page.waitForSelector('text=选择训练项目', { timeout: 30000 })
+  await page.getByRole('button', { name: /甩枪反应/ }).first().click({ timeout: 10000 })
+  await page.locator('canvas[data-engine]').first().waitFor({ state: 'attached', timeout: 45000 })
+  await page.waitForTimeout(1500)
+
+  const startBtn = page.getByRole('button', { name: /锁定鼠标并开始|点击开始/ })
+  if (await startBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await startBtn.click({ force: true, noWaitAfter: true }).catch(() => {})
+    await page.waitForTimeout(800)
+  }
+
+  const fallback = page.getByRole('button', { name: '点击目标模式' })
+  if (await fallback.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await fallback.click({ force: true, noWaitAfter: true }).catch(() => {})
+    await page.waitForTimeout(1200)
+  }
+
+  await page.getByText('训练暂停').waitFor({ state: 'visible', timeout: 20000 })
+  await page.getByText('音效音量').waitFor({ state: 'visible', timeout: 10000 })
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: filePath, fullPage: false })
+}
+
 async function captureResultsScreen(page, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
@@ -210,6 +240,11 @@ async function main() {
     captureQuickStartTraining(page, '网格速点', path.join(OUT_DIR, 'drill-precision-training-hud.png'))
   )
   await runStep('results', () => captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png')))
+
+  await runStep('pause-overlay', async () => {
+    await installQaFallback(page, { forceFallback: true, forcePause: true })
+    await capturePauseOverlay(page, path.join(OUT_DIR, 'pause-overlay.png'))
+  })
 
   await browser.close()
   console.log(`Saved screenshots to ${OUT_DIR}`)

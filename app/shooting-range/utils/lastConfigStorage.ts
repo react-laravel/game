@@ -1,5 +1,6 @@
 import type { ShootingSetupConfig } from '../types'
 import { DEFAULT_LOOK_SENSITIVITY, normalizeLookSensitivity } from './lookSensitivity'
+import { DEFAULT_SFX_VOLUME, normalizeSfxMuted, normalizeSfxVolume } from './sfxVolume'
 
 export const LAST_CONFIG_KEY = 'shooting-range-last-config'
 export const LAST_DRILL_KEY = 'shooting-range-last-drill'
@@ -35,6 +36,8 @@ export function loadLastConfig(
       lookSensitivity: normalizeLookSensitivity(
         parsed.lookSensitivity ?? DEFAULT_LOOK_SENSITIVITY
       ),
+      sfxVolume: normalizeSfxVolume(parsed.sfxVolume ?? DEFAULT_SFX_VOLUME),
+      sfxMuted: normalizeSfxMuted(parsed.sfxMuted),
     }
   } catch {
     return null

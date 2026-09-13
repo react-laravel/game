@@ -44,4 +44,6 @@ export interface ShootingSetupConfig {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity?: number
+  sfxVolume?: number
+  sfxMuted?: boolean
 }

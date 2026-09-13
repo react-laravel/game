@@ -16,7 +16,13 @@ import {
 } from '../../utils/gameUtils'
 import { mapConfigs } from '../../utils/mapConfigs'
 import { resolveTrainingSettings } from '../../utils/trainingModes'
-import { playHitSound, playShotSound } from '../../utils/audioUtils'
+import { playHitSound, playMissSound, playShotSound } from '../../utils/audioUtils'
+import {
+  MUZZLE_FLASH_DURATION,
+  RECOIL_KICK_PITCH,
+  decayRecoil,
+  randomRecoilYaw,
+} from '../../utils/gunFeel'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../../types'
 
 interface TargetData {
@@ -82,12 +88,14 @@ export function GameScene({
   const raycastObjects = useRef<THREE.Object3D[]>([])
   const screenCenter = useRef(new THREE.Vector2(0, 0))
   const nextShotAt = useRef(0)
-  const muzzleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotElapsed = useRef(0)
   const fpsElapsed = useRef(0)
   const fpsFrames = useRef(0)
   const lookRotation = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
-  const muzzleFlashRef = useRef(false)
+  const viewEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const muzzleFlashElapsed = useRef(-1)
+  const recoilPitch = useRef(0)
+  const recoilYaw = useRef(0)
   const impactFXRef = useRef<ImpactFXHandle>(null)
   const hitWorldPosition = useRef(new THREE.Vector3())
   const onShotResultRef = useRef(onShotResult)
@@ -147,12 +155,10 @@ export function GameScene({
     [settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern]
   )
 
-  const showMuzzleFlash = useCallback(() => {
-    if (muzzleTimer.current) clearTimeout(muzzleTimer.current)
-    muzzleFlashRef.current = true
-    muzzleTimer.current = setTimeout(() => {
-      muzzleFlashRef.current = false
-    }, 55)
+  const triggerGunFeel = useCallback(() => {
+    muzzleFlashElapsed.current = 0
+    recoilPitch.current += RECOIL_KICK_PITCH
+    recoilYaw.current += randomRecoilYaw()
   }, [])
 
   const handleShoot = useCallback(() => {
@@ -162,7 +168,7 @@ export function GameScene({
     if (now < nextShotAt.current) return
     nextShotAt.current = now + 145
 
-    showMuzzleFlash()
+    triggerGunFeel()
     playShotSound()
 
     raycaster.current.setFromCamera(screenCenter.current, camera)
@@ -184,17 +190,20 @@ export function GameScene({
       }
     }
 
-    if (!didHit) onShotResultRef.current(false)
-  }, [camera, gameStarted, handleTargetHit, showMuzzleFlash])
+    if (!didHit) {
+      playMissSound()
+      onShotResultRef.current(false)
+    }
+  }, [camera, gameStarted, handleTargetHit, triggerGunFeel])
 
   const handleFallbackTargetClick = useCallback(
     (id: number) => {
       if (!gameStarted || !useFallbackControls || hitTargetIds.current.has(id)) return
-      showMuzzleFlash()
+      triggerGunFeel()
       playShotSound()
       handleTargetHit(id)
     },
-    [gameStarted, handleTargetHit, showMuzzleFlash, useFallbackControls]
+    [gameStarted, handleTargetHit, triggerGunFeel, useFallbackControls]
   )
 
   useFrame((_, delta) => {
@@ -204,6 +213,23 @@ export function GameScene({
       onFpsReportRef.current?.(fpsFrames.current / fpsElapsed.current)
       fpsFrames.current = 0
       fpsElapsed.current = 0
+    }
+
+    if (muzzleFlashElapsed.current >= 0) {
+      muzzleFlashElapsed.current += delta
+      if (muzzleFlashElapsed.current >= MUZZLE_FLASH_DURATION) {
+        muzzleFlashElapsed.current = -1
+      }
+    }
+
+    recoilPitch.current = decayRecoil(recoilPitch.current, delta)
+    recoilYaw.current = decayRecoil(recoilYaw.current, delta)
+
+    if (gameStarted && !useFallbackControls) {
+      const base = lookRotation.current
+      const view = viewEuler.current
+      view.set(base.x - recoilPitch.current, base.y + recoilYaw.current, 0)
+      camera.quaternion.setFromEuler(view)
     }
 
     if (!sceneStateRef) return
@@ -260,7 +286,6 @@ export function GameScene({
         -Math.PI / 2 + 0.05,
         Math.PI / 2 - 0.05
       )
-      camera.quaternion.setFromEuler(rotation)
     }
 
     document.addEventListener('mousemove', handleMouseMove)
@@ -276,7 +301,6 @@ export function GameScene({
   useEffect(
     () => () => {
       respawnTimers.current.forEach(clearTimeout)
-      if (muzzleTimer.current) clearTimeout(muzzleTimer.current)
       document.exitPointerLock?.()
     },
     []
@@ -306,7 +330,10 @@ export function GameScene({
       ))}
 
       <ImpactFX ref={impactFXRef} />
-      <FPSWeapon muzzleFlashRef={muzzleFlashRef} />
+      <FPSWeapon
+        muzzleFlashElapsedRef={muzzleFlashElapsed}
+        recoilPitchRef={recoilPitch}
+      />
     </>
   )
 }

@@ -472,6 +472,15 @@ function AcousticFoamGrid({ x, z, facing }: { x: number; z: number; facing: 'lef
   )
 }
 
+function TreeSilhouette({ height = 5.2, width = 1.6 }: { height?: number; width?: number }) {
+  return (
+    <mesh position={[0, height * 0.48, -0.35]}>
+      <planeGeometry args={[width, height]} />
+      <meshBasicMaterial color="#0a1410" transparent opacity={0.42} toneMapped={false} depthWrite={false} />
+    </mesh>
+  )
+}
+
 function EvergreenTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const foliage = useMemo(
     () => [
@@ -487,6 +496,7 @@ function EvergreenTree({ position, scale = 1 }: { position: [number, number, num
 
   return (
     <group position={position} scale={scale}>
+      <TreeSilhouette height={5.4} width={1.45} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.55, 12]} />
         <meshBasicMaterial color="#1a2818" transparent opacity={0.35} toneMapped={false} depthWrite={false} />
@@ -527,6 +537,7 @@ function DeciduousTree({
 
   return (
     <group position={position} scale={scale}>
+      <TreeSilhouette height={5.8} width={1.75} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.65, 12]} />
         <meshBasicMaterial color="#1a2818" transparent opacity={0.32} toneMapped={false} depthWrite={false} />
@@ -1065,6 +1076,14 @@ function OutdoorRange() {
           <DeciduousTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
         )
       )}
+
+      {/* Distant ridge silhouettes for horizon readability */}
+      {[-28, 0, 26].map((x, i) => (
+        <mesh key={`ridge-${i}`} position={[x, 1.2, -72 - i * 6]} scale={[1.1 + i * 0.15, 1, 1]}>
+          <boxGeometry args={[18 - i * 2, 2.4 + i * 0.5, 4]} />
+          <meshBasicMaterial color="#1a2830" transparent opacity={0.38 - i * 0.06} toneMapped={false} />
+        </mesh>
+      ))}
     </>
   )
 }
@@ -1164,6 +1183,14 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <boxGeometry args={[36.5, 12.2, 0.55]} />
         <meshStandardMaterial color="#3a3028" metalness={0.3} roughness={0.68} />
       </mesh>
+
+      {/* Back-wall window silhouettes for depth */}
+      {[-8, -2.5, 2.5, 8].map(x => (
+        <mesh key={`wh-window-${x}`} position={[x, 5.2, -47.55]}>
+          <planeGeometry args={[3.2, 2.4]} />
+          <meshBasicMaterial color="#0c1018" transparent opacity={0.55} toneMapped={false} />
+        </mesh>
+      ))}
 
       <group position={[0, 4.5, -47.85]}>
         <mesh>

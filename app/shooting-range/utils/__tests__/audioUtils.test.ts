@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   playExplosionSound,
   playHitSound,
+  playMissSound,
   playShotSound,
   primeShootingAudio,
   resetShootingAudio,
@@ -137,7 +138,7 @@ describe('shooting-range audioUtils', () => {
     expect(window.Audio).not.toHaveBeenCalledWith('/sounds/shot.mp3')
   })
 
-  it('plays a metallic hit that is distinct from the gunshot', () => {
+  it('plays a bright metallic hit that is distinct from the gunshot', () => {
     const { MockAudioContext, oscillators, sources } = createMockAudioContext()
     Object.defineProperty(window, 'AudioContext', {
       configurable: true,
@@ -147,9 +148,24 @@ describe('shooting-range audioUtils', () => {
     playHitSound()
 
     expect(sources.length).toBe(1)
-    expect(oscillators.filter(oscillator => oscillator.type === 'triangle')).toHaveLength(2)
+    expect(oscillators.some(oscillator => oscillator.type === 'sine')).toBe(true)
+    expect(oscillators.some(oscillator => oscillator.type === 'triangle')).toBe(true)
     expect(window.Audio).not.toHaveBeenCalledWith('/sounds/explode.mp3')
     expect(window.Audio).not.toHaveBeenCalledWith('/sounds/shot.mp3')
+  })
+
+  it('plays a softer miss thud without mp3 fallbacks', () => {
+    const { MockAudioContext, oscillators, sources } = createMockAudioContext()
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      value: MockAudioContext,
+    })
+
+    playMissSound()
+
+    expect(sources.length).toBe(1)
+    expect(oscillators.some(oscillator => oscillator.type === 'sine')).toBe(true)
+    expect(window.Audio).not.toHaveBeenCalled()
   })
 
   it('keeps the explosion alias on the hit voice, not an mp3', () => {

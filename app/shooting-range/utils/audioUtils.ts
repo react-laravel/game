@@ -210,41 +210,66 @@ export const playShotSound = () => {
   })
 }
 
-/** Hollow metal drone impact: crisp ping with a short spark, less low-end mud. */
+/** Target confirm: tight metallic tick with a bright overtone — Aimlabs-style, original. */
 export const playHitSound = () => {
   withAudio((context, destination) => {
     const start = context.currentTime
-    const pitch = jitter(1, 0.1)
+    const pitch = jitter(1, 0.08)
 
     playNoiseBurst(context, destination, {
       start,
-      duration: 0.018,
-      volume: 0.055,
-      highpass: 3200,
-      lowpass: 9200,
+      duration: 0.012,
+      volume: 0.07,
+      highpass: 4200,
+      lowpass: 11000,
     })
     playTone(context, destination, {
-      type: 'triangle',
-      frequency: 2280 * pitch,
-      frequencyEnd: 1680 * pitch,
-      duration: 0.07,
-      volume: 0.1,
+      type: 'sine',
+      frequency: 2860 * pitch,
+      frequencyEnd: 2140 * pitch,
+      duration: 0.055,
+      volume: 0.11,
       start,
     })
     playTone(context, destination, {
       type: 'triangle',
-      frequency: 3520 * pitch,
-      frequencyEnd: 2480 * pitch,
-      duration: 0.05,
-      volume: 0.065,
-      start: start + 0.004,
+      frequency: 4120 * pitch,
+      frequencyEnd: 3180 * pitch,
+      duration: 0.038,
+      volume: 0.055,
+      start: start + 0.003,
     })
     playTone(context, destination, {
       type: 'square',
-      frequency: 4200 * pitch,
-      duration: 0.008,
-      volume: 0.022,
-      start: start + 0.002,
+      frequency: 5200 * pitch,
+      duration: 0.006,
+      volume: 0.028,
+      start: start + 0.0015,
+    })
+  })
+}
+
+/** Soft wall miss — muted thud so hits feel distinct without clutter. */
+export const playMissSound = () => {
+  withAudio((context, destination) => {
+    const start = context.currentTime
+    const pitch = jitter(1, 0.06)
+
+    playNoiseBurst(context, destination, {
+      start,
+      duration: 0.028,
+      volume: 0.035,
+      bandpass: 420 * pitch,
+      q: 0.7,
+      lowpass: 900,
+    })
+    playTone(context, destination, {
+      type: 'sine',
+      frequency: 92 * pitch,
+      frequencyEnd: 58,
+      duration: 0.07,
+      volume: 0.045,
+      start,
     })
   })
 }

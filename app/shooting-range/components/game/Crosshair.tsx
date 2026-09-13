@@ -12,13 +12,17 @@ interface CrosshairProps {
   className?: string
 }
 
+const HIT_X_INSET = 14
+const HIT_X_OUTSET = 30
+
 export function Crosshair({ config, hit = false, className = '' }: CrosshairProps) {
-  const color = hit ? '#fff3bf' : config.color
-  const opacity = hit ? Math.min(1, config.opacity + 0.12) : config.opacity
+  const color = hit ? '#fff6d8' : config.color
+  const opacity = hit ? Math.min(1, config.opacity + 0.18) : config.opacity
   const segments = getCrosshairSegments(config)
   const circleRadius = getCrosshairCircleRadius(config)
   const center = getCrosshairViewboxSize() / 2
   const outlineWidth = config.thickness + 2
+  const hitGapScale = hit ? 0.72 : 1
 
   return (
     <div
@@ -27,18 +31,31 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
     >
       <svg
         viewBox={`0 0 ${getCrosshairViewboxSize()} ${getCrosshairViewboxSize()}`}
-        className={`transition-transform duration-50 ease-out ${hit ? 'scale-[1.14]' : 'scale-100'}`}
+        className={`transition-transform duration-75 ease-out ${hit ? 'scale-[1.08]' : 'scale-100'}`}
         style={{
           width: `${config.size * 2.8}px`,
           height: `${config.size * 2.8}px`,
           opacity,
+          filter: hit ? 'drop-shadow(0 0 6px rgba(255, 220, 120, 0.55))' : undefined,
         }}
       >
+        {hit && (
+          <circle
+            cx={center}
+            cy={center}
+            r={circleRadius !== null ? circleRadius + 6 : 18}
+            fill="none"
+            stroke="#ffe9a8"
+            strokeWidth={1.5}
+            strokeOpacity={0.7}
+          />
+        )}
+
         {config.showOutline && circleRadius !== null && (
           <circle
             cx={center}
             cy={center}
-            r={circleRadius}
+            r={circleRadius * hitGapScale}
             fill="none"
             stroke="#041018"
             strokeWidth={outlineWidth}
@@ -49,10 +66,10 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
           segments.map((segment, index) => (
             <line
               key={`outline-${index}`}
-              x1={segment.x1}
-              y1={segment.y1}
-              x2={segment.x2}
-              y2={segment.y2}
+              x1={center + (segment.x1 - center) * hitGapScale}
+              y1={center + (segment.y1 - center) * hitGapScale}
+              x2={center + (segment.x2 - center) * hitGapScale}
+              y2={center + (segment.y2 - center) * hitGapScale}
               stroke="#041018"
               strokeWidth={outlineWidth}
               strokeLinecap="round"
@@ -64,7 +81,7 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
           <circle
             cx={center}
             cy={center}
-            r={circleRadius}
+            r={circleRadius * hitGapScale}
             fill="none"
             stroke={color}
             strokeWidth={config.thickness}
@@ -74,10 +91,10 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
         {segments.map((segment, index) => (
           <line
             key={`line-${index}`}
-            x1={segment.x1}
-            y1={segment.y1}
-            x2={segment.x2}
-            y2={segment.y2}
+            x1={center + (segment.x1 - center) * hitGapScale}
+            y1={center + (segment.y1 - center) * hitGapScale}
+            x2={center + (segment.x2 - center) * hitGapScale}
+            y2={center + (segment.y2 - center) * hitGapScale}
             stroke={color}
             strokeWidth={config.thickness}
             strokeLinecap="round"
@@ -106,10 +123,42 @@ export function Crosshair({ config, hit = false, className = '' }: CrosshairProp
 
         {hit && (
           <>
-            <line x1={18} y1={18} x2={28} y2={28} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
-            <line x1={46} y1={18} x2={36} y2={28} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
-            <line x1={18} y1={46} x2={28} y2={36} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
-            <line x1={46} y1={46} x2={36} y2={36} stroke="#ffe08a" strokeWidth={2} strokeLinecap="round" />
+            <line
+              x1={HIT_X_INSET}
+              y1={HIT_X_INSET}
+              x2={HIT_X_OUTSET}
+              y2={HIT_X_OUTSET}
+              stroke="#ffe9a0"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
+            <line
+              x1={64 - HIT_X_INSET}
+              y1={HIT_X_INSET}
+              x2={64 - HIT_X_OUTSET}
+              y2={HIT_X_OUTSET}
+              stroke="#ffe9a0"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
+            <line
+              x1={HIT_X_INSET}
+              y1={64 - HIT_X_INSET}
+              x2={HIT_X_OUTSET}
+              y2={64 - HIT_X_OUTSET}
+              stroke="#ffe9a0"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
+            <line
+              x1={64 - HIT_X_INSET}
+              y1={64 - HIT_X_INSET}
+              x2={64 - HIT_X_OUTSET}
+              y2={64 - HIT_X_OUTSET}
+              stroke="#ffe9a0"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
           </>
         )}
       </svg>

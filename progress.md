@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range gun feel pass (2026-09-13): frame-based muzzle flash curve (no setTimeout), readable camera/weapon recoil kick with smooth decay, Aimlabs-inspired hit marker (gap shrink + X + ring), brighter metallic hit SFX + soft miss thud, shorter pooled impact particles. Outdoor tree silhouettes and warehouse back-wall window depth added. Focused tests 99/99; full suite 658/658.
 - Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
 - In-game HUD shows live FPS (250ms throttled), hits/misses, accuracy, shots/min, streak, and reaction time; sessions persist to `localStorage` and surface in the end-of-run summary.
 - Hit path keeps pooled ImpactFX, cached raycast object lists, ref-stable callbacks, and in-place respawns to avoid render-loop allocations and light churn.
@@ -406,9 +407,19 @@ Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots af
 - Browser: start pose is a 3-segment capsule facing right; after ArrowDown the path `11.5,11.5 11.5,10.5 10.5,10.5` shows a rounded L and `data-heading=90`.
 - Focused snake tests: 22 passing (body/heading); keyboard-start adds 9 more in the same suite.
 
+## Shooting Range gun feel (2026-09-13)
+
+- Muzzle flash now uses a frame-synced intensity curve (`gunFeel.ts`) instead of a 55ms `setTimeout`, so flash timing stays aligned with the render loop and avoids timer jitter.
+- Camera recoil applies a brief pitch/yaw kick on each shot and decays exponentially in `useFrame`; the weapon model mirrors kick via position/rotation offsets.
+- Hit marker lasts 120ms with gap shrink, warm X overlay, and outer confirm ring; miss shots play a muted wall thud (`playMissSound`) distinct from the metallic hit ping.
+- Impact particles shortened (0.34s, 16 particles) for snappier feedback without extra allocations.
+- Outdoor trees gained dark backdrop silhouettes plus distant ridge blocks; warehouse back wall has window-pane silhouettes for depth.
+- `docs/shooting-range-screenshots/` refreshed for setup, all three maps, and drill HUDs (results screen unchanged).
+
 ## TODOs / suggestions for the next agent
 
 - Shooting Range pointer-lock aiming hitch should still be felt in a real browser; headless Chromium cannot lock the pointer, so hit smoothness was verified via click-target fallback.
+- Recoil strength could expose a user slider in settings if players want less camera kick.
 - Bowling still logs some scene-reset console messages from the original physics loop.
 - The throw button sits over the ball; a dedicated run-up animation or side throw pad could free the view.
 - Physical printer output was verified via print-media emulation, not a real printer.

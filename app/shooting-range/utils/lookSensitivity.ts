@@ -6,10 +6,10 @@ export const MAX_LOOK_SENSITIVITY = 2
 export const LOOK_SENSITIVITY_STEP = 0.1
 export const BASE_LOOK_SPEED = 0.002
 
-export const LOOK_SENSITIVITY_PRESETS: Array<{ id: string; label: string; value: number }> = [
-  { id: 'low', label: '慢', value: 0.7 },
-  { id: 'default', label: '标准', value: 1 },
-  { id: 'high', label: '快', value: 1.4 },
+export const LOOK_SENSITIVITY_PRESETS: Array<{ id: string; label: string; hint: string; value: number }> = [
+  { id: 'low', label: '慢', hint: '精细瞄准', value: 0.7 },
+  { id: 'default', label: '标准', hint: '推荐默认', value: 1 },
+  { id: 'high', label: '快', hint: '快速甩枪', value: 1.4 },
 ]
 
 export function clampLookSensitivity(value: number): number {

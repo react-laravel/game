@@ -57,8 +57,10 @@ describe('ShootingSetup', () => {
     expect(onViewHistory).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('button', { name: '准星设置' }))
-    expect(screen.getByRole('dialog', { name: /准星设置/ })).toBeInTheDocument()
-    expect(screen.queryByText('常用预设')).toBeInTheDocument()
+    const crosshairDialog = screen.getByRole('dialog', { name: /准星设置/ })
+    expect(crosshairDialog).toBeInTheDocument()
+    expect(crosshairDialog).toHaveTextContent('常用预设')
+    expect(crosshairDialog).toHaveTextContent('取消不保存')
     expect(screen.getByRole('button', { name: '取消' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '应用并关闭' })).toBeInTheDocument()
   })

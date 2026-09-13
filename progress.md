@@ -42,7 +42,8 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
-- Shooting Range cycle 27 (2026-09-13, window ending ~10:30 Asia/Shanghai): pause settings tabs stronger active contrast (amber ring 4-col grid); ESC → 设置 → back arrow or Escape returns to compact pause dialog with resume focus; Enter/Space resume only from pause menu; history recent table grade badges; `pause-settings-tabs.png` screenshot. Focused 137/137; full 696/696; eslint 0 errors.
+- Shooting Range cycle 28 (2026-09-13, window ending ~10:30 Asia/Shanghai): pause settings **灵敏度 / 音量 / 其他** tab content parity with crosshair (live previews, preset hints, framed cards); lighter home **准星设置** sheet (sticky footer, bottom-sheet mobile); results hit/miss legend dots; `pause-settings-sensitivity.png` added. Focused 138/138; full 697/697; eslint 0 errors.
+- Shooting Range cycle 27 (2026-09-13): pause settings tabs stronger active contrast (amber ring 4-col grid); ESC → 设置 → back arrow or Escape returns to compact pause dialog with resume focus; Enter/Space resume only from pause menu; history recent table grade badges; `pause-settings-tabs.png` screenshot. Focused 137/137; full 696/696; eslint 0 errors.
 - Shooting Range cycle 26 (2026-09-13): **ESC pause = compact centered popup** (回到游戏 / 设置 / 退出游戏 + 重新开始 secondary); **tabbed settings panel** (准星 / 灵敏度 / 音量 / 其他) opened from 设置 — removed left-drawer `shooting-pause-menu`. `CrosshairSettingsSheet` apply/cancel + dual-background preview on setup. Outdoor berm target frames. Focused 133/133; full 692/692; eslint 0 errors; `pause-overlay.png` refreshed.
 - Shooting Range cycle 25 (2026-09-13): **deploy CI lint fix** (seeded PRNG textures, no setState-in-effect); **Overwatch left pause menu** with 结束训练/准星/设置 on left rail; setup **准星设置** behind `CrosshairSettingsSheet` menu. Focused 129/129; full 688/688; eslint 0 errors; screenshots `setup-quick-start.png` + `pause-overlay.png`.
 - Shooting Range cycle 24 (2026-09-13, overnight window ending ~10:45 Asia/Shanghai): ESC pause overlay scrolls on short viewports with tighter spacing so SFX / reduced-motion controls stay reachable; results「查看进步」lands on history with a subtle highlight on the latest session row; zero-shot sessions persist `accuracy: 0` (not 100) for chart averages; Enter/Space no longer re-locks pointer while crosshair settings are open. Focused tests 123/123; full suite 682/682; screenshots refreshed.
@@ -186,6 +187,24 @@ Follow-up after #21 coordinator review; Aimlabs-inspired audio/crosshair UX with
 - `docs/shooting-range-screenshots/pause-overlay.png` added for ESC menu visual QA.
 - All screenshots overwritten via `node scripts/capture-shooting-range-maps.mjs`.
 - Focused shooting-range tests: **113/113**.
+
+## Shooting Range overnight polish cycle 28 (2026-09-13)
+
+Follow-up after #27 coordinator review (`pause-settings-tabs.png`); Aimlabs-inspired settings density without copying IP.
+
+### Pause settings tabs (灵敏度 / 音量 / 其他)
+- `LookSensitivityControl` + `SfxVolumeControl` + `ReducedMotionControl`: `framed` card mode with live preview panes (turn arc / volume bars), preset hint subtitles, and「精细调节」slider labels — parity with crosshair tab density.
+-「其他」tab: motion options show hint text; help summary uses 2-column card grid with bullet markers.
+
+### Home crosshair sheet
+- `CrosshairSettingsSheet`: lighter setup variant — compact header, scroll body + sticky cancel/apply footer, mobile bottom-sheet alignment, shorter「取消不保存」copy.
+
+### Results micro-polish
+- `GameUI` accuracy breakdown: emerald/rose legend dots beside 命中 / 未中 counts.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` refreshed via `node scripts/capture-shooting-range-maps.mjs`; added `pause-settings-sensitivity.png`.
+- Focused shooting-range tests: **138/138**; full suite **697/697**; `npm run lint` **0 errors**.
 
 ## Shooting Range overnight polish cycle 26 (2026-09-13)
 

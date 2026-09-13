@@ -186,8 +186,14 @@ export function GameUI({
                   )}
                 </div>
                 <div className="mt-2 flex justify-between text-[11px] text-white/45">
-                  <span>命中 {accuracyBreakdown.hits}</span>
-                  <span>未中 {accuracyBreakdown.misses}</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300" />
+                    命中 {accuracyBreakdown.hits}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-400" />
+                    未中 {accuracyBreakdown.misses}
+                  </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-white/55">{accuracyBreakdown.tip}</p>
               </div>

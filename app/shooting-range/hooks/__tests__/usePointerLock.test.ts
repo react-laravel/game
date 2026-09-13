@@ -67,6 +67,37 @@ describe('usePointerLock', () => {
     expect(result.current.isPointerLocked).toBe(true)
   })
 
+  it('retries pointer lock on the next animation frame when the first attempt does not stick', async () => {
+    const requestPointerLock = vi.fn(() => {
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        writable: true,
+        value: null,
+      })
+      document.dispatchEvent(new Event('pointerlockchange'))
+      return Promise.resolve()
+    })
+    const canvas = document.createElement('canvas')
+    canvas.requestPointerLock = requestPointerLock
+    const canvasRef = { current: canvas }
+    const { result } = renderHook(() => usePointerLock(canvasRef))
+
+    await act(async () => {
+      result.current.requestPointerLock()
+      await Promise.resolve()
+    })
+
+    expect(requestPointerLock).toHaveBeenCalledOnce()
+
+    await act(async () => {
+      await new Promise<void>(resolve => {
+        window.requestAnimationFrame(() => resolve())
+      })
+    })
+
+    expect(requestPointerLock).toHaveBeenCalledTimes(2)
+  })
+
   it('can explicitly switch to click-target fallback controls', () => {
     const canvasRef = { current: document.createElement('canvas') }
     const { result } = renderHook(() => usePointerLock(canvasRef))

@@ -170,7 +170,10 @@ export function ShootingPauseOverlay({
             <Button
               id={resumeButtonId}
               className="w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
-              onClick={onResume}
+              onPointerDown={event => {
+                event.preventDefault()
+                onResume()
+              }}
             >
               <MousePointer2 className="h-4 w-4" />
               回到游戏

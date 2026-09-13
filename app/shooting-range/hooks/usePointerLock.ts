@@ -97,25 +97,36 @@ export function usePointerLock(canvasRef: RefObject<HTMLCanvasElement | null>) {
     setPointerLockError(null)
     if (browserSupport.useFallback) return
 
-    try {
-      const canvas = canvasRef.current
-      if (!canvas) {
-        syncLockState()
-        return
-      }
-      const lockResult = requestCanvasPointerLock(canvas)
-      if (!lockResult) {
-        syncLockState()
-        return
-      }
-      void lockResult
-        .then(() => {
+    const attemptLock = (retry = false) => {
+      try {
+        const canvas = canvasRef.current
+        if (!canvas) {
           syncLockState()
-        })
-        .catch(handlePointerLockFailure)
-    } catch {
-      handlePointerLockFailure()
+          return
+        }
+
+        canvas.focus?.()
+
+        const lockResult = requestCanvasPointerLock(canvas)
+        if (!lockResult) {
+          syncLockState()
+          return
+        }
+
+        void lockResult
+          .then(() => {
+            syncLockState()
+            if (!isCanvasLocked(canvas) && !retry) {
+              window.requestAnimationFrame(() => attemptLock(true))
+            }
+          })
+          .catch(handlePointerLockFailure)
+      } catch {
+        handlePointerLockFailure()
+      }
     }
+
+    attemptLock()
   }, [browserSupport.useFallback, canvasRef, handlePointerLockFailure, syncLockState])
 
   const enableFallbackControls = useCallback(() => {

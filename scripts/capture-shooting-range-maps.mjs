@@ -6,6 +6,43 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3002'
 const OUT_DIR =
   process.env.OUT_DIR ?? path.join(process.cwd(), 'docs/shooting-range-screenshots')
 
+/** Hide Next.js dev error overlay / issue badge so QA screenshots stay clean. */
+async function suppressNextJsDevOverlay(page) {
+  await page.addInitScript(() => {
+    const style = document.createElement('style')
+    style.setAttribute('data-shooting-qa-overlay-suppress', 'true')
+    style.textContent = `
+      nextjs-portal,
+      [data-nextjs-dialog-overlay],
+      [data-nextjs-toast],
+      #__next-build-watcher,
+      [data-next-badge-root],
+      .nextjs-toast-errors-parent {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+    `
+    document.documentElement.appendChild(style)
+
+    const hideDevChrome = () => {
+      document
+        .querySelectorAll(
+          'nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast], #__next-build-watcher, [data-next-badge-root]'
+        )
+        .forEach(node => {
+          node.remove()
+        })
+    }
+
+    hideDevChrome()
+    new MutationObserver(hideDevChrome).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    })
+  })
+}
+
 const MAPS = [
   { label: '室内靶场', id: 'indoor' },
   { label: '户外靶场', id: 'outdoor' },
@@ -350,6 +387,7 @@ async function main() {
   await mkdir(OUT_DIR, { recursive: true })
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await suppressNextJsDevOverlay(page)
   await installQaFallback(page)
   await mockAuth(page)
 

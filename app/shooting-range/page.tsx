@@ -92,10 +92,24 @@ export default function ShootingRangePage() {
   )
 
   const applyPreset = useCallback((preset: DrillPreset) => {
+    const nextTargetShape = preset.targetShape ?? targetShape
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    persistConfig({ ...preset, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay }, preset.id)
+    if (preset.targetShape) setTargetShape(preset.targetShape)
+    persistConfig(
+      {
+        difficulty: preset.difficulty,
+        mapId: preset.mapId,
+        modeId: preset.modeId,
+        lookSensitivity,
+        sfxVolume,
+        sfxMuted,
+        targetShape: nextTargetShape,
+        outdoorTimeOfDay,
+      },
+      preset.id
+    )
   }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
 
   const handleQuickStart = useCallback(

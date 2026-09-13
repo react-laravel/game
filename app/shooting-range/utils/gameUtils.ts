@@ -13,6 +13,18 @@ const GRID_POSITIONS: Array<[number, number, number]> = [
 
 let gridSpawnIndex = 0
 
+/** Wall layout for static precision drills — targets stay readable in fixed tiers. */
+export function generateWallPosition(id: number, gameAreaSize: number): [number, number, number] {
+  const cols = 4
+  const row = Math.floor(id / cols)
+  const col = id % cols
+  const xSpread = gameAreaSize * 0.62
+  const x = (col / Math.max(1, cols - 1) - 0.5) * xSpread
+  const y = 2.1 + row * 1.75 + (id % 2) * 0.45
+  const z = -(11.5 + row * 2.4 + (col % 2) * 1.1)
+  return [x, y, z]
+}
+
 export function nextGridPosition(): [number, number, number] {
   const position = GRID_POSITIONS[gridSpawnIndex % GRID_POSITIONS.length]
   gridSpawnIndex += 1
@@ -84,10 +96,15 @@ export function applyTargetHit(target: TargetRuntime) {
 export function respawnTarget(
   target: TargetRuntime,
   gameAreaSize: number,
-  spawnPattern: SpawnPattern = 'random'
+  spawnPattern: SpawnPattern = 'random',
+  targetId?: number
 ) {
   const [x, y, z] =
-    spawnPattern === 'grid' ? nextGridPosition() : generateRandomPosition(gameAreaSize)
+    spawnPattern === 'grid'
+      ? nextGridPosition()
+      : spawnPattern === 'wall' && typeof targetId === 'number'
+        ? generateWallPosition(targetId, gameAreaSize)
+        : generateRandomPosition(gameAreaSize)
   target.position.set(x, y, z)
   target.userData.orbitAnchor?.set(x, y, z)
   target.userData.hit = false

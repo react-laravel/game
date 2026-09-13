@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HitZone, SessionStats, ShootingSetupConfig, ZoneHitStats } from '../types'
 import { hitZoneLabel, resolveHitPoints } from '../utils/hitZoneScoring'
 import { normalizeTargetShape } from '../utils/targetShape'
-import { HIT_MARKER_DURATION_MS, MISS_MARKER_DURATION_MS } from '../utils/gunFeel'
+import {
+  HEADSHOT_MARKER_DURATION_MS,
+  HIT_MARKER_DURATION_MS,
+  MISS_MARKER_DURATION_MS,
+} from '../utils/gunFeel'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
 
@@ -41,6 +45,7 @@ export function useShootingSession(
   const [gameStarted, setGameStarted] = useState(false)
   const [showStartOverlay, setShowStartOverlay] = useState(true)
   const [hitMarker, setHitMarker] = useState(false)
+  const [headshotMarker, setHeadshotMarker] = useState(false)
   const [missMarker, setMissMarker] = useState(false)
   const [hitPulse, setHitPulse] = useState<HitPulse | null>(null)
   const [streakToast, setStreakToast] = useState<StreakToast | null>(null)
@@ -186,15 +191,17 @@ export function useShootingSession(
     }
   }, [recordHit])
 
-  const showHitFeedback = useCallback(() => {
+  const showHitFeedback = useCallback((hitZone?: HitZone) => {
     if (hitMarkerTimer.current) window.clearTimeout(hitMarkerTimer.current)
     if (missMarkerTimer.current) window.clearTimeout(missMarkerTimer.current)
     setMissMarker(false)
-    setHitMarker(true)
-    hitMarkerTimer.current = window.setTimeout(
-      () => setHitMarker(false),
-      HIT_MARKER_DURATION_MS
-    )
+    const isHeadshot = hitZone === 'head'
+    setHeadshotMarker(isHeadshot)
+    setHitMarker(!isHeadshot)
+    hitMarkerTimer.current = window.setTimeout(() => {
+      setHitMarker(false)
+      setHeadshotMarker(false)
+    }, isHeadshot ? HEADSHOT_MARKER_DURATION_MS : HIT_MARKER_DURATION_MS)
   }, [])
 
   const resetSessionState = useCallback(() => {
@@ -263,6 +270,7 @@ export function useShootingSession(
     setGameStarted,
     showStartOverlay,
     hitMarker,
+    headshotMarker,
     missMarker,
     hitPulse,
     streakToast,

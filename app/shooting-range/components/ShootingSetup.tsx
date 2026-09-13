@@ -58,6 +58,7 @@ const FOCUS_COLORS: Record<string, string> = {
   Speed: 'from-emerald-500/20 to-green-500/10 text-emerald-200',
   Aim: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
   Precision: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
+  Human: 'from-rose-500/20 to-fuchsia-500/10 text-rose-200',
 }
 
 const MAP_META: Record<
@@ -165,7 +166,7 @@ export function ShootingSetup({
               <div className="mt-7 space-y-2.5 text-sm text-slate-300">
                 <div className="flex items-center gap-3">
                   <Zap className="h-4 w-4 text-amber-300" />
-                  快速开始 · 6 种专项训练
+                  快速开始 · 7 种专项训练
                 </div>
                 <div className="flex items-center gap-3">
                   <Gauge className="h-4 w-4 text-cyan-300" />

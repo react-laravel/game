@@ -20,7 +20,7 @@ interface ShootingGameCanvasProps {
   gameOver: boolean
   useFallbackControls: boolean
   onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
-  onHitFeedback: () => void
+  onHitFeedback: (hitZone?: import('../types').HitZone) => void
   onFpsReport: (fps: number) => void
 }
 

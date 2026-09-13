@@ -1,3 +1,5 @@
+import type { HitZone } from '../types'
+
 export const IMPACT_PARTICLE_COUNT = 16
 export const IMPACT_SLOT_COUNT = 3
 export const IMPACT_DURATION = 0.34
@@ -48,4 +50,15 @@ export function stepBurst(
 
 export function nextImpactSlot(current: number, slotCount = IMPACT_SLOT_COUNT) {
   return (current + 1) % slotCount
+}
+
+export function impactColorForZone(hitZone?: HitZone): string {
+  switch (hitZone) {
+    case 'head':
+      return '#ff6868'
+    case 'limb':
+      return '#88c8ff'
+    default:
+      return '#ffd080'
+  }
 }

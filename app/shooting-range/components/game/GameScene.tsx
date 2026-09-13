@@ -9,6 +9,7 @@ import {
   applyTargetHit,
   generateRandomDirection,
   generateRandomPosition,
+  generateWallPosition,
   markTargetSpawned,
   nextGridPosition,
   resetGridSpawnIndex,
@@ -42,13 +43,15 @@ export interface ShootingSceneSnapshot {
 
 function createTargets(settings: ReturnType<typeof resolveTrainingSettings>) {
   if (settings.spawnPattern === 'grid') resetGridSpawnIndex()
-  const speedVariance = settings.movement === 'linear' ? 0.012 : 0
+  const speedVariance = settings.movement === 'linear' ? 0.018 : 0
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position:
       settings.spawnPattern === 'grid'
         ? nextGridPosition()
-        : generateRandomPosition(settings.gameAreaSize),
+        : settings.spawnPattern === 'wall'
+          ? generateWallPosition(id, settings.gameAreaSize)
+          : generateRandomPosition(settings.gameAreaSize),
     scale: Math.random() * 0.18 + 0.55,
     speed: settings.targetSpeed + Math.random() * speedVariance,
     direction: generateRandomDirection(),
@@ -64,7 +67,7 @@ interface GameSceneProps {
   lookSensitivity: number
   reducedMotion?: boolean
   onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
-  onHitFeedback?: () => void
+  onHitFeedback?: (hitZone?: HitZone) => void
   gameStarted: boolean
   useFallbackControls?: boolean
   sceneStateRef?: MutableRefObject<ShootingSceneSnapshot>
@@ -159,17 +162,18 @@ export function GameScene({
       let reactionMs: number | undefined
       if (targetObject) {
         applyTargetHit(targetObject)
+        if (hitZone) targetObject.userData.lastHitZone = hitZone
         targetObject.getWorldPosition(hitWorldPosition.current)
-        impactFXRef.current?.trigger(hitWorldPosition.current)
+        impactFXRef.current?.trigger(hitWorldPosition.current, hitZone)
         const spawnedAt = targetObject.userData.spawnedAt
         if (typeof spawnedAt === 'number') {
           reactionMs = performance.now() - spawnedAt
         }
       }
 
-      playHitSound()
+      playHitSound(hitZone ?? 'plate')
       onShotResultRef.current(true, reactionMs, hitZone)
-      onHitFeedbackRef.current?.()
+      onHitFeedbackRef.current?.(hitZone)
       navigator.vibrate?.(28)
 
       const previousTimer = respawnTimers.current.get(id)
@@ -177,7 +181,7 @@ export function GameScene({
 
       const timer = setTimeout(() => {
         const current = targetObjects.current.get(id)
-        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern)
+        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern, id)
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
       }, settings.respawnDelayMs)
@@ -198,7 +202,7 @@ export function GameScene({
 
     const now = performance.now()
     if (now < nextShotAt.current) return
-    nextShotAt.current = now + 145
+    nextShotAt.current = now + 132
 
     triggerGunFeel()
     playShotSound()

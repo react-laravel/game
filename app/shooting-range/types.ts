@@ -10,7 +10,7 @@ export type TrainingModeId =
   | 'timed'
   | 'precision'
 
-export type SpawnPattern = 'random' | 'grid'
+export type SpawnPattern = 'random' | 'grid' | 'wall'
 
 export type TargetShape = 'circle' | 'humanoid'
 

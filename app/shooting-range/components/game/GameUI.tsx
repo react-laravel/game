@@ -46,6 +46,22 @@ export function GameUI({
   const mode = trainingModes[modeId]
   const showReaction = modeId === 'flick' || modeId === 'precision'
   const elapsedSeconds = Math.max(0, durationSeconds - timeLeft)
+  const motionBadge =
+    mode.movement === 'static'
+      ? { label: '静止', detail: '多靶排阵' }
+      : mode.movement === 'orbit'
+        ? { label: '环绕', detail: '轨道追踪' }
+        : modeId === 'timed'
+          ? { label: '速射', detail: '限时乱窜' }
+          : { label: '移动', detail: '乱窜反弹' }
+  const tutorialTips: Record<TrainingModeId, string> = {
+    static: '全场静止排阵靶 — 稳住准星，优先清理边缘靶位。',
+    moving: '靶位高速乱窜 — 预判反弹方向，保持平滑跟枪。',
+    flick: '单靶闪现换点 — 第一眼定位，命中后立刻找下一个。',
+    tracking: '少量靶沿轨道环绕 — 压低灵敏度，练平滑追踪。',
+    timed: '45 秒高密度移动靶 — 射速与精度并重，别贪枪。',
+    precision: '网格顺序闪现 — 按顺序击破，兼顾准度与手速。',
+  }
   const performanceHighlights =
     gameOver && grade ? buildPerformanceHighlights(stats, modeId) : []
   const accuracyBreakdown =
@@ -59,6 +75,12 @@ export function GameUI({
         </div>
         <div className="mt-0.5 text-sm leading-snug font-semibold">{drillLabel}</div>
         <div className="mt-1 text-[11px] leading-4 text-white/50">{mode.hudHint}</div>
+        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-white/65">
+          <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
+          {motionBadge.label}
+          <span className="text-white/35">·</span>
+          {motionBadge.detail}
+        </div>
       </div>
 
       <div className="absolute top-4 right-4 flex flex-wrap justify-end gap-2 sm:top-5 sm:right-5">
@@ -121,8 +143,8 @@ export function GameUI({
           className="absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-2xl border border-cyan-200/20 bg-slate-950/78 px-4 py-3 text-center text-sm leading-6 text-white/80 shadow-xl backdrop-blur-md transition-all duration-700 ease-out"
           style={{ opacity: showTutorialTip ? 1 : 0 }}
         >
-          <span className="font-semibold text-cyan-100">新手提示</span>
-          <div className="mt-1 text-white/70">移动鼠标瞄准，左键射击。命中后此提示会自动淡出。</div>
+          <span className="font-semibold text-cyan-100">模式提示 · {mode.name}</span>
+          <div className="mt-1 text-white/70">{tutorialTips[modeId]}</div>
         </div>
       )}
 

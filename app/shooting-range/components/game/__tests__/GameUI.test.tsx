@@ -54,10 +54,10 @@ describe('GameUI', () => {
     expect(result).toBeDefined()
   })
 
-  it('shows the first-shot tutorial tip while training is active', () => {
+  it('shows the mode-specific tutorial tip while training is active', () => {
     render(<GameUI {...baseProps} showTutorialTip />)
-    expect(screen.getByText(/新手提示/)).toBeInTheDocument()
-    expect(screen.getByText(/命中后此提示会自动淡出/)).toBeInTheDocument()
+    expect(screen.getByText(/模式提示/)).toBeInTheDocument()
+    expect(screen.getByText(/靶位高速乱窜/)).toBeInTheDocument()
   })
 
   it('should show game over summary with grade and comparison', () => {

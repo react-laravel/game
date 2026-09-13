@@ -9,9 +9,15 @@ import {
 } from '../drillPresets'
 
 describe('drillPresets', () => {
-  it('exposes six distinct quick-start drills', () => {
-    expect(drillPresets).toHaveLength(6)
-    expect(new Set(drillPresets.map(p => p.id)).size).toBe(6)
+  it('exposes seven distinct quick-start drills', () => {
+    expect(drillPresets).toHaveLength(7)
+    expect(new Set(drillPresets.map(p => p.id)).size).toBe(7)
+  })
+
+  it('includes a humanoid quick-start drill', () => {
+    const humanoid = findDrillPreset('humanoid-strafe')
+    expect(humanoid?.targetShape).toBe('humanoid')
+    expect(humanoid?.modeId).toBe('moving')
   })
 
   it('defaults to flick reflex drill', () => {

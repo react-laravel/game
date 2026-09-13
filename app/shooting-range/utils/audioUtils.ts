@@ -234,42 +234,59 @@ export const playShotSound = () => {
   })
 }
 
-/** Target confirm: tight metallic tick with a bright overtone — Aimlabs-style, original. */
-export const playHitSound = () => {
+type HitConfirmZone = 'head' | 'body' | 'limb' | 'plate'
+
+/** Target confirm: zone-tuned metallic tick — head is brighter/shorter, limb is softer. */
+export const playHitSound = (zone: HitConfirmZone = 'plate') => {
   withAudio((context, destination, volumeScale) => {
     const start = context.currentTime
-    const pitch = jitter(1, 0.08)
+    const pitch =
+      zone === 'head' ? jitter(1.18, 0.06) : zone === 'limb' ? jitter(0.82, 0.08) : jitter(1, 0.08)
+    const baseFreq = zone === 'head' ? 3380 : zone === 'limb' ? 2280 : 2860
+    const endFreq = zone === 'head' ? 2680 : zone === 'limb' ? 1780 : 2140
+    const tickVolume = zone === 'head' ? 0.13 : zone === 'limb' ? 0.08 : 0.11
+    const noiseVolume = zone === 'head' ? 0.085 : zone === 'limb' ? 0.05 : 0.07
 
     playNoiseBurst(context, destination, {
       start,
-      duration: 0.012,
-      volume: 0.07 * volumeScale,
-      highpass: 4200,
-      lowpass: 11000,
+      duration: zone === 'head' ? 0.01 : 0.012,
+      volume: noiseVolume * volumeScale,
+      highpass: zone === 'head' ? 5200 : 4200,
+      lowpass: zone === 'head' ? 13000 : 11000,
     })
     playTone(context, destination, {
       type: 'sine',
-      frequency: 2860 * pitch,
-      frequencyEnd: 2140 * pitch,
-      duration: 0.055,
-      volume: 0.11 * volumeScale,
+      frequency: baseFreq * pitch,
+      frequencyEnd: endFreq * pitch,
+      duration: zone === 'head' ? 0.048 : 0.055,
+      volume: tickVolume * volumeScale,
       start,
     })
     playTone(context, destination, {
       type: 'triangle',
-      frequency: 4120 * pitch,
-      frequencyEnd: 3180 * pitch,
+      frequency: (baseFreq + 1260) * pitch,
+      frequencyEnd: (endFreq + 1040) * pitch,
       duration: 0.038,
-      volume: 0.055 * volumeScale,
+      volume: (zone === 'head' ? 0.07 : 0.055) * volumeScale,
       start: start + 0.003,
     })
-    playTone(context, destination, {
-      type: 'square',
-      frequency: 5200 * pitch,
-      duration: 0.006,
-      volume: 0.028 * volumeScale,
-      start: start + 0.0015,
-    })
+    if (zone === 'head') {
+      playTone(context, destination, {
+        type: 'square',
+        frequency: 6200 * pitch,
+        duration: 0.005,
+        volume: 0.038 * volumeScale,
+        start: start + 0.001,
+      })
+    } else {
+      playTone(context, destination, {
+        type: 'square',
+        frequency: 5200 * pitch,
+        duration: 0.006,
+        volume: 0.028 * volumeScale,
+        start: start + 0.0015,
+      })
+    }
   })
 }
 

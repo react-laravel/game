@@ -192,7 +192,7 @@ function TargetComponent({
       if (isHumanoid) {
         const timeSec = performance.now() * 0.001
         const sample = stepBotMotion(botMotionState.current, delta, botMotionProfile, timeSec)
-        botOffset.set(sample.offsetX, sample.offsetY, sample.offsetZ)
+        botOffset.current.set(sample.offsetX, sample.offsetY, sample.offsetZ)
         crouchScaleRef.current = sample.crouchScale
         root.position.set(
           pos.x + sample.offsetX,

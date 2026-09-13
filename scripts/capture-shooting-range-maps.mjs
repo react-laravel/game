@@ -107,16 +107,18 @@ async function waitForSceneReady(page, options = {}) {
   )
 
   await page.waitForFunction(
-    () => {
+    requireHumanoidShape => {
       const canvas = document.querySelector('canvas[data-engine]')
       if (!canvas || canvas.width < 8 || canvas.height < 8) return false
 
       const gl = canvas.getContext('webgl') || canvas.getContext('webgl2')
       if (gl) {
-        const sampleW = Math.min(96, canvas.width)
-        const sampleH = Math.min(96, canvas.height)
+        const sampleW = Math.min(120, canvas.width)
+        const sampleH = Math.min(120, canvas.height)
+        const originX = Math.max(0, Math.floor(canvas.width / 2 - sampleW / 2))
+        const originY = Math.max(0, Math.floor(canvas.height / 2 - sampleH / 2))
         const pixels = new Uint8Array(sampleW * sampleH * 4)
-        gl.readPixels(0, 0, sampleW, sampleH, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+        gl.readPixels(originX, originY, sampleW, sampleH, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
         let bright = 0
         for (let i = 0; i < pixels.length; i += 4) {
           if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 36) bright += 1
@@ -124,7 +126,7 @@ async function waitForSceneReady(page, options = {}) {
         if (bright / (sampleW * sampleH) < 0.02) return false
       }
 
-      if (requireHumanoid) {
+      if (requireHumanoidShape) {
         const state = window.render_game_to_text?.()
         if (!state) return false
         const parsed = JSON.parse(state)
@@ -133,6 +135,7 @@ async function waitForSceneReady(page, options = {}) {
 
       return true
     },
+    requireHumanoid,
     { timeout }
   )
 

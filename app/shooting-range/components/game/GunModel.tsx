@@ -101,7 +101,19 @@ export function GunModel() {
       </mesh>
       <mesh position={[0, 0.158, -0.263]}>
         <planeGeometry args={[0.085, 0.072]} />
-        <meshBasicMaterial color="#60efff" transparent opacity={0.55} toneMapped={false} />
+        <meshBasicMaterial color="#1a3040" transparent opacity={0.72} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.158, -0.264]}>
+        <ringGeometry args={[0.028, 0.036, 16]} />
+        <meshBasicMaterial color="#ff3b30" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.158, -0.265]}>
+        <circleGeometry args={[0.0045, 12]} />
+        <meshBasicMaterial color="#ff5548" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.158, -0.262]}>
+        <ringGeometry args={[0.038, 0.042, 16]} />
+        <meshBasicMaterial color="#8ad8e8" transparent opacity={0.35} toneMapped={false} />
       </mesh>
       <mesh position={[0, 0.114, -0.22]}>
         <boxGeometry args={[0.15, 0.018, 0.25]} />

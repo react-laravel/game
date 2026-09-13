@@ -475,18 +475,22 @@ function AcousticFoamGrid({ x, z, facing }: { x: number; z: number; facing: 'lef
 function EvergreenTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const foliage = useMemo(
     () => [
-      { pos: [0, 2.4, 0] as [number, number, number], r: 1.05, color: '#2a5230' },
-      { pos: [0, 3.35, 0] as [number, number, number], r: 0.92, color: '#315a38' },
-      { pos: [0, 4.15, 0] as [number, number, number], r: 0.72, color: '#3a6840' },
-      { pos: [-0.38, 3.0, 0.22] as [number, number, number], r: 0.62, color: '#2f5e36' },
-      { pos: [0.35, 2.85, -0.18] as [number, number, number], r: 0.58, color: '#346238' },
-      { pos: [0.12, 4.55, 0.08] as [number, number, number], r: 0.48, color: '#427048' },
+      { pos: [0, 2.4, 0] as [number, number, number], r: 1.05, color: '#1f4a28' },
+      { pos: [0, 3.35, 0] as [number, number, number], r: 0.92, color: '#255430' },
+      { pos: [0, 4.15, 0] as [number, number, number], r: 0.72, color: '#2c6034' },
+      { pos: [-0.38, 3.0, 0.22] as [number, number, number], r: 0.62, color: '#22502c' },
+      { pos: [0.35, 2.85, -0.18] as [number, number, number], r: 0.58, color: '#285832' },
+      { pos: [0.12, 4.55, 0.08] as [number, number, number], r: 0.48, color: '#32683a' },
     ],
     []
   )
 
   return (
     <group position={position} scale={scale}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <circleGeometry args={[0.55, 12]} />
+        <meshBasicMaterial color="#1a2818" transparent opacity={0.35} toneMapped={false} depthWrite={false} />
+      </mesh>
       <mesh position={[0, 1.15, 0]} castShadow>
         <cylinderGeometry args={[0.14, 0.24, 2.3, 8]} />
         <meshStandardMaterial color="#4a3828" roughness={0.96} />
@@ -510,19 +514,23 @@ function DeciduousTree({
 }) {
   const foliage = useMemo(
     () => [
-      { pos: [0, 3.5, 0] as [number, number, number], r: 1.2, color: '#3d7442' },
-      { pos: [-0.62, 3.05, 0.12] as [number, number, number], r: 0.88, color: '#48804c' },
-      { pos: [0.58, 3.15, -0.18] as [number, number, number], r: 0.82, color: '#437848' },
-      { pos: [0.18, 4.05, 0.28] as [number, number, number], r: 0.68, color: '#508a52' },
-      { pos: [-0.22, 3.75, -0.38] as [number, number, number], r: 0.6, color: '#386c3c' },
-      { pos: [0.45, 3.45, 0.42] as [number, number, number], r: 0.55, color: '#46844a' },
-      { pos: [-0.15, 4.35, -0.12] as [number, number, number], r: 0.45, color: '#569058' },
+      { pos: [0, 3.5, 0] as [number, number, number], r: 1.2, color: '#2e6434' },
+      { pos: [-0.62, 3.05, 0.12] as [number, number, number], r: 0.88, color: '#34703a' },
+      { pos: [0.58, 3.15, -0.18] as [number, number, number], r: 0.82, color: '#306838' },
+      { pos: [0.18, 4.05, 0.28] as [number, number, number], r: 0.68, color: '#3a783e' },
+      { pos: [-0.22, 3.75, -0.38] as [number, number, number], r: 0.6, color: '#285c2e' },
+      { pos: [0.45, 3.45, 0.42] as [number, number, number], r: 0.55, color: '#327036' },
+      { pos: [-0.15, 4.35, -0.12] as [number, number, number], r: 0.45, color: '#3e7c42' },
     ],
     []
   )
 
   return (
     <group position={position} scale={scale}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <circleGeometry args={[0.65, 12]} />
+        <meshBasicMaterial color="#1a2818" transparent opacity={0.32} toneMapped={false} depthWrite={false} />
+      </mesh>
       <mesh position={[0, 1.45, 0]} castShadow>
         <cylinderGeometry args={[0.11, 0.18, 2.9, 8]} />
         <meshStandardMaterial color="#5a4532" roughness={0.95} />
@@ -574,19 +582,23 @@ function OutdoorSky() {
     <>
       <Sky
         distance={450000}
-        sunPosition={[85, 28, -45]}
-        mieCoefficient={0.003}
-        mieDirectionalG={0.78}
-        rayleigh={1.35}
-        turbidity={5.5}
+        sunPosition={[85, 22, -45]}
+        mieCoefficient={0.004}
+        mieDirectionalG={0.8}
+        rayleigh={1.55}
+        turbidity={6.2}
       />
+      <mesh position={[0, 18, -55]} rotation={[0.12, 0, 0]}>
+        <planeGeometry args={[180, 42]} />
+        <meshBasicMaterial color="#8ab8d8" transparent opacity={0.28} toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[5.5, 12, 12]} />
-        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.1} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color="#ffe8c8" transparent opacity={0.07} toneMapped={false} depthWrite={false} />
       </mesh>
       <mesh position={[38, 34, -72]}>
         <sphereGeometry args={[2.2, 10, 10]} />
-        <meshBasicMaterial color="#fff4e8" transparent opacity={0.35} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color="#fff4e8" transparent opacity={0.28} toneMapped={false} depthWrite={false} />
       </mesh>
       {cloudBanks.map((bank, i) => (
         <group key={i} position={bank.pos} rotation={[0.04, i * 0.7, 0.02]}>
@@ -1164,11 +1176,19 @@ function WarehouseRange({ config }: { config: MapConfig }) {
             <meshStandardMaterial color="#7a6a58" metalness={0.55} roughness={0.5} />
           </mesh>
         ))}
+        <mesh position={[0, 0.2, 0.16]}>
+          <planeGeometry args={[26, 7.2]} />
+          <meshBasicMaterial color="#ffe8c0" transparent opacity={0.06} toneMapped={false} depthWrite={false} />
+        </mesh>
       </group>
 
       <mesh position={[0, 3.5, -47.9]}>
         <boxGeometry args={[32, 6.5, 0.35]} />
         <meshStandardMaterial color="#4a4030" metalness={0.4} roughness={0.75} />
+      </mesh>
+      <mesh position={[0, 5.8, -47.75]}>
+        <planeGeometry args={[30, 5.5]} />
+        <meshBasicMaterial color="#fff0d8" transparent opacity={0.1} toneMapped={false} depthWrite={false} />
       </mesh>
       {[2.2, 3.8, 5.4].map(y => (
         <mesh key={y} position={[0, y, -47.7]}>
@@ -1240,6 +1260,13 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <planeGeometry args={[10, 46]} />
         <meshStandardMaterial color="#6a6058" metalness={0.15} roughness={0.75} />
       </mesh>
+
+      {[-10, -22, -34, -46].map(z => (
+        <mesh key={`aisle-shadow-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9645, z]}>
+          <planeGeometry args={[8.5, 0.35]} />
+          <meshStandardMaterial color="#3a342c" roughness={0.92} transparent opacity={0.22} depthWrite={false} />
+        </mesh>
+      ))}
 
       {/* Center shooting lane stripe */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.963, -21]}>

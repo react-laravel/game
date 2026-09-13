@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SessionRecord, SessionStats } from '../../types'
 import {
+  buildAccuracyBreakdown,
   buildPerformanceHighlights,
   compareToPersonalBest,
   computeSessionGrade,
@@ -44,6 +45,18 @@ describe('sessionInsights', () => {
     expect(computeSessionGrade({ ...baseStats, shots: 0, hits: 0, accuracy: 100 }, 'flick')).toBe(
       'D'
     )
+  })
+
+  it('builds accuracy breakdown with hit/miss split and coaching tip', () => {
+    const breakdown = buildAccuracyBreakdown(baseStats)
+    expect(breakdown.summary).toBe('命中 50 · 未中 5')
+    expect(breakdown.hitPercent).toBe(91)
+    expect(breakdown.missPercent).toBe(9)
+    expect(breakdown.tip).toContain('精准度出色')
+
+    const empty = buildAccuracyBreakdown({ ...baseStats, shots: 0, hits: 0, misses: 0 })
+    expect(empty.summary).toBe('本场未开火')
+    expect(empty.tip).toContain('下一局')
   })
 
   it('builds mode-specific performance highlights', () => {

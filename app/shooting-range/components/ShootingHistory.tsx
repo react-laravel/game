@@ -62,8 +62,12 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground">
-              还没有训练记录。完成一场训练后会自动保存到本地。
+            <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-10 text-center">
+              <BarChart3 className="mx-auto h-8 w-8 text-muted-foreground/50" />
+              <p className="mt-3 text-sm font-medium text-foreground/80">还没有训练记录</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                完成一场训练后会自动保存到本地，并生成精准度与得分曲线。
+              </p>
             </div>
           )}
 
@@ -194,9 +198,25 @@ export function ShootingHistory({ onClose }: ShootingHistoryProps) {
             </section>
           )}
 
-          <ChartPanel title="近 14 天精准度" buckets={daily} field="avgAccuracy" suffix="%" />
-          <ChartPanel title="近 14 天得分" buckets={daily} field="avgScore" />
-          <ChartPanel title="近 6 个月月度得分" buckets={monthly} field="avgScore" />
+          <ChartPanel
+            title="近 14 天精准度"
+            buckets={daily}
+            field="avgAccuracy"
+            suffix="%"
+            emptyHint="近两周暂无数据，完成训练后这里会显示每日精准度。"
+          />
+          <ChartPanel
+            title="近 14 天得分"
+            buckets={daily}
+            field="avgScore"
+            emptyHint="近两周暂无数据，完成训练后这里会显示每日平均得分。"
+          />
+          <ChartPanel
+            title="近 6 个月月度得分"
+            buckets={monthly}
+            field="avgScore"
+            emptyHint="近半年暂无数据，完成训练后这里会显示月度趋势。"
+          />
 
           {history.length > 0 && (
             <div className="flex justify-end">
@@ -255,40 +275,80 @@ function ChartPanel({
   buckets,
   field,
   suffix = '',
+  emptyHint,
 }: {
   title: string
   buckets: ChartBucket[]
   field: 'avgAccuracy' | 'avgScore' | 'totalShots'
   suffix?: string
+  emptyHint?: string
 }) {
   const max = Math.max(1, maxBucketValue(buckets, field))
+  const totalSessions = buckets.reduce((sum, bucket) => sum + bucket.sessions, 0)
+  const activeBuckets = buckets.filter(bucket => bucket.sessions > 0)
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card/50 p-4">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="font-semibold">{title}</h3>
         <span className="text-muted-foreground text-xs">
-          共 {buckets.reduce((sum, bucket) => sum + bucket.sessions, 0)} 场
+          {totalSessions > 0 ? `共 ${totalSessions} 场` : '暂无数据'}
         </span>
       </div>
-      <div className="flex h-36 items-end gap-1.5">
-        {buckets.map(bucket => {
-          const value = bucket[field] as number
-          const height = bucket.sessions > 0 ? Math.max(8, (value / max) * 100) : 4
-          return (
-            <div key={bucket.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-              <div className="flex h-28 w-full items-end">
-                <div
-                  className={`w-full rounded-t-md ${bucket.sessions > 0 ? 'bg-gradient-to-t from-cyan-500/80 to-amber-300/90' : 'bg-muted/50'}`}
-                  style={{ height: `${height}%` }}
-                  title={`${bucket.label}: ${value}${suffix}`}
-                />
-              </div>
-              <span className="truncate text-[10px] text-muted-foreground">{bucket.label}</span>
-            </div>
-          )
-        })}
-      </div>
+
+      {activeBuckets.length === 0 ? (
+        <div className="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/15 px-4 text-center">
+          <BarChart3 className="h-6 w-6 text-muted-foreground/40" />
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {emptyHint ?? '完成训练后这里会显示趋势。'}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>0{suffix}</span>
+            <span>{max}{suffix}</span>
+          </div>
+          <div className="flex h-36 items-end gap-1.5">
+            {buckets.map(bucket => {
+              const value = bucket[field] as number
+              const height = bucket.sessions > 0 ? Math.max(10, (value / max) * 100) : 4
+              const isPeak =
+                bucket.sessions > 0 &&
+                value === maxBucketValue(buckets.filter(b => b.sessions > 0), field)
+              return (
+                <div key={bucket.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                  {bucket.sessions > 0 && (
+                    <span
+                      className={`font-mono text-[9px] tabular-nums ${isPeak ? 'font-bold text-amber-500' : 'text-muted-foreground'}`}
+                    >
+                      {value}{suffix}
+                    </span>
+                  )}
+                  <div className="flex h-28 w-full items-end">
+                    <div
+                      className={`w-full rounded-t-md transition-[height] duration-500 ${
+                        bucket.sessions > 0
+                          ? isPeak
+                            ? 'bg-gradient-to-t from-cyan-600/90 to-amber-400'
+                            : 'bg-gradient-to-t from-cyan-500/75 to-amber-300/85'
+                          : 'bg-muted/40'
+                      }`}
+                      style={{ height: `${height}%` }}
+                      title={`${bucket.label}: ${value}${suffix} · ${bucket.sessions} 场`}
+                    />
+                  </div>
+                  <span
+                    className={`truncate text-[10px] ${bucket.sessions > 0 ? 'text-foreground/70' : 'text-muted-foreground/60'}`}
+                  >
+                    {bucket.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }

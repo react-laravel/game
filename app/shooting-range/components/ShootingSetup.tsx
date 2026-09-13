@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   BarChart3,
+  Building2,
   ChevronDown,
   Crosshair,
+  Factory,
   Gauge,
   MapPinned,
   MousePointer2,
@@ -12,6 +14,7 @@ import {
   RotateCcw,
   Sparkles,
   Target,
+  Trees,
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,6 +46,30 @@ const FOCUS_COLORS: Record<string, string> = {
   Speed: 'from-emerald-500/20 to-green-500/10 text-emerald-200',
   Aim: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
   Precision: 'from-sky-500/20 to-cyan-500/10 text-sky-200',
+}
+
+const MAP_META: Record<
+  ShootingMapId,
+  { icon: typeof Building2; badge: string; ring: string; chip: string }
+> = {
+  indoor: {
+    icon: Building2,
+    badge: '室内',
+    ring: 'ring-cyan-400/35',
+    chip: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200',
+  },
+  outdoor: {
+    icon: Trees,
+    badge: '户外',
+    ring: 'ring-emerald-400/35',
+    chip: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200',
+  },
+  warehouse: {
+    icon: Factory,
+    badge: '仓库',
+    ring: 'ring-amber-400/35',
+    chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-200',
+  },
 }
 
 interface ShootingSetupProps {
@@ -153,27 +180,39 @@ export function ShootingSetup({
             </div>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {drillPresets.map(preset => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => onQuickStart(preset)}
-                  className="group rounded-2xl border border-border bg-gradient-to-br from-muted/30 to-transparent p-3.5 text-left transition-all hover:border-primary/50 hover:shadow-md"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span
-                      className={`rounded-lg bg-gradient-to-br px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${FOCUS_COLORS[preset.tag] ?? 'bg-muted text-muted-foreground'}`}
-                    >
-                      {preset.tag}
-                    </span>
-                    <Play className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                  <div className="mt-2 font-bold">{preset.name}</div>
-                  <div className="text-muted-foreground mt-0.5 text-xs leading-5">
-                    {preset.subtitle}
-                  </div>
-                </button>
-              ))}
+              {drillPresets.map(preset => {
+                const mapMeta = MAP_META[preset.mapId]
+                const MapIcon = mapMeta.icon
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => onQuickStart(preset)}
+                    className={`group rounded-2xl border border-border bg-gradient-to-br from-muted/30 to-transparent p-3.5 text-left transition-all hover:border-primary/50 hover:shadow-md hover:ring-1 ${mapMeta.ring}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`rounded-lg bg-gradient-to-br px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${FOCUS_COLORS[preset.tag] ?? 'bg-muted text-muted-foreground'}`}
+                        >
+                          {preset.tag}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${mapMeta.chip}`}
+                        >
+                          <MapIcon className="h-3 w-3" />
+                          {mapMeta.badge}
+                        </span>
+                      </div>
+                      <Play className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </div>
+                    <div className="mt-2 font-bold">{preset.name}</div>
+                    <div className="text-muted-foreground mt-0.5 text-xs leading-5">
+                      {preset.subtitle}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <button
@@ -212,15 +251,22 @@ export function ShootingSetup({
                 <section>
                   <SectionLabel icon={MapPinned} title="场景" />
                   <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                    {mapOptions.map(option => (
-                      <OptionCard
-                        key={option.id}
-                        selected={mapId === option.id}
-                        title={option.name}
-                        detail={option.description}
-                        onClick={() => onMapChange(option.id)}
-                      />
-                    ))}
+                    {mapOptions.map(option => {
+                      const mapMeta = MAP_META[option.id]
+                      const MapIcon = mapMeta.icon
+                      return (
+                        <OptionCard
+                          key={option.id}
+                          selected={mapId === option.id}
+                          title={option.name}
+                          badge={mapMeta.badge}
+                          detail={option.description}
+                          icon={<MapIcon className="h-4 w-4" />}
+                          accentClass={mapMeta.chip}
+                          onClick={() => onMapChange(option.id)}
+                        />
+                      )
+                    })}
                   </div>
                 </section>
 
@@ -290,12 +336,16 @@ function OptionCard({
   title,
   badge,
   detail,
+  icon,
+  accentClass,
   onClick,
 }: {
   selected: boolean
   title: string
   badge?: string
   detail: string
+  icon?: ReactNode
+  accentClass?: string
   onClick: () => void
 }) {
   return (
@@ -309,15 +359,28 @@ function OptionCard({
           : 'border-border hover:border-primary/40 hover:bg-muted/40'
       }`}
     >
-      <div className="flex items-center gap-2">
-        <span className="font-semibold">{title}</span>
-        {badge && (
-          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-            {badge}
+      <div className="flex items-start gap-2.5">
+        {icon && (
+          <span
+            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accentClass ?? 'bg-muted text-muted-foreground'}`}
+          >
+            {icon}
           </span>
         )}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-semibold">{title}</span>
+            {badge && (
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${accentClass ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
+          <div className="text-muted-foreground mt-1 text-xs leading-5">{detail}</div>
+        </div>
       </div>
-      <div className="text-muted-foreground mt-1 text-xs leading-5">{detail}</div>
     </button>
   )
 }

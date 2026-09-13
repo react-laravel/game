@@ -84,6 +84,53 @@ export interface PerformanceHighlight {
   accent: 'emerald' | 'cyan' | 'amber' | 'rose'
 }
 
+export interface AccuracyBreakdown {
+  hits: number
+  misses: number
+  hitPercent: number
+  missPercent: number
+  summary: string
+  tip: string
+}
+
+export function buildAccuracyBreakdown(stats: SessionStats): AccuracyBreakdown {
+  const { hits, misses, shots, accuracy } = stats
+
+  if (shots === 0) {
+    return {
+      hits: 0,
+      misses: 0,
+      hitPercent: 0,
+      missPercent: 0,
+      summary: '本场未开火',
+      tip: '下一局先锁定 3 个稳定命中，再逐步提高射速。',
+    }
+  }
+
+  const hitPercent = Math.round((hits / shots) * 100)
+  const missPercent = 100 - hitPercent
+
+  let tip = '保持当前节奏，尝试把连击拉长。'
+  if (accuracy >= 90) {
+    tip = '精准度出色，可以挑战更高难度或更快射速。'
+  } else if (accuracy >= 75) {
+    tip = '整体稳定，优先减少连续脱靶以提升得分。'
+  } else if (misses > hits) {
+    tip = '脱靶偏多，放慢射速，先保证每一枪都完成瞄准。'
+  } else if (misses >= 3) {
+    tip = '注意收尾：后段疲劳时容易漏靶，保持呼吸节奏。'
+  }
+
+  return {
+    hits,
+    misses,
+    hitPercent,
+    missPercent,
+    summary: `命中 ${hits} · 未中 ${misses}`,
+    tip,
+  }
+}
+
 export function buildPerformanceHighlights(
   stats: SessionStats,
   modeId: TrainingModeId

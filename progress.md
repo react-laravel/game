@@ -160,6 +160,29 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
 
+## Shooting Range overnight polish cycle 19 (2026-09-13)
+
+Follow-up after #18 gun feel; addresses coordinator screenshot review and Aimlabs-inspired UX without copying IP.
+
+### Post-run results UX
+- `buildAccuracyBreakdown`: hit/miss split bar, coaching tip, and clearer zero-shot copy on the results card.
+- Performance highlights and summary grid retained from prior cycles.
+
+### Setup / mode picker
+- Quick-start drill cards show map badge + icon (室内/户外/仓库) with color ring per scene.
+- Custom map picker uses scene icons and contrast chips for clearer differentiation.
+
+### History charts
+- Daily/monthly charts show axis hints, value labels on bars, peak highlighting, and dashed empty states instead of flat zero bars.
+
+### Visual (warehouse depth + outdoor sky)
+- Warehouse rear: rack + forklift silhouettes, window warm wash, ceiling backlight plane (meshBasic only — no new point lights).
+- Outdoor sky: removed large sun bokeh sphere; clouds use flat boxes at lower opacity to avoid circular flare artifacts.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten via `node scripts/capture-shooting-range-maps.mjs`.
+- Focused shooting-range tests: **100/100** passing.
+
 ## Shooting Range visual polish cycle 9 (2026-09-13)
 
 Follow-up after merging cycle 16 (#16): gun sight lacked reticle, targets washed on bright sky, outdoor trees/sky flat, warehouse back wall read flat.

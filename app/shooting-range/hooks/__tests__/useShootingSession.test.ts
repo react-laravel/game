@@ -56,6 +56,23 @@ describe('useShootingSession', () => {
     expect(onTrainingStateChange).toHaveBeenLastCalledWith(false)
   })
 
+  it('applies humanoid head/body multipliers when target shape is humanoid', () => {
+    const { result } = renderHook(() =>
+      useShootingSession({ ...baseConfig, modeId: 'moving', targetShape: 'humanoid' })
+    )
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.recordShot(true, 200, 'head')
+      result.current.recordShot(true, 180, 'body')
+      result.current.recordShot(true, 160, 'limb')
+    })
+
+    expect(result.current.sessionStats.score).toBe(35)
+    expect(result.current.sessionStats.zoneHits).toEqual({ head: 1, body: 1, limb: 1 })
+    expect(result.current.hitPulse?.zoneLabel).toBe('四肢')
+  })
+
   it('tracks misses, streaks, and persists history on game over', () => {
     const { result } = renderHook(() =>
       useShootingSession({ ...baseConfig, modeId: 'timed' })

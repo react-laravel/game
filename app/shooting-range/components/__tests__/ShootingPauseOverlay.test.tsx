@@ -20,6 +20,8 @@ const baseProps = {
   onSfxVolumeChange: vi.fn(),
   onSfxMutedChange: vi.fn(),
   onMotionPreferenceChange: vi.fn(),
+  targetShape: 'circle' as const,
+  onTargetShapeChange: vi.fn(),
 }
 
 describe('ShootingPauseOverlay', () => {

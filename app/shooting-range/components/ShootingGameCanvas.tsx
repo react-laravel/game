@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { memo } from 'react'
 import type { MutableRefObject, RefObject } from 'react'
 import { GameScene, type ShootingSceneSnapshot } from './game/GameScene'
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { mapConfigs } from '../utils/mapConfigs'
 
 interface ShootingGameCanvasProps {
@@ -11,12 +11,13 @@ interface ShootingGameCanvasProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  targetShape: TargetShape
   lookSensitivity: number
   reducedMotion?: boolean
   gameStarted: boolean
   gameOver: boolean
   useFallbackControls: boolean
-  onShotResult: (didHit: boolean, reactionMs?: number) => void
+  onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
   onHitFeedback: () => void
   onFpsReport: (fps: number) => void
 }
@@ -27,6 +28,7 @@ function ShootingGameCanvasComponent({
   difficulty,
   mapId,
   modeId,
+  targetShape,
   lookSensitivity,
   reducedMotion = false,
   gameStarted,
@@ -54,10 +56,11 @@ function ShootingGameCanvasComponent({
       className="outline-none"
     >
       <GameScene
-        key={`${difficulty}-${mapId}-${modeId}`}
+        key={`${difficulty}-${mapId}-${modeId}-${targetShape}`}
         difficulty={difficulty}
         mapId={mapId}
         modeId={modeId}
+        targetShape={targetShape}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         onShotResult={onShotResult}

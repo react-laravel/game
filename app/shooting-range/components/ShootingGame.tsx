@@ -15,7 +15,7 @@ import {
   computeSessionGrade,
 } from '../utils/sessionInsights'
 import { loadSessionHistory } from '../utils/statsStorage'
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { useMotionPreference } from '../hooks/useMotionPreference'
 import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { ShootingHelpSheet } from './ShootingHelpSheet'
@@ -35,6 +35,8 @@ interface ShootingGameProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  targetShape: TargetShape
+  onTargetShapeChange: (value: TargetShape) => void
   lookSensitivity: number
   sfxVolume: number
   sfxMuted: boolean
@@ -54,6 +56,8 @@ export default function ShootingGame({
   difficulty,
   mapId,
   modeId,
+  targetShape,
+  onTargetShapeChange,
   lookSensitivity,
   sfxVolume,
   sfxMuted,
@@ -78,7 +82,7 @@ export default function ShootingGame({
     camera: { yaw: 0, pitch: 0 },
     targets: [],
   })
-  const config = { difficulty, mapId, modeId }
+  const config = { difficulty, mapId, modeId, targetShape }
   const { displayFps, reportFps } = useFpsMeter()
   const {
     timeLeft,
@@ -153,8 +157,8 @@ export default function ShootingGame({
   }, [requestPointerLock])
 
   const handleShotResult = useCallback(
-    (didHit: boolean, reactionMs?: number) => {
-      recordShot(didHit, reactionMs)
+    (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => {
+      recordShot(didHit, reactionMs, hitZone)
       if (didHit) setShowTutorialTip(false)
     },
     [recordShot]
@@ -285,6 +289,7 @@ export default function ShootingGame({
         difficulty={difficulty}
         mapId={mapId}
         modeId={modeId}
+        targetShape={targetShape}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         gameStarted={gameStarted}
@@ -384,6 +389,8 @@ export default function ShootingGame({
           onSfxVolumeChange={onSfxVolumeChange}
           onSfxMutedChange={onSfxMutedChange}
           onMotionPreferenceChange={setMotionPreference}
+          targetShape={targetShape}
+          onTargetShapeChange={onTargetShapeChange}
         />
       )}
 

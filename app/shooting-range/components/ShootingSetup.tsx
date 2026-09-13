@@ -32,7 +32,9 @@ import {
 } from '../utils/drillPresets'
 import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
 import { loadSessionHistory } from '../utils/statsStorage'
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
+import { TargetShapeControl } from './TargetShapeControl'
+import { targetShapeLabel } from '../utils/targetShape'
 import { mapOptions } from '../utils/mapConfigs'
 import { trainingModeOptions, trainingModes } from '../utils/trainingModes'
 
@@ -93,6 +95,8 @@ interface ShootingSetupProps {
   onLookSensitivityChange: (value: number) => void
   onSfxVolumeChange: (value: number) => void
   onSfxMutedChange: (muted: boolean) => void
+  targetShape: TargetShape
+  onTargetShapeChange: (value: TargetShape) => void
   onStart: () => void
   onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
@@ -113,6 +117,8 @@ export function ShootingSetup({
   onLookSensitivityChange,
   onSfxVolumeChange,
   onSfxMutedChange,
+  targetShape,
+  onTargetShapeChange,
   onStart,
   onQuickStart,
   onViewHistory,
@@ -283,7 +289,8 @@ export function ShootingSetup({
                     {selectedMode.name} · {selectedMap?.name} · {selectedDifficulty.name}
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs leading-5">
-                    {selectedDifficulty.label} · 灵敏度 {lookSensitivity.toFixed(1)}× · 音效{' '}
+                    {selectedDifficulty.label} · {targetShapeLabel(targetShape)} · 灵敏度{' '}
+                    {lookSensitivity.toFixed(1)}× · 音效{' '}
                     {sfxMuted ? '静音' : `${sfxVolumePercent(sfxVolume)}%`}
                   </div>
                 </div>
@@ -324,6 +331,8 @@ export function ShootingSetup({
                   onVolumeChange={onSfxVolumeChange}
                   onMutedChange={onSfxMutedChange}
                 />
+
+                <TargetShapeControl value={targetShape} onChange={onTargetShapeChange} />
 
                 <section>
                   <SectionLabel icon={Target} title="训练模式" />

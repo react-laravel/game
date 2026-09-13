@@ -10,6 +10,8 @@ import { CrosshairSettings } from './CrosshairSettings'
 import { LookSensitivityControl } from './LookSensitivityControl'
 import { ReducedMotionControl } from './ReducedMotionControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
+import { TargetShapeControl } from './TargetShapeControl'
+import type { TargetShape } from '../types'
 
 const pauseSettingsTabTriggerClass =
   'rounded-lg px-3 py-1.5 text-xs font-medium text-white/45 transition-all hover:bg-white/5 hover:text-white/70 data-[state=active]:bg-amber-400/18 data-[state=active]:font-semibold data-[state=active]:text-amber-50 data-[state=active]:shadow-[inset_0_0_0_1px_rgba(251,191,36,0.38)] data-[state=active]:ring-1 data-[state=active]:ring-amber-400/30'
@@ -27,6 +29,8 @@ interface ShootingPauseSettingsPanelProps {
   onSfxMutedChange: (muted: boolean) => void
   motionPreference: MotionPreference
   onMotionPreferenceChange: (value: MotionPreference) => void
+  targetShape: TargetShape
+  onTargetShapeChange: (value: TargetShape) => void
   onChangeDrill?: () => void
   onBack: () => void
 }
@@ -44,6 +48,8 @@ export function ShootingPauseSettingsPanel({
   onSfxMutedChange,
   motionPreference,
   onMotionPreferenceChange,
+  targetShape,
+  onTargetShapeChange,
   onChangeDrill,
   onBack,
 }: ShootingPauseSettingsPanelProps) {
@@ -123,6 +129,14 @@ export function ShootingPauseSettingsPanel({
           </TabsContent>
 
           <TabsContent value="other" className="mt-0 space-y-4">
+            <TargetShapeControl
+              compact
+              framed
+              variant="dark"
+              value={targetShape}
+              onChange={onTargetShapeChange}
+            />
+
             <ReducedMotionControl
               compact
               framed

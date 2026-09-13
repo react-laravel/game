@@ -24,4 +24,23 @@ describe('targetAppearance', () => {
     expect(getTargetAppearance('flick').showOrbitHint).toBe(false)
     expect(getTargetAppearance('moving').showOrbitHint).toBe(false)
   })
+
+  it('enables aim cross for static and speed ring for timed modes', () => {
+    expect(getTargetAppearance('static').showAimCross).toBe(true)
+    expect(getTargetAppearance('static').showSpeedRing).toBe(false)
+    expect(getTargetAppearance('timed').showSpeedRing).toBe(true)
+    expect(getTargetAppearance('timed').showAimCross).toBe(false)
+    expect(getTargetAppearance('timed').pulseSpeed).toBeGreaterThan(getTargetAppearance('moving').pulseSpeed)
+  })
+
+  it('keeps static and timed ring colors distinct from flick and precision', () => {
+    const aim = getTargetAppearance('static')
+    const speed = getTargetAppearance('timed')
+    const flick = getTargetAppearance('flick')
+    const grid = getTargetAppearance('precision')
+
+    expect(aim.ringColor).not.toBe(speed.ringColor)
+    expect(aim.ringColor).not.toBe(flick.ringColor)
+    expect(speed.ringColor).not.toBe(grid.ringColor)
+  })
 })

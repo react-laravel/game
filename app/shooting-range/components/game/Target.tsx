@@ -1,11 +1,18 @@
-import { memo, useEffect, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ThreeEvent, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import type { TrainingModeId } from '../../types'
+import type { TargetShape, TrainingModeId } from '../../types'
 import type { TargetMovement } from '../../utils/trainingModes'
+import {
+  createBotMotionState,
+  getBotMotionProfile,
+  stepBotMotion,
+} from '../../utils/humanoidMotion'
 import { getTargetAppearance } from '../../utils/targetAppearance'
+import { HumanoidVisual } from './HumanoidVisual'
 
 interface TargetProps {
+  targetShape: TargetShape
   position: [number, number, number]
   direction: [number, number, number]
   speed: number
@@ -62,11 +69,18 @@ function TargetComponent({
   orbitRadius,
   orbitSpeed,
   modeId,
+  targetShape,
   onClick,
   onReady,
   id,
 }: TargetProps) {
+  const isHumanoid = targetShape === 'humanoid'
   const appearance = useMemo(() => getTargetAppearance(modeId), [modeId])
+  const botMotionProfile = useMemo(() => getBotMotionProfile(modeId), [modeId])
+  const botMotionState = useRef(createBotMotionState(id))
+  const botOffset = useRef(new THREE.Vector3())
+  const crouchScaleRef = useRef(1)
+  const basePosition = useRef(new THREE.Vector3(...position))
   const rootRef = useRef<THREE.Group>(null)
   const visualRef = useRef<THREE.Group>(null)
   const plateMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
@@ -85,6 +99,9 @@ function TargetComponent({
   const burstRingRef = useRef<THREE.Mesh>(null)
   const burstMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const orbitHintRef = useRef<THREE.Group>(null)
+  const speedRingRef = useRef<THREE.Mesh>(null)
+  const speedRingMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const [humanoidHit, setHumanoidHit] = useState(false)
 
   useEffect(() => {
     const root = rootRef.current
@@ -96,6 +113,8 @@ function TargetComponent({
     root.userData.spawnedAt = performance.now()
     root.userData.orbitAnchor = orbitAnchor.current
     orbitAnchor.current.set(...position)
+    basePosition.current.set(...position)
+    botMotionState.current = createBotMotionState(id)
     spawnPulse.current = appearance.spawnPop
     spawnFlashElapsed.current = 0
     onReady?.(id, root)
@@ -120,46 +139,66 @@ function TargetComponent({
         spawnPulse.current = appearance.spawnPop
         spawnFlashElapsed.current = 0
       }
-      applyTargetLook(
-        hit,
-        appearance.ringColor,
-        plateMaterialRef.current,
-        ringMaterialRef.current,
-        innerMaterialRef.current,
-        centerMaterialRef.current
-      )
+      if (isHumanoid) {
+        setHumanoidHit(hit)
+      } else {
+        applyTargetLook(
+          hit,
+          appearance.ringColor,
+          plateMaterialRef.current,
+          ringMaterialRef.current,
+          innerMaterialRef.current,
+          centerMaterialRef.current
+        )
+      }
     }
 
     if (!hit) {
       if (movement === 'orbit' && orbitRadius > 0) {
         const time = performance.now() * 0.001 * orbitSpeed + id * 1.7
-        root.position.set(
+        basePosition.set(
           orbitAnchor.current.x + Math.cos(time) * orbitRadius,
           orbitAnchor.current.y + Math.sin(time * 0.85) * orbitRadius * 0.42,
           orbitAnchor.current.z + Math.sin(time * 1.1) * orbitRadius * 0.55
         )
       } else if (movement === 'linear' && speed > 0) {
         const directionVector = directionRef.current
-        root.position.addScaledVector(directionVector, speed * 60 * delta)
+        basePosition.addScaledVector(directionVector, speed * 60 * delta)
 
         const halfWidth = gameAreaSize * 0.42
-        const minY = 0.8
+        const minY = isHumanoid ? 0.15 : 0.8
         const maxY = Math.min(9, gameAreaSize * 0.42 + 2)
         const nearZ = -7
         const farZ = -(gameAreaSize + 9)
 
-        if (root.position.x < -halfWidth || root.position.x > halfWidth) directionVector.x *= -1
-        if (root.position.y < minY || root.position.y > maxY) directionVector.y *= -1
-        if (root.position.z > nearZ || root.position.z < farZ) directionVector.z *= -1
+        if (basePosition.x < -halfWidth || basePosition.x > halfWidth) directionVector.x *= -1
+        if (basePosition.y < minY || basePosition.y > maxY) directionVector.y *= -1
+        if (basePosition.z > nearZ || basePosition.z < farZ) directionVector.z *= -1
 
-        root.position.x = THREE.MathUtils.clamp(root.position.x, -halfWidth, halfWidth)
-        root.position.y = THREE.MathUtils.clamp(root.position.y, minY, maxY)
-        root.position.z = THREE.MathUtils.clamp(root.position.z, farZ, nearZ)
+        basePosition.x = THREE.MathUtils.clamp(basePosition.x, -halfWidth, halfWidth)
+        basePosition.y = THREE.MathUtils.clamp(basePosition.y, minY, maxY)
+        basePosition.z = THREE.MathUtils.clamp(basePosition.z, farZ, nearZ)
 
         if (jitterChance > 0 && Math.random() < delta * jitterChance) {
           jitterRef.current.set((Math.random() - 0.5) * 0.55, (Math.random() - 0.5) * 0.35, 0)
           directionVector.add(jitterRef.current).normalize()
         }
+      } else if (movement === 'static') {
+        basePosition.copy(orbitAnchor.current)
+      }
+
+      if (isHumanoid) {
+        const timeSec = performance.now() * 0.001
+        const sample = stepBotMotion(botMotionState.current, delta, botMotionProfile, timeSec)
+        botOffset.set(sample.offsetX, sample.offsetY, sample.offsetZ)
+        crouchScaleRef.current = sample.crouchScale
+        root.position.set(
+          basePosition.x + sample.offsetX,
+          basePosition.y + sample.offsetY,
+          basePosition.z + sample.offsetZ
+        )
+      } else {
+        root.position.copy(basePosition)
       }
 
       spawnPulse.current = THREE.MathUtils.lerp(spawnPulse.current, 1, delta * 6)
@@ -169,6 +208,13 @@ function TargetComponent({
           : 1
       const pulse = movement === 'static' ? spawnPulse.current : movingPulse
       visual.scale.setScalar(pulse)
+
+      if (appearance.showSpeedRing && speedRingRef.current && speedRingMaterialRef.current) {
+        const urgency = 0.5 + Math.sin(performance.now() * 0.001 * appearance.pulseSpeed * 1.4 + id) * 0.5
+        speedRingRef.current.visible = true
+        speedRingRef.current.scale.setScalar(1.08 + urgency * 0.14)
+        speedRingMaterialRef.current.opacity = 0.18 + urgency * 0.22
+      }
 
       if (spawnFlashElapsed.current < 0.42) {
         spawnFlashElapsed.current += delta
@@ -205,7 +251,7 @@ function TargetComponent({
       }
     }
 
-    if (faceCamera) root.lookAt(camera.position)
+    if (faceCamera || isHumanoid) root.lookAt(camera.position)
 
     if (orbitHintRef.current && appearance.showOrbitHint) {
       orbitHintRef.current.position.copy(orbitAnchor.current)
@@ -237,10 +283,14 @@ function TargetComponent({
       <group
         ref={rootRef}
         position={position}
-        scale={scale}
+        scale={isHumanoid ? scale * 0.78 : scale}
         onClick={handleClick}
       >
       <group ref={visualRef}>
+        {isHumanoid ? (
+          <HumanoidVisual modeId={modeId} hit={humanoidHit} crouchScaleRef={crouchScaleRef} />
+        ) : (
+          <>
         <mesh ref={spawnFlashRef} position={[0, 0, 0.12]} visible={false}>
           <ringGeometry args={[1.02, 1.18, 32]} />
           <meshBasicMaterial
@@ -334,6 +384,44 @@ function TargetComponent({
                 </mesh>
               </group>
             ))}
+          </>
+        )}
+
+        {appearance.showAimCross && (
+          <>
+            {[
+              [0, 0.62, 0.11],
+              [0, -0.62, 0.11],
+              [0.62, 0, 0.11],
+              [-0.62, 0, 0.11],
+            ].map(([cx, cy, cz], index) => (
+              <mesh key={`aim-cross-${index}`} position={[cx, cy, cz]}>
+                <boxGeometry args={[index < 2 ? 0.05 : 0.42, index < 2 ? 0.42 : 0.05, 0.02]} />
+                <meshBasicMaterial
+                  color={appearance.ringColor}
+                  transparent
+                  opacity={0.55}
+                  toneMapped={false}
+                  depthWrite={false}
+                />
+              </mesh>
+            ))}
+          </>
+        )}
+
+        {appearance.showSpeedRing && (
+          <mesh ref={speedRingRef} position={[0, 0, 0.08]} visible={false}>
+            <ringGeometry args={[1.12, 1.28, 36]} />
+            <meshBasicMaterial
+              ref={speedRingMaterialRef}
+              color={appearance.ringColor}
+              transparent
+              opacity={0}
+              toneMapped={false}
+              depthWrite={false}
+            />
+          </mesh>
+        )}
           </>
         )}
       </group>

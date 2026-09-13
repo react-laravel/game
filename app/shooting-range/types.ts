@@ -12,6 +12,16 @@ export type TrainingModeId =
 
 export type SpawnPattern = 'random' | 'grid'
 
+export type TargetShape = 'circle' | 'humanoid'
+
+export type HitZone = 'head' | 'body' | 'limb'
+
+export interface ZoneHitStats {
+  head: number
+  body: number
+  limb: number
+}
+
 export interface ShootingBrowserSupport {
   supported: boolean
   message: string
@@ -27,6 +37,7 @@ export interface SessionStats {
   shotsPerMinute: number
   bestStreak: number
   avgReactionMs: number | null
+  zoneHits: ZoneHitStats
 }
 
 export interface SessionRecord extends SessionStats {
@@ -46,4 +57,5 @@ export interface ShootingSetupConfig {
   lookSensitivity?: number
   sfxVolume?: number
   sfxMuted?: boolean
+  targetShape?: TargetShape
 }

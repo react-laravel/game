@@ -121,6 +121,16 @@ async function captureCustomMapTraining(page, mapLabel, filePath) {
   await captureTrainingHud(page, filePath)
 }
 
+async function captureHumanoidTraining(page, filePath) {
+  await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('text=选择训练项目')
+  await page.getByRole('button', { name: /自定义场景与难度/ }).click()
+  await page.getByRole('button', { name: /人形靶/ }).click()
+  await page.getByRole('button', { name: /按当前设置开始/ }).click()
+  await enterFallbackPlay(page)
+  await captureTrainingHud(page, filePath)
+}
+
 async function captureQuickStartTraining(page, drillName, filePath) {
   await page.goto(`${BASE_URL}/shooting-range`, { waitUntil: 'networkidle' })
   await page.waitForSelector('text=选择训练项目')
@@ -257,6 +267,9 @@ async function main() {
   )
   await runStep('drill-precision', () =>
     captureQuickStartTraining(page, '网格速点', path.join(OUT_DIR, 'drill-precision-training-hud.png'))
+  )
+  await runStep('humanoid-hud', () =>
+    captureHumanoidTraining(page, path.join(OUT_DIR, 'humanoid-training-hud.png'))
   )
   await runStep('results', () => captureResultsScreen(page, path.join(OUT_DIR, 'results-screen.png')))
 

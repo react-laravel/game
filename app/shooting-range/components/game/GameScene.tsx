@@ -24,7 +24,7 @@ import {
   randomRecoilYaw,
 } from '../../utils/gunFeel'
 import { lookSpeedForSensitivity } from '../../utils/lookSensitivity'
-import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../../types'
+import type { HitZone, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../../types'
 
 interface TargetData {
   id: number
@@ -58,9 +58,10 @@ interface GameSceneProps {
   difficulty: ShootingDifficulty
   mapId: ShootingMapId
   modeId: TrainingModeId
+  targetShape: TargetShape
   lookSensitivity: number
   reducedMotion?: boolean
-  onShotResult: (didHit: boolean, reactionMs?: number) => void
+  onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
   onHitFeedback?: () => void
   gameStarted: boolean
   useFallbackControls?: boolean
@@ -73,6 +74,7 @@ export function GameScene({
   difficulty,
   mapId,
   modeId,
+  targetShape,
   lookSensitivity,
   reducedMotion = false,
   onShotResult,
@@ -128,8 +130,23 @@ export function GameScene({
     raycastObjects.current = Array.from(targetObjects.current.values())
   }, [])
 
+  const resolveRaycastHit = useCallback((object: THREE.Object3D | null) => {
+    let current: THREE.Object3D | null = object
+    let hitZone: HitZone | undefined
+    while (current) {
+      if (current.userData?.hitZone) {
+        hitZone = current.userData.hitZone as HitZone
+      }
+      if (typeof current.userData?.targetId === 'number') {
+        return { targetId: current.userData.targetId as number, hitZone }
+      }
+      current = current.parent
+    }
+    return null
+  }, [])
+
   const handleTargetHit = useCallback(
-    (id: number) => {
+    (id: number, hitZone?: HitZone) => {
       if (hitTargetIds.current.has(id)) return
       hitTargetIds.current.add(id)
 
@@ -146,7 +163,7 @@ export function GameScene({
       }
 
       playHitSound()
-      onShotResultRef.current(true, reactionMs)
+      onShotResultRef.current(true, reactionMs, hitZone)
       onHitFeedbackRef.current?.()
       navigator.vibrate?.(28)
 
@@ -189,12 +206,9 @@ export function GameScene({
 
     let didHit = false
     for (const intersection of intersections) {
-      let object: THREE.Object3D | null = intersection.object
-      while (object && object.userData?.targetId === undefined) object = object.parent
-
-      const targetId = object?.userData?.targetId
-      if (typeof targetId === 'number' && !hitTargetIds.current.has(targetId)) {
-        handleTargetHit(targetId)
+      const resolved = resolveRaycastHit(intersection.object)
+      if (resolved && !hitTargetIds.current.has(resolved.targetId)) {
+        handleTargetHit(resolved.targetId, resolved.hitZone)
         didHit = true
         break
       }
@@ -204,7 +218,7 @@ export function GameScene({
       playMissSound()
       onShotResultRef.current(false)
     }
-  }, [camera, gameStarted, handleTargetHit, triggerGunFeel])
+  }, [camera, gameStarted, handleTargetHit, resolveRaycastHit, triggerGunFeel])
 
   const handleFallbackTargetClick = useCallback(
     (id: number) => {
@@ -336,6 +350,7 @@ export function GameScene({
           orbitRadius={settings.orbitRadius}
           orbitSpeed={settings.orbitSpeed}
           modeId={modeId}
+          targetShape={targetShape}
           onReady={registerTarget}
           onClick={handleFallbackTargetClick}
         />

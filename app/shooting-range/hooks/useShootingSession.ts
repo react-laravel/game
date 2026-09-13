@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SessionStats, ShootingSetupConfig } from '../types'
+import type { HitZone, SessionStats, ShootingSetupConfig, ZoneHitStats } from '../types'
+import { hitZoneLabel, resolveHitPoints } from '../utils/hitZoneScoring'
+import { normalizeTargetShape } from '../utils/targetShape'
 import { HIT_MARKER_DURATION_MS, MISS_MARKER_DURATION_MS } from '../utils/gunFeel'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
@@ -10,6 +12,8 @@ export interface HitPulse {
   id: number
   points: number
   streak: number
+  hitZone?: HitZone
+  zoneLabel?: string
 }
 
 export interface StreakToast {
@@ -49,10 +53,16 @@ export function useShootingSession(
   const reactionSamplesRef = useRef<number[]>([])
   const sessionSavedRef = useRef(false)
   const scorePerHitRef = useRef(mode.scorePerHit)
+  const targetShapeRef = useRef(normalizeTargetShape(config.targetShape))
+  const [zoneHits, setZoneHits] = useState<ZoneHitStats>({ head: 0, body: 0, limb: 0 })
 
   useEffect(() => {
     scorePerHitRef.current = mode.scorePerHit
   }, [mode.scorePerHit])
+
+  useEffect(() => {
+    targetShapeRef.current = normalizeTargetShape(config.targetShape)
+  }, [config.targetShape])
 
   useEffect(() => {
     if (!gameStarted || gameOver) return
@@ -94,8 +104,9 @@ export function useShootingSession(
       shotsPerMinute,
       bestStreak,
       avgReactionMs,
+      zoneHits,
     }
-  }, [avgReactionMs, bestStreak, durationSeconds, hits, misses, score, shots, timeLeft])
+  }, [avgReactionMs, bestStreak, durationSeconds, hits, misses, score, shots, timeLeft, zoneHits])
 
   useEffect(() => {
     if (!gameOver || sessionSavedRef.current) return
@@ -112,19 +123,30 @@ export function useShootingSession(
   }, [])
 
   const recordHit = useCallback(
-    (reactionMs?: number) => {
-      const points = scorePerHitRef.current
+    (reactionMs?: number, hitZone?: HitZone) => {
+      const shape = targetShapeRef.current
+      const zone = shape === 'humanoid' ? hitZone ?? 'body' : undefined
+      const points = resolveHitPoints(scorePerHitRef.current, zone, shape)
       const nextStreak = currentStreakRef.current + 1
       currentStreakRef.current = nextStreak
 
       setScore(previous => previous + points)
       setHits(previous => previous + 1)
+      if (zone) {
+        setZoneHits(previous => ({ ...previous, [zone]: previous[zone] + 1 }))
+      }
       setCurrentStreak(nextStreak)
       setBestStreak(currentBest => Math.max(currentBest, nextStreak))
 
       feedbackSeq.current += 1
       const pulseId = feedbackSeq.current
-      setHitPulse({ id: pulseId, points, streak: nextStreak })
+      setHitPulse({
+        id: pulseId,
+        points,
+        streak: nextStreak,
+        hitZone: zone,
+        zoneLabel: zone ? hitZoneLabel(zone) : undefined,
+      })
       if (hitPulseTimer.current) window.clearTimeout(hitPulseTimer.current)
       hitPulseTimer.current = window.setTimeout(() => setHitPulse(null), 520)
 
@@ -143,9 +165,9 @@ export function useShootingSession(
     [recordReactionSample]
   )
 
-  const recordShot = useCallback((didHit: boolean, reactionMs?: number) => {
+  const recordShot = useCallback((didHit: boolean, reactionMs?: number, hitZone?: HitZone) => {
     setShots(previous => previous + 1)
-    if (didHit) recordHit(reactionMs)
+    if (didHit) recordHit(reactionMs, hitZone)
     else {
       setMisses(previous => previous + 1)
       currentStreakRef.current = 0
@@ -181,6 +203,7 @@ export function useShootingSession(
     setTimeLeft(durationSeconds)
     setGameOver(false)
     setAvgReactionMs(null)
+    setZoneHits({ head: 0, body: 0, limb: 0 })
     reactionSamplesRef.current = []
     sessionSavedRef.current = false
   }, [durationSeconds])
@@ -216,6 +239,7 @@ export function useShootingSession(
     if (patch.shots !== undefined) setShots(patch.shots)
     if (patch.bestStreak !== undefined) setBestStreak(patch.bestStreak)
     if (patch.avgReactionMs !== undefined) setAvgReactionMs(patch.avgReactionMs)
+    if (patch.zoneHits !== undefined) setZoneHits(patch.zoneHits)
   }, [])
 
   const sessionStats = buildSessionStats()

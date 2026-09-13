@@ -31,12 +31,12 @@ interface TargetProps {
   id: number
 }
 
-const plateIdleColor = new THREE.Color('#e2dcd0')
-const plateLitColor = new THREE.Color('#ece6da')
+const plateIdleColor = new THREE.Color('#e8e0d4')
+const plateLitColor = new THREE.Color('#f0eae0')
 const plateHitColor = new THREE.Color('#d84848')
 const plateHitEmissive = new THREE.Color('#5a1010')
 const ringHitColor = new THREE.Color('#c88830')
-const innerIdleColor = new THREE.Color('#1a2228')
+const innerIdleColor = new THREE.Color('#4a4438')
 const innerHitColor = new THREE.Color('#f0e8d0')
 const centerIdleColor = new THREE.Color('#887058')
 const ringLitColor = new THREE.Color('#b0a898')
@@ -228,10 +228,10 @@ function TargetComponent({
           nightBoost
         )
         if (outerRingMaterialRef.current) {
-          outerRingMaterialRef.current.color.set('#141a20')
+          outerRingMaterialRef.current.color.set('#3a3830')
         }
         if (frameRingMaterialRef.current) {
-          frameRingMaterialRef.current.color.set('#1a2228')
+          frameRingMaterialRef.current.color.set('#4a4438')
         }
       }
     }
@@ -414,19 +414,19 @@ function TargetComponent({
 
         <mesh position={[0, 0, 0.092]}>
           <ringGeometry args={[0.96, 1.02, 32]} />
-          <meshStandardMaterial ref={outerRingMaterialRef} color="#141a20" metalness={0.05} roughness={0.92} />
+          <meshStandardMaterial ref={outerRingMaterialRef} color="#3a3830" metalness={0.05} roughness={0.92} />
         </mesh>
 
         <mesh position={[0, 0, 0.095]}>
           <ringGeometry args={[0.88, 0.98, 32]} />
-          <meshStandardMaterial ref={frameRingMaterialRef} color="#1a2228" metalness={0.05} roughness={0.92} />
+          <meshStandardMaterial ref={frameRingMaterialRef} color="#4a4438" metalness={0.05} roughness={0.92} />
         </mesh>
 
         <mesh position={[0, 0, 0.1]}>
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial
             ref={plateMaterialRef}
-            color="#e2dcd0"
+            color="#e8e0d4"
             metalness={0.04}
             roughness={0.9}
           />
@@ -444,12 +444,12 @@ function TargetComponent({
 
         <mesh position={[0, 0, 0.125]}>
           <circleGeometry args={[0.33, 32]} />
-          <meshStandardMaterial ref={innerMaterialRef} color="#1a2228" metalness={0.02} roughness={0.94} />
+          <meshStandardMaterial ref={innerMaterialRef} color="#4a4438" metalness={0.02} roughness={0.94} />
         </mesh>
 
         <mesh position={[0, 0, 0.135]}>
           <circleGeometry args={[0.13, 24]} />
-          <meshStandardMaterial ref={centerMaterialRef} color="#c89838" metalness={0.03} roughness={0.88} />
+          <meshStandardMaterial ref={centerMaterialRef} color="#b89048" metalness={0.03} roughness={0.88} />
         </mesh>
 
         <mesh position={[-1.18, 0, 0]}>

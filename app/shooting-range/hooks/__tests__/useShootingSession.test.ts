@@ -93,6 +93,28 @@ describe('useShootingSession', () => {
     expect(result.current.hitMarker).toBe(false)
   })
 
+  it('emits score pop and streak milestone toasts on consecutive hits', () => {
+    const { result } = renderHook(() => useShootingSession(baseConfig))
+
+    act(() => {
+      result.current.beginTraining()
+      result.current.recordShot(true)
+      result.current.recordShot(true)
+      result.current.recordShot(true)
+    })
+
+    expect(result.current.hitPulse).toEqual({ id: 3, points: 10, streak: 3 })
+    expect(result.current.streakToast).toEqual({ id: 4, streak: 3 })
+
+    act(() => {
+      result.current.recordShot(false)
+      result.current.recordShot(true)
+    })
+
+    expect(result.current.hitPulse?.streak).toBe(1)
+    expect(result.current.streakToast?.streak).toBe(3)
+  })
+
   it('can end the session early for QA and persist results', () => {
     const { result } = renderHook(() => useShootingSession(baseConfig))
 

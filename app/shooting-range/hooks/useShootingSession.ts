@@ -4,6 +4,19 @@ import { HIT_MARKER_DURATION_MS } from '../utils/gunFeel'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
 
+export const STREAK_MILESTONES = [3, 5, 8, 10, 15, 20] as const
+
+export interface HitPulse {
+  id: number
+  points: number
+  streak: number
+}
+
+export interface StreakToast {
+  id: number
+  streak: number
+}
+
 export function useShootingSession(
   config: ShootingSetupConfig,
   onTrainingStateChange?: (started: boolean) => void
@@ -22,9 +35,13 @@ export function useShootingSession(
   const [gameStarted, setGameStarted] = useState(false)
   const [showStartOverlay, setShowStartOverlay] = useState(true)
   const [hitMarker, setHitMarker] = useState(false)
+  const [hitPulse, setHitPulse] = useState<HitPulse | null>(null)
+  const [streakToast, setStreakToast] = useState<StreakToast | null>(null)
   const [avgReactionMs, setAvgReactionMs] = useState<number | null>(null)
 
   const hitMarkerTimer = useRef<number | null>(null)
+  const feedbackSeq = useRef(0)
+  const currentStreakRef = useRef(0)
   const reactionSamplesRef = useRef<number[]>([])
   const sessionSavedRef = useRef(false)
   const scorePerHitRef = useRef(mode.scorePerHit)
@@ -90,13 +107,20 @@ export function useShootingSession(
   const recordHit = useCallback(
     (reactionMs?: number) => {
       const points = scorePerHitRef.current
+      const nextStreak = currentStreakRef.current + 1
+      currentStreakRef.current = nextStreak
+
       setScore(previous => previous + points)
       setHits(previous => previous + 1)
-      setCurrentStreak(previous => {
-        const nextStreak = previous + 1
-        setBestStreak(currentBest => Math.max(currentBest, nextStreak))
-        return nextStreak
-      })
+      setCurrentStreak(nextStreak)
+      setBestStreak(currentBest => Math.max(currentBest, nextStreak))
+
+      feedbackSeq.current += 1
+      setHitPulse({ id: feedbackSeq.current, points, streak: nextStreak })
+      if ((STREAK_MILESTONES as readonly number[]).includes(nextStreak)) {
+        feedbackSeq.current += 1
+        setStreakToast({ id: feedbackSeq.current, streak: nextStreak })
+      }
 
       if (typeof reactionMs === 'number' && reactionMs > 0 && reactionMs < 5000) {
         recordReactionSample(reactionMs)
@@ -110,6 +134,7 @@ export function useShootingSession(
     if (didHit) recordHit(reactionMs)
     else {
       setMisses(previous => previous + 1)
+      currentStreakRef.current = 0
       setCurrentStreak(0)
     }
   }, [recordHit])
@@ -128,6 +153,7 @@ export function useShootingSession(
     setHits(0)
     setMisses(0)
     setShots(0)
+    currentStreakRef.current = 0
     setCurrentStreak(0)
     setBestStreak(0)
     setTimeLeft(durationSeconds)
@@ -186,6 +212,8 @@ export function useShootingSession(
     setGameStarted,
     showStartOverlay,
     hitMarker,
+    hitPulse,
+    streakToast,
     avgReactionMs,
     sessionStats,
     recordShot,

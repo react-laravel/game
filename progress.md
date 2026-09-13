@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 20 (2026-09-13): history chart period/metric toggles + hover tooltips; in-session score pop + streak milestone toasts; outdoor umbrella/sparse tree canopy variety. Focused tests 101/101; full suite 660/660.
 - Shooting Range gun feel pass (2026-09-13): frame-based muzzle flash curve (no setTimeout), readable camera/weapon recoil kick with smooth decay, Aimlabs-inspired hit marker (gap shrink + X + ring), brighter metallic hit SFX + soft miss thud, shorter pooled impact particles. Outdoor tree silhouettes and warehouse back-wall window depth added. Focused tests 99/99; full suite 658/658.
 - Shooting Range setup now offers 3 scenes (indoor / outdoor / warehouse), 5 training modes (static / moving / flick / tracking / timed), and a local history view with daily + monthly SVG charts.
 - In-game HUD shows live FPS (250ms throttled), hits/misses, accuracy, shots/min, streak, and reaction time; sessions persist to `localStorage` and surface in the end-of-run summary.
@@ -159,6 +160,26 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 - Hitting a target used to `setTargets` (snapping the drone back to its spawn prop), mount an `Explosion` plus a `pointLight`, and remount muzzle-flash lights. Three.js recompiled shaders on the light-count change, which dropped frames.
 - Hits now set `userData.hit`, reuse 3 prewarmed particle bursts, and fade the existing gun light. HUD score updates are isolated from the Canvas with `memo`.
 - Shooting-range tests: 75 passing. Playwright fallback clicks scored 20 with 2/2 shots, 100% accuracy, and no page errors.
+
+## Shooting Range overnight polish cycle 20 (2026-09-13)
+
+Follow-up after #19 coordinator review; Aimlabs-inspired micro-feedback without copying IP.
+
+### History / progress charts
+- Unified trends section with **14 天 / 6 个月** period toggle and **精准度 / 得分** metric toggle (replaces three stacked chart panels).
+- Hover tooltips on bars, horizontal grid guides, higher-contrast axis labels, and amber peak highlight ring.
+- Dashed empty states retained; peak summary shown when not hovering.
+
+### In-session micro-feedback
+- `SessionFeedback`: floating **+得分** pop on each hit and soft **N 连击** toast at milestones (3/5/8/10/15/20).
+- Hit marker + crosshair flash unchanged from #18 gun feel; feedback also shown in click-target fallback mode.
+
+### Outdoor tree variety (visual nit)
+- Added `UmbrellaTree` (flat wide canopy) and `SparseTree` (asymmetric dodecahedron clusters) mixed into the tree line alongside evergreen/deciduous.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/*.png` overwritten (setup, three map HUDs, drill HUDs, results).
+- Focused shooting-range tests: **101/101**; full suite **660/660**.
 
 ## Shooting Range overnight polish cycle 19 (2026-09-13)
 

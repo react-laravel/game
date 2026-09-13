@@ -107,12 +107,16 @@ export function findDrillPreset(id: string): DrillPreset | undefined {
 export function drillLabelForConfig(
   modeId: TrainingModeId,
   mapId: ShootingMapId,
-  difficulty: ShootingDifficulty
+  difficulty: ShootingDifficulty,
+  targetShape: TargetShape = 'circle'
 ): string {
-  const match = drillPresets.find(
-    preset =>
-      preset.modeId === modeId && preset.mapId === mapId && preset.difficulty === difficulty
-  )
+  const match = drillPresets.find(preset => {
+    if (preset.modeId !== modeId || preset.mapId !== mapId || preset.difficulty !== difficulty) {
+      return false
+    }
+    if (preset.targetShape && preset.targetShape !== targetShape) return false
+    return true
+  })
   if (match) return match.name
   const mode = trainingModes[modeId]
   const map = mapOptions.find(option => option.id === mapId)

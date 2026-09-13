@@ -281,7 +281,7 @@ export default function ShootingGame({
     returnToSettings()
   }, [releasePointerLock, returnToSettings])
 
-  const drillLabel = drillLabelForConfig(modeId, mapId, difficulty)
+  const drillLabel = drillLabelForConfig(modeId, mapId, difficulty, targetShape)
   const sessionGrade = useMemo(
     () => (gameOver ? computeSessionGrade(sessionStats, modeId) : null),
     [gameOver, modeId, sessionStats]
@@ -316,7 +316,7 @@ export default function ShootingGame({
         onFpsReport={reportFps}
       />
 
-      {gameStarted && !gameOver && isPointerLocked && (
+      {gameStarted && !gameOver && (isPointerLocked || browserSupport.useFallback) && (
         <>
           <Crosshair
             config={crosshairConfig}
@@ -330,14 +330,6 @@ export default function ShootingGame({
             reducedMotion={reducedMotion}
           />
         </>
-      )}
-
-      {gameStarted && !gameOver && browserSupport.useFallback && (
-        <SessionFeedback
-          hitPulse={hitPulse}
-          streakToast={streakToast}
-          reducedMotion={reducedMotion}
-        />
       )}
 
       {gameStarted && !showPauseOverlay && (

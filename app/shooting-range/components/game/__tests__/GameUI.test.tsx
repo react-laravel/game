@@ -60,6 +60,40 @@ describe('GameUI', () => {
     expect(screen.getByText(/靶位高速乱窜/)).toBeInTheDocument()
   })
 
+  it('shows humanoid zone hit breakdown on results when zone stats exist', () => {
+    render(
+      <GameUI
+        {...baseProps}
+        stats={{
+          ...baseStats,
+          score: 86,
+          hits: 8,
+          misses: 2,
+          shots: 10,
+          accuracy: 80,
+          shotsPerMinute: 48,
+          bestStreak: 4,
+          zoneHits: { head: 3, body: 4, limb: 1 },
+        }}
+        timeLeft={0}
+        gameOver={true}
+        grade="A"
+        comparison={{
+          previous: null,
+          isNewBest: false,
+          scoreDelta: null,
+          accuracyDelta: null,
+          reactionDelta: null,
+        }}
+      />
+    )
+
+    expect(screen.getByText('命中部位')).toBeInTheDocument()
+    expect(screen.getByText('头部')).toBeInTheDocument()
+    expect(screen.getByText('躯干')).toBeInTheDocument()
+    expect(screen.getByText('四肢')).toBeInTheDocument()
+  })
+
   it('should show game over summary with grade and comparison', () => {
     const onRestart = vi.fn()
     const result = GameUI({

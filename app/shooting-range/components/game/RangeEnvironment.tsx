@@ -1030,6 +1030,16 @@ function SafetyStripe({ x, z, vertical = false }: { x: number; z: number; vertic
 }
 
 function WarehouseRange({ config }: { config: MapConfig }) {
+  const distanceMarkers = useMemo(
+    () => [
+      { z: -10, label: '5M' },
+      { z: -22, label: '12M' },
+      { z: -34, label: '20M' },
+      { z: -46, label: '30M' },
+    ],
+    []
+  )
+
   const crateStacks = useMemo(
     () => [
       { x: -14, z: -28, h: 2.2 },
@@ -1045,6 +1055,28 @@ function WarehouseRange({ config }: { config: MapConfig }) {
     []
   )
 
+  const deepCrates = useMemo(
+    () => [
+      { x: -15.8, z: -44, w: 2.6, h: 2.8, d: 1.8 },
+      { x: 15.5, z: -42, w: 2.4, h: 2.2, d: 1.6 },
+      { x: -15.2, z: -30, w: 2.2, h: 1.8, d: 1.4 },
+      { x: 15.8, z: -28, w: 2.0, h: 2.4, d: 1.5 },
+      { x: -14.5, z: -16, w: 1.8, h: 1.4, d: 1.2 },
+      { x: 14.8, z: -18, w: 2.2, h: 1.6, d: 1.3 },
+    ],
+    []
+  )
+
+  const sideRacks = useMemo(
+    () => [
+      { x: -17.2, z: -20, shelves: 4 },
+      { x: 17.2, z: -26, shelves: 3 },
+      { x: -17.2, z: -38, shelves: 5 },
+      { x: 17.2, z: -42, shelves: 4 },
+    ],
+    []
+  )
+
   const pallets = useMemo(
     () => [
       [-16, -12], [16, -14], [-6, -36], [8, -38],
@@ -1054,7 +1086,7 @@ function WarehouseRange({ config }: { config: MapConfig }) {
 
   return (
     <>
-      {/* meshBasic depth pass — ceiling trusses and solid wall plaques (no glass in lane) */}
+      {/* meshBasic depth pass — trusses, plaques, columns, conduit (no glass in lane) */}
       {[-16, -4, 8, 20].map(x => (
         <mesh key={`wh-truss-${x}`} position={[x, 11.35, -24]} rotation={[0, 0, Math.PI / 2]}>
           <boxGeometry args={[54, 0.38, 0.55]} />
@@ -1062,16 +1094,85 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         </mesh>
       ))}
 
-      {[
-        { z: -10, label: '5M' },
-        { z: -22, label: '12M' },
-        { z: -34, label: '20M' },
-        { z: -46, label: '30M' },
-      ].map(marker => (
-        <mesh key={marker.label} position={[-15.4, 3.2, marker.z]}>
-          <boxGeometry args={[0.06, 0.85, 1.3]} />
-          <meshBasicMaterial color="#1e1814" toneMapped={false} />
+      {distanceMarkers.map(marker => (
+        <mesh key={`wh-cross-truss-${marker.z}`} position={[2, 11.35, marker.z]} rotation={[0, Math.PI / 2, 0]}>
+          <boxGeometry args={[34, 0.3, 0.38]} />
+          <meshBasicMaterial color="#16120e" toneMapped={false} />
         </mesh>
+      ))}
+
+      {[-17.7, 17.7].map(x =>
+        [-12, -24, -36, -44].map(z => (
+          <mesh key={`wh-pillar-${x}-${z}`} position={[x, 5.5, z]}>
+            <boxGeometry args={[0.5, 11, 0.5]} />
+            <meshBasicMaterial color="#14100c" toneMapped={false} />
+          </mesh>
+        ))
+      )}
+
+      {[-8, 0, 8].map(x => (
+        <mesh key={`wh-conduit-${x}`} position={[x, 10.15, -24]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[50, 0.14, 0.14]} />
+          <meshBasicMaterial color="#241c14" toneMapped={false} />
+        </mesh>
+      ))}
+
+      {distanceMarkers.map(marker => (
+        <group key={marker.label} position={[-15.4, 3.2, marker.z]}>
+          <mesh>
+            <boxGeometry args={[0.06, 0.85, 1.3]} />
+            <meshBasicMaterial color="#1e1814" toneMapped={false} />
+          </mesh>
+          <mesh position={[0.05, 0.12, 0]}>
+            <boxGeometry args={[0.04, 0.22, 0.55]} />
+            <meshBasicMaterial color={config.accent} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {distanceMarkers.map(marker => (
+        <group key={`wh-aisle-band-${marker.z}`}>
+          <mesh position={[-17.6, 4.5, marker.z]}>
+            <boxGeometry args={[0.1, 0.4, 9]} />
+            <meshBasicMaterial color="#1c1612" toneMapped={false} />
+          </mesh>
+          <mesh position={[17.6, 4.5, marker.z]}>
+            <boxGeometry args={[0.1, 0.4, 9]} />
+            <meshBasicMaterial color="#1c1612" toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+
+      {[0, 1, 2].map(layer => (
+        <mesh key={`wh-backstop-depth-${layer}`} position={[0, 2.8 + layer * 1.4, -47.65 - layer * 0.12]}>
+          <boxGeometry args={[28 - layer * 2.5, 6 - layer * 0.5, 0.1]} />
+          <meshBasicMaterial color={['#14100c', '#16120e', '#181410'][layer]} toneMapped={false} />
+        </mesh>
+      ))}
+
+      {deepCrates.map((crate, index) => (
+        <mesh
+          key={`wh-deep-crate-${index}`}
+          position={[crate.x, crate.h / 2 - 1.85, crate.z]}
+        >
+          <boxGeometry args={[crate.w, crate.h, crate.d]} />
+          <meshBasicMaterial color={index % 2 === 0 ? '#1a1410' : '#16120e'} toneMapped={false} />
+        </mesh>
+      ))}
+
+      {sideRacks.map((rack, index) => (
+        <group key={`wh-side-rack-${index}`} position={[rack.x, 1.2, rack.z]}>
+          <mesh>
+            <boxGeometry args={[0.35, rack.shelves * 1.35 + 0.8, 2.4]} />
+            <meshBasicMaterial color="#14100c" toneMapped={false} />
+          </mesh>
+          {Array.from({ length: rack.shelves }, (_, shelf) => (
+            <mesh key={shelf} position={[rack.x > 0 ? -0.12 : 0.12, shelf * 1.35 - 0.2, 0]}>
+              <boxGeometry args={[0.55, 0.1, 2.2]} />
+              <meshBasicMaterial color="#1c1814" toneMapped={false} />
+            </mesh>
+          ))}
+        </group>
       ))}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 12.02, -18]}>
@@ -1235,10 +1336,17 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial color="#6a6058" metalness={0.15} roughness={0.75} />
       </mesh>
 
-      {[-10, -22, -34, -46].map(z => (
-        <mesh key={`aisle-marker-${z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9645, z]}>
+      {distanceMarkers.map(marker => (
+        <mesh key={`aisle-marker-${marker.z}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9645, marker.z]}>
           <planeGeometry args={[8.5, 0.35]} />
           <meshStandardMaterial color="#3a342c" roughness={0.92} />
+        </mesh>
+      ))}
+
+      {distanceMarkers.map(marker => (
+        <mesh key={`wh-floor-trans-${marker.z}`} position={[0, -1.961, marker.z]}>
+          <boxGeometry args={[12, 0.06, 0.08]} />
+          <meshBasicMaterial color="#2a2218" toneMapped={false} />
         </mesh>
       ))}
 
@@ -1263,12 +1371,20 @@ function WarehouseRange({ config }: { config: MapConfig }) {
         <meshStandardMaterial color="#4a4840" roughness={0.88} />
       </mesh>
 
-      {/* Lane edge curbs — painted floor lines outside bullet path */}
+      {/* Lane edge curbs — solid posts + painted floor lines outside bullet path */}
       {[-15.2, 15.2].map(x => (
-        <mesh key={`wh-lane-curb-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.971, -24]}>
-          <planeGeometry args={[0.12, 48]} />
-          <meshStandardMaterial color={config.accent} metalness={0.2} roughness={0.75} />
-        </mesh>
+        <group key={`wh-lane-curb-${x}`}>
+          {[-8, -20, -32, -44].map(z => (
+            <mesh key={z} position={[x, 0.18, z]}>
+              <boxGeometry args={[0.1, 0.36, 0.1]} />
+              <meshBasicMaterial color="#4a3d30" toneMapped={false} />
+            </mesh>
+          ))}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.971, -24]}>
+            <planeGeometry args={[0.12, 48]} />
+            <meshStandardMaterial color={config.accent} metalness={0.2} roughness={0.75} />
+          </mesh>
+        </group>
       ))}
 
       {[-16, 16].map(x => (

@@ -19,6 +19,7 @@ import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types
 import { CrosshairSettings } from './CrosshairSettings'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
+import { SessionFeedback } from './game/SessionFeedback'
 import type { ShootingSceneSnapshot } from './game/GameScene'
 import { ShootingGameCanvas } from './ShootingGameCanvas'
 import {
@@ -65,6 +66,8 @@ export default function ShootingGame({
     gameStarted,
     showStartOverlay,
     hitMarker,
+    hitPulse,
+    streakToast,
     sessionStats,
     recordShot,
     showHitFeedback,
@@ -217,7 +220,14 @@ export default function ShootingGame({
       />
 
       {gameStarted && !gameOver && isPointerLocked && (
-        <Crosshair config={crosshairConfig} hit={hitMarker} />
+        <>
+          <Crosshair config={crosshairConfig} hit={hitMarker} />
+          <SessionFeedback hitPulse={hitPulse} streakToast={streakToast} />
+        </>
+      )}
+
+      {gameStarted && !gameOver && browserSupport.useFallback && (
+        <SessionFeedback hitPulse={hitPulse} streakToast={streakToast} />
       )}
 
       {gameStarted && (

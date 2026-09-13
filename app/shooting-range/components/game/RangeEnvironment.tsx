@@ -556,6 +556,72 @@ function DeciduousTree({
   )
 }
 
+function UmbrellaTree({
+  position,
+  scale = 1,
+}: {
+  position: [number, number, number]
+  scale?: number
+}) {
+  const canopyLayers = useMemo(
+    () => [
+      { pos: [0, 4.1, 0] as [number, number, number], r: 1.45, color: '#2f6836' },
+      { pos: [0.28, 4.35, -0.18] as [number, number, number], r: 0.95, color: '#3a783e' },
+      { pos: [-0.32, 3.95, 0.22] as [number, number, number], r: 0.82, color: '#286030' },
+    ],
+    []
+  )
+
+  return (
+    <group position={position} scale={scale}>
+      <TreeSilhouette height={5.6} width={2.1} />
+      <mesh position={[0, 1.35, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.12, 2.7, 8]} />
+        <meshStandardMaterial color="#5a4838" roughness={0.94} />
+      </mesh>
+      {canopyLayers.map((layer, i) => (
+        <mesh key={i} position={layer.pos} scale={[1.15, 0.55, 1.05]} castShadow>
+          <icosahedronGeometry args={[layer.r, 1]} />
+          <meshStandardMaterial color={layer.color} roughness={0.84} metalness={0.02} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function SparseTree({
+  position,
+  scale = 1,
+}: {
+  position: [number, number, number]
+  scale?: number
+}) {
+  const foliage = useMemo(
+    () => [
+      { pos: [0.42, 3.2, 0.15] as [number, number, number], r: 0.78, color: '#3a743c' },
+      { pos: [-0.55, 3.85, -0.22] as [number, number, number], r: 0.92, color: '#2e6434' },
+      { pos: [0.08, 4.55, 0.35] as [number, number, number], r: 0.62, color: '#427a44' },
+    ],
+    []
+  )
+
+  return (
+    <group position={position} scale={scale}>
+      <TreeSilhouette height={5.2} width={1.35} />
+      <mesh position={[0, 1.55, 0]} castShadow>
+        <cylinderGeometry args={[0.1, 0.16, 3.1, 8]} />
+        <meshStandardMaterial color="#6a5438" roughness={0.95} />
+      </mesh>
+      {foliage.map((cluster, i) => (
+        <mesh key={i} position={cluster.pos} castShadow>
+          <dodecahedronGeometry args={[cluster.r, 0]} />
+          <meshStandardMaterial color={cluster.color} roughness={0.88} metalness={0.02} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
 function BushClump({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const blobs = useMemo(
     () => [
@@ -893,15 +959,15 @@ function OutdoorRange() {
   const treeLine = useMemo(
     () => [
       { pos: [-22, -22] as [number, number], type: 'evergreen' as const, scale: 1.15 },
-      { pos: [-14, -30] as [number, number], type: 'deciduous' as const, scale: 1.0 },
-      { pos: [10, -26] as [number, number], type: 'evergreen' as const, scale: 1.05 },
+      { pos: [-14, -30] as [number, number], type: 'umbrella' as const, scale: 1.0 },
+      { pos: [10, -26] as [number, number], type: 'sparse' as const, scale: 1.05 },
       { pos: [20, -36] as [number, number], type: 'deciduous' as const, scale: 1.2 },
       { pos: [-26, -40] as [number, number], type: 'evergreen' as const, scale: 0.95 },
-      { pos: [2, -44] as [number, number], type: 'deciduous' as const, scale: 1.08 },
-      { pos: [-16, -52] as [number, number], type: 'evergreen' as const, scale: 1.25 },
+      { pos: [2, -44] as [number, number], type: 'umbrella' as const, scale: 1.08 },
+      { pos: [-16, -52] as [number, number], type: 'sparse' as const, scale: 1.25 },
       { pos: [24, -48] as [number, number], type: 'deciduous' as const, scale: 0.92 },
       { pos: [-8, -58] as [number, number], type: 'evergreen' as const, scale: 1.1 },
-      { pos: [14, -56] as [number, number], type: 'deciduous' as const, scale: 0.85 },
+      { pos: [14, -56] as [number, number], type: 'umbrella' as const, scale: 0.85 },
     ],
     []
   )
@@ -1065,13 +1131,19 @@ function OutdoorRange() {
         <BushClump key={i} position={[x, -1.95, z]} scale={0.85 + (i % 3) * 0.12} />
       ))}
 
-      {treeLine.map(({ pos, type, scale }, i) =>
-        type === 'evergreen' ? (
-          <EvergreenTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
-        ) : (
-          <DeciduousTree key={i} position={[pos[0], -2, pos[1]]} scale={scale} />
-        )
-      )}
+      {treeLine.map(({ pos, type, scale }, i) => {
+        const treePosition = [pos[0], -2, pos[1]] as [number, number, number]
+        if (type === 'evergreen') {
+          return <EvergreenTree key={i} position={treePosition} scale={scale} />
+        }
+        if (type === 'umbrella') {
+          return <UmbrellaTree key={i} position={treePosition} scale={scale} />
+        }
+        if (type === 'sparse') {
+          return <SparseTree key={i} position={treePosition} scale={scale} />
+        }
+        return <DeciduousTree key={i} position={treePosition} scale={scale} />
+      })}
 
       {/* Distant ridge silhouettes for horizon readability */}
       {[-28, 0, 26].map((x, i) => (

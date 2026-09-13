@@ -29,5 +29,10 @@ export function useCrosshairSettings() {
     setConfig(next)
   }, [])
 
-  return { config, updateConfig, resetConfig }
+  const applyConfig = useCallback((nextConfig: CrosshairConfig) => {
+    const next = saveCrosshairConfig(normalizeCrosshairConfig(nextConfig))
+    setConfig(next)
+  }, [])
+
+  return { config, updateConfig, resetConfig, applyConfig }
 }

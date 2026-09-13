@@ -44,6 +44,7 @@ interface ShootingGameProps {
   crosshairConfig: CrosshairConfig
   onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
   onCrosshairReset: () => void
+  onCrosshairApply: (config: CrosshairConfig) => void
   setGameStarted?: (started: boolean) => void
   onViewHistory?: () => void
   onChangeDrill?: () => void
@@ -62,6 +63,7 @@ export default function ShootingGame({
   crosshairConfig,
   onCrosshairChange,
   onCrosshairReset,
+  onCrosshairApply,
   setGameStarted,
   onViewHistory,
   onChangeDrill,
@@ -396,10 +398,9 @@ export default function ShootingGame({
       {showCrosshairSettings && !showPauseOverlay && (
         <CrosshairSettingsSheet
           variant="ingame"
-          saveLabel="保存并继续"
+          applyLabel="应用并继续"
           config={crosshairConfig}
-          onChange={onCrosshairChange}
-          onReset={onCrosshairReset}
+          onApply={onCrosshairApply}
           onClose={() => {
             setShowCrosshairSettings(false)
             if (gameStarted && !gameOver && !browserSupport.useFallback) {

@@ -15,6 +15,7 @@ interface LookSensitivityControlProps {
   onChange: (value: number) => void
   compact?: boolean
   variant?: 'default' | 'dark'
+  hideHint?: boolean
 }
 
 export function LookSensitivityControl({
@@ -22,6 +23,7 @@ export function LookSensitivityControl({
   onChange,
   compact = false,
   variant = 'default',
+  hideHint = false,
 }: LookSensitivityControlProps) {
   const clamped = clampLookSensitivity(value)
   const onDark = variant === 'dark'
@@ -72,9 +74,11 @@ export function LookSensitivityControl({
         onValueChange={([next]) => onChange(next)}
         aria-label="鼠标灵敏度"
       />
-      <p className={`text-xs leading-5 ${hintClass}`}>
-        影响视角转动速度。设置会保存到本地，下次训练自动恢复。
-      </p>
+      {!hideHint && (
+        <p className={`text-xs leading-5 ${hintClass}`}>
+          影响视角转动速度。设置会保存到本地，下次训练自动恢复。
+        </p>
+      )}
     </section>
   )
 }

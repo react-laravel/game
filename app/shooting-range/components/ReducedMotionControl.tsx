@@ -14,6 +14,7 @@ interface ReducedMotionControlProps {
   onChange: (value: MotionPreference) => void
   compact?: boolean
   variant?: 'default' | 'dark'
+  hideHint?: boolean
 }
 
 export function ReducedMotionControl({
@@ -21,6 +22,7 @@ export function ReducedMotionControl({
   onChange,
   compact = false,
   variant = 'default',
+  hideHint = false,
 }: ReducedMotionControlProps) {
   const onDark = variant === 'dark'
   const titleClass = onDark ? 'text-white' : 'text-foreground'
@@ -38,9 +40,11 @@ export function ReducedMotionControl({
         <Sparkles className={`mt-0.5 h-4 w-4 shrink-0 ${onDark ? 'text-cyan-200' : 'text-primary'}`} />
         <div>
           <div className={`text-sm font-semibold ${titleClass}`}>动态效果</div>
-          <p className={`mt-0.5 text-xs leading-5 ${hintClass}`}>
-            减弱得分飘字、连击提示与枪口闪光强度，枪械功能不受影响。
-          </p>
+          {!hideHint && (
+            <p className={`mt-0.5 text-xs leading-5 ${hintClass}`}>
+              减弱得分飘字、连击提示与枪口闪光强度，枪械功能不受影响。
+            </p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">

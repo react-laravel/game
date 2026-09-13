@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 26 (2026-09-13): **ESC pause = compact centered popup** (回到游戏 / 设置 / 退出游戏 + 重新开始 secondary); **tabbed settings panel** (准星 / 灵敏度 / 音量 / 其他) opened from 设置 — removed left-drawer `shooting-pause-menu`. `CrosshairSettingsSheet` apply/cancel + dual-background preview on setup. Outdoor berm target frames. Focused 133/133; full 692/692; eslint 0 errors; `pause-overlay.png` refreshed.
 - Shooting Range cycle 25 (2026-09-13): **deploy CI lint fix** (seeded PRNG textures, no setState-in-effect); **Overwatch left pause menu** with 结束训练/准星/设置 on left rail; setup **准星设置** behind `CrosshairSettingsSheet` menu. Focused 129/129; full 688/688; eslint 0 errors; screenshots `setup-quick-start.png` + `pause-overlay.png`.
 - Shooting Range cycle 24 (2026-09-13, overnight window ending ~10:45 Asia/Shanghai): ESC pause overlay scrolls on short viewports with tighter spacing so SFX / reduced-motion controls stay reachable; results「查看进步」lands on history with a subtle highlight on the latest session row; zero-shot sessions persist `accuracy: 0` (not 100) for chart averages; Enter/Space no longer re-locks pointer while crosshair settings are open. Focused tests 123/123; full suite 682/682; screenshots refreshed.
 - Shooting Range cycle 23 (2026-09-13): compact Chinese help sheet (`?` HUD + pause「操作说明」); `prefers-reduced-motion` + pause「动态效果」toggle for score pop / combo toast / muzzle flash / impact particles; target hit ring-burst on despawn; outdoor lane gravel shoulders + fence concrete footings. Focused tests 119/119; screenshots refreshed (pause-overlay retained).
@@ -184,6 +185,28 @@ Follow-up after #21 coordinator review; Aimlabs-inspired audio/crosshair UX with
 - `docs/shooting-range-screenshots/pause-overlay.png` added for ESC menu visual QA.
 - All screenshots overwritten via `node scripts/capture-shooting-range-maps.mjs`.
 - Focused shooting-range tests: **113/113**.
+
+## Shooting Range overnight polish cycle 26 (2026-09-13)
+
+Sam correction: discard #25 left-drawer pause direction. ESC pause is a **small centered popup** only.
+
+### ESC pause popup
+- `ShootingPauseOverlay`: compact `shooting-pause-dialog` with **回到游戏**, **设置**, **退出游戏**, and secondary **重新开始**.
+- No sensitivity / volume / crosshair / motion on the first-level popup; removed `shooting-pause-menu` left rail.
+
+### Tabbed in-game settings
+- `ShootingPauseSettingsPanel`: tabs **准星** · **灵敏度** · **音量** · **其他** (dynamic effects, help summary, 换训练项).
+- Opened from pause popup **设置**; back arrow returns to pause menu while still paused.
+
+### Crosshair sheet (setup / HUD)
+- `CrosshairSettingsSheet`: draft + **取消** / **应用**; `CrosshairSettings` dual light/dark **enhancedPreview**.
+
+### Visual nit
+- Outdoor berm: wooden target-frame silhouettes for backstop depth.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/pause-overlay.png` refreshed (compact popup).
+- Focused shooting-range tests: **133/133**; full suite **692/692**; `npm run lint` **0 errors**.
 
 ## Shooting Range overnight polish cycle 25 (2026-09-13)
 

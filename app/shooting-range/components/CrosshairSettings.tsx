@@ -19,6 +19,8 @@ interface CrosshairSettingsProps {
   onChange: (patch: Partial<CrosshairConfig>) => void
   onReset: () => void
   compact?: boolean
+  /** Dual light/dark preview panes for sheet modals */
+  enhancedPreview?: boolean
 }
 
 export function CrosshairSettings({
@@ -26,6 +28,7 @@ export function CrosshairSettings({
   onChange,
   onReset,
   compact = false,
+  enhancedPreview = false,
 }: CrosshairSettingsProps) {
   return (
     <section className={compact ? 'space-y-4' : 'mt-6 space-y-4'}>
@@ -41,12 +44,43 @@ export function CrosshairSettings({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-slate-950">
-        <div className="relative flex h-36 items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_72%)]">
-          <Crosshair config={config} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
-            实时预览
+        {enhancedPreview ? (
+          <div className="relative">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.18]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(45deg, #ffffff 25%, transparent 25%), linear-gradient(-45deg, #ffffff 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ffffff 75%), linear-gradient(-45deg, transparent 75%, #ffffff 75%)',
+                backgroundSize: '12px 12px',
+                backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0',
+              }}
+            />
+            <div className="grid grid-cols-2 divide-x divide-white/10">
+              <div className="relative flex h-40 items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_78%)]">
+                <Crosshair config={config} />
+                <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-white/55">
+                  暗色场景
+                </span>
+              </div>
+              <div className="relative flex h-40 items-center justify-center bg-[radial-gradient(circle_at_center,#e8eef4_0%,#c8d4dc_82%)]">
+                <Crosshair config={config} />
+                <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-slate-600">
+                  亮色场景
+                </span>
+              </div>
+            </div>
+            <div className="border-t border-white/8 px-3 py-1.5 text-center text-[10px] tracking-[0.16em] text-white/40 uppercase">
+              实时预览 · 双背景对比
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative flex h-36 items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_72%)]">
+            <Crosshair config={config} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+              实时预览
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

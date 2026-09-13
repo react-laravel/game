@@ -22,20 +22,38 @@ const baseProps = {
 }
 
 describe('ShootingPauseOverlay', () => {
-  it('renders an Overwatch-style left pause menu with reachable exit and settings', () => {
+  it('renders a compact centered pause dialog without a left drawer', () => {
     render(<ShootingPauseOverlay {...baseProps} onChangeDrill={vi.fn()} />)
 
-    const menu = screen.getByTestId('shooting-pause-menu')
-    expect(menu).toBeInTheDocument()
     expect(screen.getByTestId('shooting-pause-overlay')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /继续训练/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '结束训练' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '换训练项' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '准星设置' })).toBeInTheDocument()
-    expect(screen.getByText('动态效果')).toBeInTheDocument()
+    expect(screen.getByTestId('shooting-pause-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('shooting-pause-menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '回到游戏' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '设置' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '退出游戏' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '重新开始' })).toBeInTheDocument()
+    expect(screen.queryByText('鼠标灵敏度')).not.toBeInTheDocument()
+    expect(screen.queryByText('音效音量')).not.toBeInTheDocument()
+    expect(screen.queryByText('动态效果')).not.toBeInTheDocument()
   })
 
-  it('wires primary actions from the left menu', () => {
+  it('opens tabbed settings from the pause popup', () => {
+    render(<ShootingPauseOverlay {...baseProps} onChangeDrill={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+
+    expect(screen.getByTestId('shooting-pause-settings')).toBeInTheDocument()
+    expect(screen.queryByTestId('shooting-pause-dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '准星' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '灵敏度' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '音量' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '其他' })).toBeInTheDocument()
+    expect(screen.getByText('准星设置')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '灵敏度' })).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByRole('tab', { name: '音量' })).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('wires resume and exit from the compact pause popup', () => {
     const onResume = vi.fn()
     const onExitTraining = vi.fn()
     render(
@@ -46,10 +64,10 @@ describe('ShootingPauseOverlay', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /继续训练/ }))
+    fireEvent.click(screen.getByRole('button', { name: '回到游戏' }))
     expect(onResume).toHaveBeenCalledOnce()
 
-    fireEvent.click(screen.getByRole('button', { name: '结束训练' }))
+    fireEvent.click(screen.getByRole('button', { name: '退出游戏' }))
     expect(onExitTraining).toHaveBeenCalledOnce()
   })
 })

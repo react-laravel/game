@@ -97,8 +97,7 @@ interface ShootingSetupProps {
   onQuickStart: (preset: DrillPreset) => void
   onViewHistory: () => void
   crosshairConfig: CrosshairConfig
-  onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
-  onCrosshairReset: () => void
+  onCrosshairApply: (config: CrosshairConfig) => void
 }
 
 export function ShootingSetup({
@@ -118,8 +117,7 @@ export function ShootingSetup({
   onQuickStart,
   onViewHistory,
   crosshairConfig,
-  onCrosshairChange,
-  onCrosshairReset,
+  onCrosshairApply,
 }: ShootingSetupProps) {
   const [showCustom, setShowCustom] = useState(false)
   const [showCrosshairPanel, setShowCrosshairPanel] = useState(false)
@@ -395,9 +393,9 @@ export function ShootingSetup({
       {showCrosshairPanel && (
         <CrosshairSettingsSheet
           config={crosshairConfig}
-          onChange={onCrosshairChange}
-          onReset={onCrosshairReset}
+          onApply={onCrosshairApply}
           onClose={() => setShowCrosshairPanel(false)}
+          applyLabel="应用并关闭"
         />
       )}
     </div>

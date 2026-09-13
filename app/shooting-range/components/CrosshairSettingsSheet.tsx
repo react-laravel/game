@@ -1,29 +1,42 @@
 'use client'
 
+import { useState } from 'react'
 import { Crosshair as CrosshairIcon, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { CrosshairConfig } from '../utils/crosshairConfig'
+import {
+  DEFAULT_CROSSHAIR_CONFIG,
+  normalizeCrosshairConfig,
+  type CrosshairConfig,
+} from '../utils/crosshairConfig'
 import { CrosshairSettings } from './CrosshairSettings'
 
 interface CrosshairSettingsSheetProps {
   config: CrosshairConfig
-  onChange: (patch: Partial<CrosshairConfig>) => void
-  onReset: () => void
+  onApply: (config: CrosshairConfig) => void
   onClose: () => void
   /** setup = light card modal; in-game = dark overlay */
   variant?: 'setup' | 'ingame'
-  saveLabel?: string
+  applyLabel?: string
 }
 
 export function CrosshairSettingsSheet({
   config,
-  onChange,
-  onReset,
+  onApply,
   onClose,
   variant = 'setup',
-  saveLabel = '完成',
+  applyLabel = '应用',
 }: CrosshairSettingsSheetProps) {
   const isIngame = variant === 'ingame'
+  const [draft, setDraft] = useState<CrosshairConfig>(() => normalizeCrosshairConfig(config))
+
+  const handleApply = () => {
+    onApply(draft)
+    onClose()
+  }
+
+  const handleCancel = () => {
+    onClose()
+  }
 
   return (
     <div
@@ -66,7 +79,7 @@ export function CrosshairSettingsSheet({
                 准星设置
               </h2>
               <p className={`mt-1 text-xs leading-5 ${isIngame ? 'text-white/50' : 'text-muted-foreground'}`}>
-                调整样式、颜色与大小，设置会保存到本地。
+                调整样式、颜色与大小。应用后保存到本地，取消则丢弃未保存的更改。
               </p>
             </div>
           </div>
@@ -78,21 +91,42 @@ export function CrosshairSettingsSheet({
                 ? 'shrink-0 border border-white/10 text-white/70 hover:bg-white/5 hover:text-white'
                 : 'shrink-0'
             }
-            onClick={onClose}
+            onClick={handleCancel}
             aria-label="关闭准星设置"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <CrosshairSettings compact config={config} onChange={onChange} onReset={onReset} />
+        <CrosshairSettings
+          compact
+          enhancedPreview
+          config={draft}
+          onChange={patch => setDraft(previous => normalizeCrosshairConfig({ ...previous, ...patch }))}
+          onReset={() => setDraft(DEFAULT_CROSSHAIR_CONFIG)}
+        />
 
-        <Button
-          className={`mt-6 w-full font-bold ${isIngame ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : ''}`}
-          onClick={onClose}
-        >
-          {saveLabel}
-        </Button>
+        <div className="mt-6 flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className={`flex-1 font-semibold ${
+              isIngame
+                ? 'border-white/15 bg-transparent text-white hover:bg-white/10 hover:text-white'
+                : ''
+            }`}
+            onClick={handleCancel}
+          >
+            取消
+          </Button>
+          <Button
+            type="button"
+            className={`flex-1 font-bold ${isIngame ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' : ''}`}
+            onClick={handleApply}
+          >
+            {applyLabel}
+          </Button>
+        </div>
       </div>
     </div>
   )

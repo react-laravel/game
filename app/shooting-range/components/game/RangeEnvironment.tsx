@@ -1156,6 +1156,26 @@ function OutdoorRange() {
         </mesh>
       ))}
 
+      {/* Berm target frames — wooden posts + paper silhouette for backstop depth */}
+      {[-7, 0, 7].map(x => (
+        <group key={`berm-frame-${x}`} position={[x, -1.15, -45.75]}>
+          {[-0.5, 0.5].map(postX => (
+            <mesh key={postX} position={[postX, 1.05, 0]}>
+              <boxGeometry args={[0.1, 2.1, 0.1]} />
+              <meshStandardMaterial color="#6a5848" roughness={0.9} />
+            </mesh>
+          ))}
+          <mesh position={[0, 2.0, 0]}>
+            <boxGeometry args={[1.15, 0.08, 0.08]} />
+            <meshStandardMaterial color="#7a6858" roughness={0.86} />
+          </mesh>
+          <mesh position={[0, 1.35, 0.03]}>
+            <planeGeometry args={[0.82, 0.62]} />
+            <meshBasicMaterial color="#f2eee6" transparent opacity={0.14} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+
       <group position={[-20, 0, -10]}>
         <mesh position={[0, 2.5, 0]}>
           <cylinderGeometry args={[0.05, 0.05, 5, 8]} />

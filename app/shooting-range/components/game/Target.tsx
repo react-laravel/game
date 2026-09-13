@@ -38,7 +38,8 @@ const plateHitEmissive = new THREE.Color('#5a1010')
 const ringHitColor = new THREE.Color('#c88830')
 const innerIdleColor = new THREE.Color('#1a2228')
 const innerHitColor = new THREE.Color('#f0e8d0')
-const centerIdleColor = new THREE.Color('#c89838')
+const centerIdleColor = new THREE.Color('#887058')
+const ringLitColor = new THREE.Color('#b0a898')
 const centerHitColor = new THREE.Color('#f0ece0')
 const MATTE = { metalness: 0.04, roughness: 0.9 }
 
@@ -66,15 +67,37 @@ function applyTargetLook(
   }
   plate.metalness = MATTE.metalness
   plate.roughness = MATTE.roughness
-  ring.color.set(hit ? ringHitColor : ringIdleHex)
+  if (hit) {
+    ring.color.copy(ringHitColor)
+    ring.emissive.set('#000000')
+    ring.emissiveIntensity = 0
+  } else {
+    ring.color.set(ringIdleHex)
+    if (lowLightBoost > 0) {
+      ring.color.lerp(ringLitColor, lowLightBoost * 0.45)
+      ring.emissive.set(ringIdleHex)
+      ring.emissiveIntensity = lowLightBoost * 0.34
+    } else {
+      ring.emissive.set('#000000')
+      ring.emissiveIntensity = 0
+    }
+  }
   ring.metalness = 0.02
-  ring.roughness = 0.92
+  ring.roughness = 0.94
   inner.color.copy(hit ? innerHitColor : innerIdleColor)
   inner.metalness = 0.02
   inner.roughness = 0.94
   center.color.copy(hit ? centerHitColor : centerIdleColor)
+  if (!hit && lowLightBoost > 0) {
+    center.color.lerp(centerHitColor, lowLightBoost * 0.28)
+    center.emissive.set('#6a5840')
+    center.emissiveIntensity = lowLightBoost * 0.24
+  } else {
+    center.emissive.set('#000000')
+    center.emissiveIntensity = 0
+  }
   center.metalness = 0.03
-  center.roughness = 0.88
+  center.roughness = 0.9
 }
 
 /** A moving range drone. Movement is applied directly to Three.js objects. */

@@ -40,23 +40,39 @@ function createCanvasTexture(
 function useGrassTexture() {
   return useMemo(
     () =>
-      createCanvasTexture(256, 256, (ctx, w, h) => {
+      createCanvasTexture(512, 512, (ctx, w, h) => {
         const rand = createSeededRandom(0x67a34c)
-        ctx.fillStyle = '#4a7a48'
+        ctx.fillStyle = '#4a7648'
         ctx.fillRect(0, 0, w, h)
-        for (let i = 0; i < 4200; i += 1) {
+
+        // Large soft color washes — organic lawn variation, not tile blocks.
+        for (let i = 0; i < 28; i += 1) {
+          const cx = rand() * w
+          const cy = rand() * h
+          const radius = 48 + rand() * 92
+          const tone = rand()
+          const g = tone > 0.5 ? 108 + rand() * 18 : 88 + rand() * 16
+          const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
+          gradient.addColorStop(0, `rgba(${48 + rand() * 12}, ${g}, ${46 + rand() * 10}, 0.22)`)
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          ctx.fillStyle = gradient
+          ctx.fillRect(0, 0, w, h)
+        }
+
+        // Fine blade strokes — high frequency, low contrast.
+        for (let i = 0; i < 5200; i += 1) {
           const x = rand() * w
           const y = rand() * h
           const shade = rand()
           ctx.fillStyle =
-            shade > 0.82
-              ? 'rgba(90, 68, 42, 0.35)'
-              : shade > 0.55
-                ? `rgba(${58 + rand() * 28}, ${108 + rand() * 32}, ${58 + rand() * 22}, 0.55)`
-                : `rgba(${42 + rand() * 18}, ${92 + rand() * 24}, ${48 + rand() * 16}, 0.45)`
-          ctx.fillRect(x, y, 1 + rand() * 2, 1 + rand() * 3)
+            shade > 0.88
+              ? 'rgba(82, 64, 40, 0.12)'
+              : shade > 0.52
+                ? `rgba(${54 + rand() * 16}, ${102 + rand() * 20}, ${54 + rand() * 14}, 0.28)`
+                : `rgba(${44 + rand() * 12}, ${88 + rand() * 16}, ${46 + rand() * 10}, 0.2)`
+          ctx.fillRect(x, y, 1 + rand() * 1.5, 1 + rand() * 2.5)
         }
-      }, 6),
+      }, 1),
     []
   )
 }
@@ -304,11 +320,12 @@ function AcousticFoamGrid({ x, z, facing }: { x: number; z: number; facing: 'lef
   )
 }
 
+/** Opaque dark backing — no transparent planes that read as glass in the lane. */
 function TreeSilhouette({ height = 5.2, width = 1.6 }: { height?: number; width?: number }) {
   return (
     <mesh position={[0, height * 0.48, -0.35]}>
       <planeGeometry args={[width, height]} />
-      <meshBasicMaterial color="#0a1410" transparent opacity={0.42} toneMapped={false} depthWrite={false} />
+      <meshBasicMaterial color="#0c1810" toneMapped={false} />
     </mesh>
   )
 }
@@ -787,7 +804,13 @@ function IndoorRange({ config }: { config: MapConfig }) {
 }
 
 /** Solid metal pole + box head — no glass housings in the lane. */
-function OutdoorRangeLight({ position }: { position: [number, number, number] }) {
+function OutdoorRangeLight({
+  position,
+  intensity = 3.35,
+}: {
+  position: [number, number, number]
+  intensity?: number
+}) {
   return (
     <group position={position}>
       <mesh position={[0, 2.8, 0]}>
@@ -803,11 +826,12 @@ function OutdoorRangeLight({ position }: { position: [number, number, number] })
         <meshStandardMaterial
           color="#fff0d8"
           emissive="#ffd878"
-          emissiveIntensity={0.62}
+          emissiveIntensity={0.42}
           toneMapped={false}
         />
       </mesh>
-      <pointLight position={[0, 5.2, 0.2]} intensity={2.55} color="#ffd890" distance={28} decay={2} />
+      <pointLight position={[0, 5.2, 0.2]} intensity={intensity} color="#ffd890" distance={36} decay={2} />
+      <pointLight position={[0, 1.8, 0.15]} intensity={intensity * 0.38} color="#ffe8c0" distance={22} decay={2} />
     </group>
   )
 }
@@ -832,21 +856,6 @@ function OutdoorRange({
       earthTexture?.dispose()
     }
   }, [grassTexture, earthTexture])
-
-  /** Flat ground-color patches — rotation locked to horizontal, no tilted slabs. */
-  const grassPatches = useMemo(
-    () => [
-      { x: -18, z: -14, w: 14, d: 10, color: '#3f6e3c', opacity: 0.35 },
-      { x: 16, z: -18, w: 12, d: 11, color: '#528a4e', opacity: 0.28 },
-      { x: -10, z: -32, w: 10, d: 14, color: '#3a6838', opacity: 0.32 },
-      { x: 14, z: -36, w: 11, d: 12, color: '#467a44', opacity: 0.3 },
-      { x: -22, z: -48, w: 16, d: 10, color: '#3d7040', opacity: 0.25 },
-      { x: 8, z: -52, w: 13, d: 9, color: '#4a8248', opacity: 0.28 },
-      { x: -6, z: -8, w: 8, d: 6, color: '#5a8a52', opacity: 0.22 },
-      { x: 20, z: -10, w: 9, d: 7, color: '#3e7240', opacity: 0.26 },
-    ],
-    []
-  )
 
   const treeLine = useMemo(
     () => [
@@ -908,27 +917,12 @@ function OutdoorRange({
         <meshStandardMaterial
           map={grassTexture}
           color={grassTint}
-          roughness={0.96}
-          metalness={0.02}
+          emissive={showRangeLights ? '#1a2820' : '#000000'}
+          emissiveIntensity={showRangeLights ? 0.14 : 0}
+          roughness={0.97}
+          metalness={0.01}
         />
       </mesh>
-
-      {grassPatches.map((patch, i) => (
-        <mesh
-          key={`grass-patch-${i}`}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[patch.x, -1.985, patch.z]}
-        >
-          <planeGeometry args={[patch.w, patch.d]} />
-          <meshStandardMaterial
-            color={patch.color}
-            roughness={0.95}
-            transparent
-            opacity={patch.opacity}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
 
       {[0, 1, 2].map(layer => (
         <mesh key={`berm-tier-${layer}`} position={[0, 0.55 + layer * 0.48, -44.35 - layer * 0.14]}>
@@ -1042,18 +1036,24 @@ function OutdoorRange({
               <OutdoorRangeLight key={`range-light-${x}-${z}`} position={[x, 0, z]} />
             ))
           )}
-          <OutdoorRangeLight position={[-10, 0, -44]} />
-          <OutdoorRangeLight position={[10, 0, -44]} />
+          <OutdoorRangeLight position={[-10, 0, -44]} intensity={3.8} />
+          <OutdoorRangeLight position={[10, 0, -44]} intensity={3.8} />
+          <OutdoorRangeLight position={[0, 0, -24]} intensity={2.8} />
           <mesh position={[0, 3.8, -45.5]}>
             <boxGeometry args={[34, 0.14, 0.35]} />
             <meshStandardMaterial
               color="#fff0d0"
               emissive="#ffb347"
-              emissiveIntensity={0.55}
+              emissiveIntensity={0.38}
               toneMapped={false}
             />
           </mesh>
-          <pointLight position={[0, 3.6, -45.5]} intensity={2.1} color="#ffd8a0" distance={34} decay={2} />
+          <pointLight position={[0, 3.6, -45.5]} intensity={2.85} color="#ffd8a0" distance={40} decay={2} />
+          <pointLight position={[0, 2.2, -20]} intensity={1.35} color="#ffe8c8" distance={52} decay={2} />
+          <pointLight position={[0, 1.4, -32]} intensity={1.15} color="#ffe0b8" distance={42} decay={2} />
+          <pointLight position={[-8, 3.8, -36]} intensity={1.65} color="#ffd8a8" distance={38} decay={2} />
+          <pointLight position={[8, 3.8, -36]} intensity={1.65} color="#ffd8a8" distance={38} decay={2} />
+          <pointLight position={[0, 4.2, -40]} intensity={2.2} color="#ffe8c0" distance={46} decay={2} />
         </>
       ) : null}
 

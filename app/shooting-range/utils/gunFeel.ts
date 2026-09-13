@@ -2,6 +2,7 @@
 
 export const MUZZLE_FLASH_DURATION = 0.072
 export const HIT_MARKER_DURATION_MS = 120
+export const MISS_MARKER_DURATION_MS = 90
 export const RECOIL_KICK_PITCH = 0.017
 export const RECOIL_KICK_YAW = 0.0032
 export const RECOIL_RECOVERY_SPEED = 13.5

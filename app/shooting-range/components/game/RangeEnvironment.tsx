@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import type { MapConfig } from '../../utils/mapConfigs'
+import { createSeededRandom } from '../../utils/seededRandom'
 
 interface RangeEnvironmentProps {
   config: MapConfig
@@ -34,19 +35,20 @@ function useGrassTexture() {
   return useMemo(
     () =>
       createCanvasTexture(256, 256, (ctx, w, h) => {
+        const rand = createSeededRandom(0x67a34c)
         ctx.fillStyle = '#4a7a48'
         ctx.fillRect(0, 0, w, h)
         for (let i = 0; i < 4200; i += 1) {
-          const x = Math.random() * w
-          const y = Math.random() * h
-          const shade = Math.random()
+          const x = rand() * w
+          const y = rand() * h
+          const shade = rand()
           ctx.fillStyle =
             shade > 0.82
               ? 'rgba(90, 68, 42, 0.35)'
               : shade > 0.55
-                ? `rgba(${58 + Math.random() * 28}, ${108 + Math.random() * 32}, ${58 + Math.random() * 22}, 0.55)`
-                : `rgba(${42 + Math.random() * 18}, ${92 + Math.random() * 24}, ${48 + Math.random() * 16}, 0.45)`
-          ctx.fillRect(x, y, 1 + Math.random() * 2, 1 + Math.random() * 3)
+                ? `rgba(${58 + rand() * 28}, ${108 + rand() * 32}, ${58 + rand() * 22}, 0.55)`
+                : `rgba(${42 + rand() * 18}, ${92 + rand() * 24}, ${48 + rand() * 16}, 0.45)`
+          ctx.fillRect(x, y, 1 + rand() * 2, 1 + rand() * 3)
         }
       }, 6),
     []
@@ -57,13 +59,14 @@ function useGravelTexture() {
   return useMemo(
     () =>
       createCanvasTexture(128, 128, (ctx, w, h) => {
+        const rand = createSeededRandom(0x8a7a62)
         ctx.fillStyle = '#8a7a62'
         ctx.fillRect(0, 0, w, h)
         for (let i = 0; i < 900; i += 1) {
-          const x = Math.random() * w
-          const y = Math.random() * h
-          const size = 1 + Math.random() * 2.5
-          const tone = 110 + Math.random() * 50
+          const x = rand() * w
+          const y = rand() * h
+          const size = 1 + rand() * 2.5
+          const tone = 110 + rand() * 50
           ctx.fillStyle = `rgb(${tone}, ${tone - 12}, ${tone - 28})`
           ctx.beginPath()
           ctx.arc(x, y, size, 0, Math.PI * 2)
@@ -78,14 +81,15 @@ function useEarthTexture() {
   return useMemo(
     () =>
       createCanvasTexture(128, 128, (ctx, w, h) => {
+        const rand = createSeededRandom(0x6a5840)
         ctx.fillStyle = '#6a5840'
         ctx.fillRect(0, 0, w, h)
         for (let i = 0; i < 700; i += 1) {
-          const x = Math.random() * w
-          const y = Math.random() * h
-          const tone = 80 + Math.random() * 45
+          const x = rand() * w
+          const y = rand() * h
+          const tone = 80 + rand() * 45
           ctx.fillStyle = `rgba(${tone + 18}, ${tone}, ${tone - 22}, 0.65)`
-          ctx.fillRect(x, y, 2 + Math.random() * 4, 1 + Math.random() * 3)
+          ctx.fillRect(x, y, 2 + rand() * 4, 1 + rand() * 3)
         }
       }, 2),
     []

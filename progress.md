@@ -42,6 +42,7 @@ Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示�
 
 ## Current work
 
+- Shooting Range cycle 25 (2026-09-13): **deploy CI lint fix** (seeded PRNG textures, no setState-in-effect); **Overwatch left pause menu** with 结束训练/准星/设置 on left rail; setup **准星设置** behind `CrosshairSettingsSheet` menu. Focused 129/129; full 688/688; eslint 0 errors; screenshots `setup-quick-start.png` + `pause-overlay.png`.
 - Shooting Range cycle 24 (2026-09-13, overnight window ending ~10:45 Asia/Shanghai): ESC pause overlay scrolls on short viewports with tighter spacing so SFX / reduced-motion controls stay reachable; results「查看进步」lands on history with a subtle highlight on the latest session row; zero-shot sessions persist `accuracy: 0` (not 100) for chart averages; Enter/Space no longer re-locks pointer while crosshair settings are open. Focused tests 123/123; full suite 682/682; screenshots refreshed.
 - Shooting Range cycle 23 (2026-09-13): compact Chinese help sheet (`?` HUD + pause「操作说明」); `prefers-reduced-motion` + pause「动态效果」toggle for score pop / combo toast / muzzle flash / impact particles; target hit ring-burst on despawn; outdoor lane gravel shoulders + fence concrete footings. Focused tests 119/119; screenshots refreshed (pause-overlay retained).
 - Shooting Range cycle 22 (2026-09-13): master SFX volume + mute toggle on setup custom panel and ESC pause overlay, persisted via `lastConfigStorage`; shot/hit/miss Web Audio respects volume + mute. Crosshair settings: dot/circle/cross quick presets, Chinese color/size labels, live preview retained. Added `pause-overlay.png` to `docs/shooting-range-screenshots/`. Focused tests 113/113; screenshots overwritten.
@@ -183,6 +184,30 @@ Follow-up after #21 coordinator review; Aimlabs-inspired audio/crosshair UX with
 - `docs/shooting-range-screenshots/pause-overlay.png` added for ESC menu visual QA.
 - All screenshots overwritten via `node scripts/capture-shooting-range-maps.mjs`.
 - Focused shooting-range tests: **113/113**.
+
+## Shooting Range overnight polish cycle 25 (2026-09-13)
+
+Priority interrupt: production deploy CI (`eslint .`) was failing on `main`; UX pass for Overwatch pause + setup crosshair menu.
+
+### CI / lint fixes (deploy blocker)
+- `RangeEnvironment.tsx`: replaced `Math.random()` in texture `useMemo` builders with deterministic `createSeededRandom` seeds.
+- `SessionFeedback.tsx`: render `hitPulse` / `streakToast` directly; auto-clear timers live in `useShootingSession.recordHit`.
+- `useMotionPreference.ts`, `page.tsx`, `ShootingSetup.tsx`: lazy `useState` initializers instead of mount `useEffect` setState.
+- `ShootingHistory.tsx`: highlight row id from lazy init; effect only scrolls + fades highlight (async timeout).
+- `MoonDiceDie.test.tsx`: eslint-disable on test `next/image` stub.
+
+### Overwatch-style ESC pause menu
+- `ShootingPauseOverlay` is a **left vertical rail** (not centered relock modal) with large buttons: 继续训练·重新锁定鼠标, 重新开始, 换训练项, 结束训练, 准星设置, 操作说明.
+- Sensitivity / SFX / 动态效果 remain in the left scroll area; crosshair + help expand in right panel (desktop) or slide-up (mobile).
+- Top-left 结束训练 / settings / ? chips hidden while pause menu is open — all actions reachable from the rail.
+
+### Setup crosshair declutter
+- `CrosshairSettingsSheet`: reusable modal for home + in-game fallback.
+- Setup sidebar + custom panel link to sheet instead of inline `CrosshairSettings` block.
+
+### Screenshots & QA
+- `docs/shooting-range-screenshots/setup-quick-start.png`, `pause-overlay.png` refreshed.
+- Focused shooting-range tests: **129/129**; full suite **688/688**; `npm run lint` **0 errors**.
 
 ## Shooting Range overnight polish cycle 24 (2026-09-13)
 

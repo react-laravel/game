@@ -17,7 +17,7 @@ import {
 import { loadSessionHistory } from '../utils/statsStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { useMotionPreference } from '../hooks/useMotionPreference'
-import { CrosshairSettings } from './CrosshairSettings'
+import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { ShootingHelpSheet } from './ShootingHelpSheet'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
@@ -85,6 +85,7 @@ export default function ShootingGame({
     gameStarted,
     showStartOverlay,
     hitMarker,
+    missMarker,
     hitPulse,
     streakToast,
     sessionStats,
@@ -167,11 +168,6 @@ export default function ShootingGame({
     releasePointerLock()
     onChangeDrill?.()
   }, [onChangeDrill, releasePointerLock])
-
-  const handleOpenCrosshairSettings = useCallback(() => {
-    releasePointerLock()
-    setShowCrosshairSettings(true)
-  }, [releasePointerLock])
 
   const handleOpenHelp = useCallback(() => {
     releasePointerLock()
@@ -297,7 +293,7 @@ export default function ShootingGame({
 
       {gameStarted && !gameOver && isPointerLocked && (
         <>
-          <Crosshair config={crosshairConfig} hit={hitMarker} />
+          <Crosshair config={crosshairConfig} hit={hitMarker} miss={missMarker} />
           <SessionFeedback
             hitPulse={hitPulse}
             streakToast={streakToast}
@@ -314,7 +310,7 @@ export default function ShootingGame({
         />
       )}
 
-      {gameStarted && (
+      {gameStarted && !showPauseOverlay && (
         <div className="absolute top-5 left-5 z-40 flex gap-2">
           <Button
             variant="ghost"
@@ -372,11 +368,13 @@ export default function ShootingGame({
           lookSensitivity={lookSensitivity}
           sfxVolume={sfxVolume}
           sfxMuted={sfxMuted}
+          crosshairConfig={crosshairConfig}
+          onCrosshairChange={onCrosshairChange}
+          onCrosshairReset={onCrosshairReset}
           onResume={resumePointerLock}
           onRestart={handleRestart}
+          onExitTraining={handleBackToSettings}
           onChangeDrill={onChangeDrill ? handlePauseChangeDrill : undefined}
-          onCrosshairSettings={handleOpenCrosshairSettings}
-          onOpenHelp={handleOpenHelp}
           motionPreference={motionPreference}
           onSensitivityChange={onLookSensitivityChange}
           onSfxVolumeChange={onSfxVolumeChange}
@@ -395,26 +393,20 @@ export default function ShootingGame({
         />
       )}
 
-      {showCrosshairSettings && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-card p-6 shadow-2xl">
-            <CrosshairSettings
-              compact
-              config={crosshairConfig}
-              onChange={onCrosshairChange}
-              onReset={onCrosshairReset}
-            />
-            <Button
-              className="mt-6 w-full"
-              onClick={() => {
-                setShowCrosshairSettings(false)
-                if (gameStarted && !gameOver) requestPointerLock()
-              }}
-            >
-              保存并继续
-            </Button>
-          </div>
-        </div>
+      {showCrosshairSettings && !showPauseOverlay && (
+        <CrosshairSettingsSheet
+          variant="ingame"
+          saveLabel="保存并继续"
+          config={crosshairConfig}
+          onChange={onCrosshairChange}
+          onReset={onCrosshairReset}
+          onClose={() => {
+            setShowCrosshairSettings(false)
+            if (gameStarted && !gameOver && !browserSupport.useFallback) {
+              requestPointerLock()
+            }
+          }}
+        />
       )}
     </div>
   )

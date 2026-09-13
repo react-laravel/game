@@ -42,4 +42,10 @@ describe('ShootingHistory', () => {
 
     expect(screen.queryByTestId('highlighted-session-row')).not.toBeInTheDocument()
   })
+
+  it('shows encouragement when only a few sessions exist', () => {
+    render(<ShootingHistory onClose={() => {}} />)
+
+    expect(screen.getByText(/继续加油/)).toBeInTheDocument()
+  })
 })

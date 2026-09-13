@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionStats, ShootingSetupConfig } from '../types'
-import { HIT_MARKER_DURATION_MS } from '../utils/gunFeel'
+import { HIT_MARKER_DURATION_MS, MISS_MARKER_DURATION_MS } from '../utils/gunFeel'
 import { trainingModes } from '../utils/trainingModes'
 import { createSessionRecord, saveSessionRecord } from '../utils/statsStorage'
 
@@ -35,11 +35,15 @@ export function useShootingSession(
   const [gameStarted, setGameStarted] = useState(false)
   const [showStartOverlay, setShowStartOverlay] = useState(true)
   const [hitMarker, setHitMarker] = useState(false)
+  const [missMarker, setMissMarker] = useState(false)
   const [hitPulse, setHitPulse] = useState<HitPulse | null>(null)
   const [streakToast, setStreakToast] = useState<StreakToast | null>(null)
   const [avgReactionMs, setAvgReactionMs] = useState<number | null>(null)
 
   const hitMarkerTimer = useRef<number | null>(null)
+  const missMarkerTimer = useRef<number | null>(null)
+  const hitPulseTimer = useRef<number | null>(null)
+  const streakToastTimer = useRef<number | null>(null)
   const feedbackSeq = useRef(0)
   const currentStreakRef = useRef(0)
   const reactionSamplesRef = useRef<number[]>([])
@@ -69,6 +73,9 @@ export function useShootingSession(
   useEffect(
     () => () => {
       if (hitMarkerTimer.current) window.clearTimeout(hitMarkerTimer.current)
+      if (missMarkerTimer.current) window.clearTimeout(missMarkerTimer.current)
+      if (hitPulseTimer.current) window.clearTimeout(hitPulseTimer.current)
+      if (streakToastTimer.current) window.clearTimeout(streakToastTimer.current)
     },
     []
   )
@@ -116,10 +123,17 @@ export function useShootingSession(
       setBestStreak(currentBest => Math.max(currentBest, nextStreak))
 
       feedbackSeq.current += 1
-      setHitPulse({ id: feedbackSeq.current, points, streak: nextStreak })
+      const pulseId = feedbackSeq.current
+      setHitPulse({ id: pulseId, points, streak: nextStreak })
+      if (hitPulseTimer.current) window.clearTimeout(hitPulseTimer.current)
+      hitPulseTimer.current = window.setTimeout(() => setHitPulse(null), 520)
+
       if ((STREAK_MILESTONES as readonly number[]).includes(nextStreak)) {
         feedbackSeq.current += 1
-        setStreakToast({ id: feedbackSeq.current, streak: nextStreak })
+        const toastId = feedbackSeq.current
+        setStreakToast({ id: toastId, streak: nextStreak })
+        if (streakToastTimer.current) window.clearTimeout(streakToastTimer.current)
+        streakToastTimer.current = window.setTimeout(() => setStreakToast(null), 1100)
       }
 
       if (typeof reactionMs === 'number' && reactionMs > 0 && reactionMs < 5000) {
@@ -136,11 +150,19 @@ export function useShootingSession(
       setMisses(previous => previous + 1)
       currentStreakRef.current = 0
       setCurrentStreak(0)
+      if (missMarkerTimer.current) window.clearTimeout(missMarkerTimer.current)
+      setMissMarker(true)
+      missMarkerTimer.current = window.setTimeout(
+        () => setMissMarker(false),
+        MISS_MARKER_DURATION_MS
+      )
     }
   }, [recordHit])
 
   const showHitFeedback = useCallback(() => {
     if (hitMarkerTimer.current) window.clearTimeout(hitMarkerTimer.current)
+    if (missMarkerTimer.current) window.clearTimeout(missMarkerTimer.current)
+    setMissMarker(false)
     setHitMarker(true)
     hitMarkerTimer.current = window.setTimeout(
       () => setHitMarker(false),
@@ -212,6 +234,7 @@ export function useShootingSession(
     setGameStarted,
     showStartOverlay,
     hitMarker,
+    missMarker,
     hitPulse,
     streakToast,
     avgReactionMs,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   BarChart3,
   Building2,
@@ -20,13 +20,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
-import { CrosshairSettings } from './CrosshairSettings'
+import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { LookSensitivityControl } from './LookSensitivityControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
 import { sfxVolumePercent } from '../utils/sfxVolume'
 import type { DrillPreset } from '../utils/drillPresets'
-import { drillPresets } from '../utils/drillPresets'
+import {
+  drillMetaForPreset,
+  drillPresets,
+  isRecommendedEntryDrill,
+} from '../utils/drillPresets'
 import { loadLastDrillId, loadLastConfig } from '../utils/lastConfigStorage'
+import { loadSessionHistory } from '../utils/statsStorage'
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
 import { mapOptions } from '../utils/mapConfigs'
 import { trainingModeOptions, trainingModes } from '../utils/trainingModes'
@@ -117,23 +122,21 @@ export function ShootingSetup({
   onCrosshairReset,
 }: ShootingSetupProps) {
   const [showCustom, setShowCustom] = useState(false)
-  const [lastConfig, setLastConfig] = useState<ReturnType<typeof loadLastConfig>>(null)
-  const [lastDrill, setLastDrill] = useState<DrillPreset | null>(null)
-
-  useEffect(() => {
-    const config = loadLastConfig()
+  const [showCrosshairPanel, setShowCrosshairPanel] = useState(false)
+  const [lastConfig] = useState(() => loadLastConfig())
+  const [lastDrill] = useState<DrillPreset | null>(() => {
     const drillId = loadLastDrillId()
-    setLastConfig(config)
-    setLastDrill(drillId ? (drillPresets.find(p => p.id === drillId) ?? null) : null)
-  }, [])
+    return drillId ? (drillPresets.find(p => p.id === drillId) ?? null) : null
+  })
+  const [sessionCount] = useState(() => loadSessionHistory().length)
 
   const selectedMode = trainingModes[modeId]
   const selectedDifficulty = DIFFICULTIES.find(option => option.id === difficulty) ?? DIFFICULTIES[1]
   const selectedMap = mapOptions.find(option => option.id === mapId)
 
   return (
-    <div className="flex w-full flex-1 items-center justify-center pb-10">
-      <Card className="border-border/70 relative w-full max-w-5xl overflow-hidden p-0 shadow-2xl">
+    <div className="flex w-full flex-1 items-center justify-center pb-6 sm:pb-10">
+      <Card className="border-border/70 relative max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto overflow-x-hidden p-0 shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-amber-400 to-cyan-400" />
         <div className="grid lg:grid-cols-[0.75fr_1.65fr]">
           <div className="relative overflow-hidden bg-slate-950 p-7 text-white sm:p-8">
@@ -181,6 +184,14 @@ export function ShootingSetup({
                   <BarChart3 className="h-4 w-4" />
                   训练记录与进步
                 </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                  onClick={() => setShowCrosshairPanel(true)}
+                >
+                  <Crosshair className="h-4 w-4" />
+                  准星设置
+                </Button>
               </div>
             </div>
           </div>
@@ -200,15 +211,24 @@ export function ShootingSetup({
               {drillPresets.map(preset => {
                 const mapMeta = MAP_META[preset.mapId]
                 const MapIcon = mapMeta.icon
+                const meta = drillMetaForPreset(preset)
+                const recommended = isRecommendedEntryDrill(preset, sessionCount)
                 return (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => onQuickStart(preset)}
-                    className={`group rounded-2xl border border-border bg-gradient-to-br from-muted/30 to-transparent p-3.5 text-left transition-all hover:border-primary/50 hover:shadow-md hover:ring-1 ${mapMeta.ring}`}
+                    className={`group rounded-2xl border border-border bg-gradient-to-br from-muted/30 to-transparent p-3.5 text-left transition-all hover:border-primary/50 hover:shadow-md hover:ring-1 ${mapMeta.ring} ${
+                      recommended ? 'ring-1 ring-amber-400/40' : ''
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
+                        {recommended && (
+                          <span className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-200">
+                            推荐入门
+                          </span>
+                        )}
                         <span
                           className={`rounded-lg bg-gradient-to-br px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${FOCUS_COLORS[preset.tag] ?? 'bg-muted text-muted-foreground'}`}
                         >
@@ -226,6 +246,14 @@ export function ShootingSetup({
                     <div className="mt-2 font-bold">{preset.name}</div>
                     <div className="text-muted-foreground mt-0.5 text-xs leading-5">
                       {preset.subtitle}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="rounded-md bg-muted/70 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        {meta.duration}s
+                      </span>
+                      <span className="rounded-md bg-muted/70 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        {meta.difficulty}
+                      </span>
                     </div>
                   </button>
                 )
@@ -337,11 +365,17 @@ export function ShootingSetup({
                   </div>
                 </section>
 
-                <CrosshairSettings
-                  config={crosshairConfig}
-                  onChange={onCrosshairChange}
-                  onReset={onCrosshairReset}
-                />
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-xl border border-border/80 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/40"
+                  onClick={() => setShowCrosshairPanel(true)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Crosshair className="h-4 w-4 text-primary" />
+                    准星设置
+                  </span>
+                  <span className="text-muted-foreground text-xs">打开面板</span>
+                </button>
               </div>
             )}
 
@@ -357,6 +391,15 @@ export function ShootingSetup({
           </div>
         </div>
       </Card>
+
+      {showCrosshairPanel && (
+        <CrosshairSettingsSheet
+          config={crosshairConfig}
+          onChange={onCrosshairChange}
+          onReset={onCrosshairReset}
+          onClose={() => setShowCrosshairPanel(false)}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,12 @@
 import type { ShootingDifficulty, ShootingMapId, TrainingModeId } from '../types'
+import { mapOptions } from './mapConfigs'
+import { trainingModes } from './trainingModes'
+
+const DIFFICULTY_LABELS: Record<ShootingDifficulty, string> = {
+  easy: '新兵',
+  medium: '精英',
+  hard: '专家',
+}
 
 export type DrillFocus = 'flick' | 'tracking' | 'speed' | 'precision' | 'mixed'
 
@@ -93,5 +101,18 @@ export function drillLabelForConfig(
       preset.modeId === modeId && preset.mapId === mapId && preset.difficulty === difficulty
   )
   if (match) return match.name
-  return `${modeId} · ${mapId}`
+  const mode = trainingModes[modeId]
+  const map = mapOptions.find(option => option.id === mapId)
+  return `${mode.name} · ${map?.name ?? mapId}`
+}
+
+export function drillMetaForPreset(preset: DrillPreset): { duration: number; difficulty: string } {
+  return {
+    duration: trainingModes[preset.modeId].durationSeconds,
+    difficulty: DIFFICULTY_LABELS[preset.difficulty],
+  }
+}
+
+export function isRecommendedEntryDrill(preset: DrillPreset, sessionCount: number): boolean {
+  return preset.id === defaultDrillPreset.id && sessionCount === 0
 }

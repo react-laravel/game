@@ -27,25 +27,22 @@ export default function ShootingRangePage() {
   const [isStarted, setIsStarted] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [highlightLatestSession, setHighlightLatestSession] = useState(false)
-  const [difficulty, setDifficulty] = useState<ShootingDifficulty>('medium')
-  const [mapId, setMapId] = useState<ShootingMapId>('indoor')
-  const [modeId, setModeId] = useState<TrainingModeId>('moving')
-  const [lookSensitivity, setLookSensitivity] = useState(DEFAULT_LOOK_SENSITIVITY)
-  const [sfxVolume, setSfxVolume] = useState(DEFAULT_SFX_VOLUME)
-  const [sfxMuted, setSfxMuted] = useState(false)
+  const [difficulty, setDifficulty] = useState<ShootingDifficulty>(
+    () => loadLastConfig()?.difficulty ?? 'medium'
+  )
+  const [mapId, setMapId] = useState<ShootingMapId>(() => loadLastConfig()?.mapId ?? 'indoor')
+  const [modeId, setModeId] = useState<TrainingModeId>(
+    () => loadLastConfig()?.modeId ?? 'moving'
+  )
+  const [lookSensitivity, setLookSensitivity] = useState(
+    () => loadLastConfig()?.lookSensitivity ?? DEFAULT_LOOK_SENSITIVITY
+  )
+  const [sfxVolume, setSfxVolume] = useState(
+    () => loadLastConfig()?.sfxVolume ?? DEFAULT_SFX_VOLUME
+  )
+  const [sfxMuted, setSfxMuted] = useState(() => loadLastConfig()?.sfxMuted ?? false)
   const { config: crosshairConfig, updateConfig: updateCrosshair, resetConfig: resetCrosshair } =
     useCrosshairSettings()
-
-  useEffect(() => {
-    const last = loadLastConfig()
-    if (!last) return
-    setDifficulty(last.difficulty)
-    setMapId(last.mapId)
-    setModeId(last.modeId)
-    if (last.lookSensitivity !== undefined) setLookSensitivity(last.lookSensitivity)
-    if (last.sfxVolume !== undefined) setSfxVolume(last.sfxVolume)
-    if (last.sfxMuted !== undefined) setSfxMuted(last.sfxMuted)
-  }, [])
 
   useEffect(() => {
     setShootingSfxSettings({ volume: sfxVolume, muted: sfxMuted })

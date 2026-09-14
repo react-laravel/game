@@ -54,8 +54,11 @@ Current prompt (2026-09-14): 默认关闭后坐力
 
 Current prompt (2026-09-14): 我在设置页点击东西，游戏里怎么也开枪了，应该关闭开枪
 
+Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/34794219991/job/103824094305 actions失败
+
 ## Current work
 
+- Shooting Range cycle 42 (2026-09-14): **deploy type-check** — `HumanoidVisual` no longer assigns `emissiveIntensity` through optional chaining (`TS2779`).
 - Shooting Range cycle 41 (2026-09-14): **no shooting through pause/settings UI** — live fire only while the canvas holds pointer lock (UI targets ignored even if lock is granted on the same click); pause overlay stops mouse/pointer bubbling; Space no longer shoots or steals keys while unlocked.
 - Shooting Range cycle 40 (2026-09-14): **recoil off by default** — `DEFAULT_RECOIL_ENABLED` / missing lastConfig now load as 关闭; explicit 开启 still persists.
 - Shooting Range cycle 39 (2026-09-14): **targets stay under the roof** — indoor play height capped at 6.8m (`INDOOR_TARGET_MAX_Y`) for spawn, respawn, linear bounce, orbit, and humanoid offset so plates no longer clip the 8.25m ceiling.

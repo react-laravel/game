@@ -101,9 +101,12 @@ export function HumanoidVisual({
     const bodyColor = hit ? zoneHitColor(hitZone, 'body', bodyIdle) : bodyIdle
     const limbColor = hit ? zoneHitColor(hitZone, 'limb', limbIdle) : limbIdle
 
-    headMaterialRef.current?.color.set(headColor)
-    headMaterialRef.current?.emissive.set(hit && hitZone === 'head' ? '#5a1018' : '#000000')
-    headMaterialRef.current?.emissiveIntensity = hit && hitZone === 'head' ? 0.42 : 0
+    const headMaterial = headMaterialRef.current
+    if (headMaterial) {
+      headMaterial.color.set(headColor)
+      headMaterial.emissive.set(hit && hitZone === 'head' ? '#5a1018' : '#000000')
+      headMaterial.emissiveIntensity = hit && hitZone === 'head' ? 0.42 : 0
+    }
 
     chestAccentMaterialRef.current?.color.set(hit && hitZone === 'body' ? '#e8d8b8' : ACCENT_COLOR)
     crownMaterialRef.current?.color.set(hit && hitZone === 'head' ? '#f0c0c0' : accent)

@@ -68,6 +68,7 @@ describe('lastConfigStorage', () => {
       sfxMuted: true,
       targetShape: 'circle',
       outdoorTimeOfDay: 'day',
+      recoilEnabled: false,
     })
   })
 
@@ -115,9 +116,29 @@ describe('lastConfigStorage', () => {
       sfxMuted: false,
       targetShape: 'humanoid',
       outdoorTimeOfDay: 'day',
+      recoilEnabled: false,
     })
     expect(loadLastDrillId()).toBe('flick-reflex')
     expect(localStorage.getItem(LAST_CONFIG_KEY)).toContain('"mapId":"outdoor"')
     expect(localStorage.getItem(LAST_DRILL_KEY)).toBe('flick-reflex')
+  })
+
+  it('defaults recoil to off when missing and preserves on', () => {
+    localStorage.setItem(
+      LAST_CONFIG_KEY,
+      JSON.stringify({ difficulty: 'easy', mapId: 'indoor', modeId: 'static' })
+    )
+    expect(loadLastConfig()?.recoilEnabled).toBe(false)
+
+    localStorage.setItem(
+      LAST_CONFIG_KEY,
+      JSON.stringify({
+        difficulty: 'easy',
+        mapId: 'indoor',
+        modeId: 'static',
+        recoilEnabled: true,
+      })
+    )
+    expect(loadLastConfig()?.recoilEnabled).toBe(true)
   })
 })

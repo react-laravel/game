@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/card'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
 import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { LookSensitivityControl } from './LookSensitivityControl'
+import { RecoilControl } from './RecoilControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
 import { sfxVolumePercent } from '../utils/sfxVolume'
 import type { DrillPreset } from '../utils/drillPresets'
@@ -90,12 +91,14 @@ interface ShootingSetupProps {
   mapId: ShootingMapId
   modeId: TrainingModeId
   lookSensitivity: number
+  recoilEnabled: boolean
   sfxVolume: number
   sfxMuted: boolean
   onDifficultyChange: (difficulty: ShootingDifficulty) => void
   onMapChange: (mapId: ShootingMapId) => void
   onModeChange: (modeId: TrainingModeId) => void
   onLookSensitivityChange: (value: number) => void
+  onRecoilEnabledChange: (enabled: boolean) => void
   onSfxVolumeChange: (value: number) => void
   onSfxMutedChange: (muted: boolean) => void
   targetShape: TargetShape
@@ -114,12 +117,14 @@ export function ShootingSetup({
   mapId,
   modeId,
   lookSensitivity,
+  recoilEnabled,
   sfxVolume,
   sfxMuted,
   onDifficultyChange,
   onMapChange,
   onModeChange,
   onLookSensitivityChange,
+  onRecoilEnabledChange,
   onSfxVolumeChange,
   onSfxMutedChange,
   targetShape,
@@ -298,7 +303,7 @@ export function ShootingSetup({
                   <div className="text-muted-foreground mt-1 text-xs leading-5">
                     {selectedDifficulty.label} · {targetShapeLabel(targetShape)}
                     {mapId === 'outdoor' ? ` · ${outdoorTimeLabel(outdoorTimeOfDay)}` : ''} · 灵敏度{' '}
-                    {lookSensitivity.toFixed(1)}× · 音效{' '}
+                    {lookSensitivity.toFixed(1)}× · 后坐力 {recoilEnabled ? '开启' : '关闭'} · 音效{' '}
                     {sfxMuted ? '静音' : `${sfxVolumePercent(sfxVolume)}%`}
                   </div>
                 </div>
@@ -332,6 +337,8 @@ export function ShootingSetup({
                   value={lookSensitivity}
                   onChange={onLookSensitivityChange}
                 />
+
+                <RecoilControl enabled={recoilEnabled} onChange={onRecoilEnabledChange} />
 
                 <SfxVolumeControl
                   volume={sfxVolume}

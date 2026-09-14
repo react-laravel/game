@@ -8,6 +8,7 @@ import type { MotionPreference } from '../utils/motionPrefs'
 import { shootingHelpSections } from '../utils/shootingHelp'
 import { CrosshairSettings } from './CrosshairSettings'
 import { LookSensitivityControl } from './LookSensitivityControl'
+import { RecoilControl } from './RecoilControl'
 import { ReducedMotionControl } from './ReducedMotionControl'
 import { SfxVolumeControl } from './SfxVolumeControl'
 import { TargetShapeControl } from './TargetShapeControl'
@@ -24,6 +25,8 @@ interface ShootingPauseSettingsPanelProps {
   onCrosshairReset: () => void
   lookSensitivity: number
   onSensitivityChange: (value: number) => void
+  recoilEnabled: boolean
+  onRecoilEnabledChange: (enabled: boolean) => void
   sfxVolume: number
   sfxMuted: boolean
   onSfxVolumeChange: (value: number) => void
@@ -46,6 +49,8 @@ export function ShootingPauseSettingsPanel({
   onCrosshairReset,
   lookSensitivity,
   onSensitivityChange,
+  recoilEnabled,
+  onRecoilEnabledChange,
   sfxVolume,
   sfxMuted,
   onSfxVolumeChange,
@@ -142,6 +147,14 @@ export function ShootingPauseSettingsPanel({
               variant="dark"
               value={targetShape}
               onChange={onTargetShapeChange}
+            />
+
+            <RecoilControl
+              compact
+              framed
+              variant="dark"
+              enabled={recoilEnabled}
+              onChange={onRecoilEnabledChange}
             />
 
             <OutdoorTimeOfDayControl

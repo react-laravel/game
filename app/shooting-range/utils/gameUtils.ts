@@ -1,4 +1,5 @@
-import type { SpawnPattern } from '../types'
+import type { ShootingMapId, SpawnPattern } from '../types'
+import { INDOOR_TARGET_MAX_Y, WAREHOUSE_TARGET_MAX_Y } from './indoorCeiling'
 
 /**
  * 游戏工具函数
@@ -13,22 +14,50 @@ const GRID_POSITIONS: Array<[number, number, number]> = [
 
 let gridSpawnIndex = 0
 
-/** Wall layout for static precision drills — targets stay readable in fixed tiers. */
-export function generateWallPosition(id: number, gameAreaSize: number): [number, number, number] {
-  const cols = 4
-  const row = Math.floor(id / cols)
-  const col = id % cols
-  const xSpread = gameAreaSize * 0.62
-  const x = (col / Math.max(1, cols - 1) - 0.5) * xSpread
-  const y = 2.1 + row * 1.75 + (id % 2) * 0.45
-  const z = -(11.5 + row * 2.4 + (col % 2) * 1.1)
-  return [x, y, z]
+/** Uniform plate size so a static wall reads as one range rack. */
+export const WALL_TARGET_SCALE = 0.62
+/** Local-space radius of the circular plate mesh (before scale). */
+export const WALL_PLATE_RADIUS = 1.05
+
+const WALL_COLS = 4
+const WALL_BASE_Y = 2.25
+const WALL_Z = -14.2
+
+export const TARGET_OPEN_MAX_Y = 9
+
+export function roofMaxYForMap(mapId: ShootingMapId): number {
+  if (mapId === 'indoor') return INDOOR_TARGET_MAX_Y
+  if (mapId === 'warehouse') return WAREHOUSE_TARGET_MAX_Y
+  return Number.POSITIVE_INFINITY
 }
 
-export function nextGridPosition(): [number, number, number] {
+export function targetTravelMaxY(gameAreaSize: number, roofMaxY = TARGET_OPEN_MAX_Y): number {
+  return Math.min(TARGET_OPEN_MAX_Y, gameAreaSize * 0.42 + 2, roofMaxY)
+}
+
+/**
+ * Static precision wall — one depth so a closer lower plate cannot eat a shot
+ * aimed at the row above it.
+ */
+export function generateWallPosition(
+  id: number,
+  gameAreaSize: number,
+  maxY = TARGET_OPEN_MAX_Y
+): [number, number, number] {
+  const row = Math.floor(id / WALL_COLS)
+  const col = id % WALL_COLS
+  const xSpread = gameAreaSize * 0.5
+  const x = (col / Math.max(1, WALL_COLS - 1) - 0.5) * xSpread
+  const topY = Math.max(WALL_BASE_Y, maxY)
+  const rowSpan = Math.max(0.9, (topY - WALL_BASE_Y) / 3)
+  const y = WALL_BASE_Y + row * rowSpan
+  return [x, y, WALL_Z]
+}
+
+export function nextGridPosition(maxY = TARGET_OPEN_MAX_Y): [number, number, number] {
   const position = GRID_POSITIONS[gridSpawnIndex % GRID_POSITIONS.length]
   gridSpawnIndex += 1
-  return position
+  return [position[0], Math.min(position[1], maxY), position[2]]
 }
 
 export function resetGridSpawnIndex() {
@@ -46,10 +75,14 @@ export const isGameOver = (): boolean => {
 /**
  * 生成随机位置
  */
-export const generateRandomPosition = (gameAreaSize: number): [number, number, number] => {
+export const generateRandomPosition = (
+  gameAreaSize: number,
+  maxY = targetTravelMaxY(gameAreaSize)
+): [number, number, number] => {
+  const minY = 0.8
   return [
     (Math.random() - 0.5) * gameAreaSize * 0.78,
-    Math.random() * Math.max(0.1, gameAreaSize / 4 + 1.2) + 0.8,
+    minY + Math.random() * Math.max(0.1, maxY - minY),
     -(Math.random() * gameAreaSize + 8),
   ]
 }
@@ -97,14 +130,15 @@ export function respawnTarget(
   target: TargetRuntime,
   gameAreaSize: number,
   spawnPattern: SpawnPattern = 'random',
-  targetId?: number
+  targetId?: number,
+  maxY = targetTravelMaxY(gameAreaSize)
 ) {
   const [x, y, z] =
     spawnPattern === 'grid'
-      ? nextGridPosition()
+      ? nextGridPosition(maxY)
       : spawnPattern === 'wall' && typeof targetId === 'number'
-        ? generateWallPosition(targetId, gameAreaSize)
-        : generateRandomPosition(gameAreaSize)
+        ? generateWallPosition(targetId, gameAreaSize, maxY)
+        : generateRandomPosition(gameAreaSize, maxY)
   target.position.set(x, y, z)
   target.userData.orbitAnchor?.set(x, y, z)
   target.userData.hit = false

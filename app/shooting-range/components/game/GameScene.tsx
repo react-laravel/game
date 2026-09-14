@@ -14,6 +14,9 @@ import {
   nextGridPosition,
   resetGridSpawnIndex,
   respawnTarget,
+  roofMaxYForMap,
+  targetTravelMaxY,
+  WALL_TARGET_SCALE,
 } from '../../utils/gameUtils'
 import { mapConfigs } from '../../utils/mapConfigs'
 import { getOutdoorTargetReadabilityBoost } from '../../utils/outdoorTimeOfDay'
@@ -21,12 +24,13 @@ import { resolveTrainingSettings } from '../../utils/trainingModes'
 import { playHitSound, playMissSound, playShotSound } from '../../utils/audioUtils'
 import {
   MUZZLE_FLASH_DURATION,
-  RECOIL_KICK_PITCH,
   SHOT_COOLDOWN_MS,
   decayRecoil,
-  randomRecoilYaw,
+  kickUpwardRecoil,
+  viewPitchWithRecoil,
 } from '../../utils/gunFeel'
-import { lookSpeedForSensitivity } from '../../utils/lookSensitivity'
+import { applyLookDelta, lookSpeedForSensitivity } from '../../utils/lookSensitivity'
+import { shouldAcceptLockedShot } from '../../utils/shootingInput'
 import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../../types'
 
 interface TargetData {
@@ -42,18 +46,21 @@ export interface ShootingSceneSnapshot {
   targets: Array<{ id: number; x: number; y: number; z: number; hit: boolean }>
 }
 
-function createTargets(settings: ReturnType<typeof resolveTrainingSettings>) {
+function createTargets(
+  settings: ReturnType<typeof resolveTrainingSettings>,
+  maxY: number
+) {
   if (settings.spawnPattern === 'grid') resetGridSpawnIndex()
   const speedVariance = settings.movement === 'linear' ? 0.018 : 0
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position:
       settings.spawnPattern === 'grid'
-        ? nextGridPosition()
+        ? nextGridPosition(maxY)
         : settings.spawnPattern === 'wall'
-          ? generateWallPosition(id, settings.gameAreaSize)
-          : generateRandomPosition(settings.gameAreaSize),
-    scale: Math.random() * 0.18 + 0.55,
+          ? generateWallPosition(id, settings.gameAreaSize, maxY)
+          : generateRandomPosition(settings.gameAreaSize, maxY),
+    scale: settings.spawnPattern === 'wall' ? WALL_TARGET_SCALE : Math.random() * 0.18 + 0.55,
     speed: settings.targetSpeed + Math.random() * speedVariance,
     direction: generateRandomDirection(),
   }))
@@ -67,6 +74,7 @@ interface GameSceneProps {
   outdoorTimeOfDay?: OutdoorTimeOfDay
   lookSensitivity: number
   reducedMotion?: boolean
+  recoilEnabled?: boolean
   onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
   onHitFeedback?: (hitZone?: HitZone) => void
   gameStarted: boolean
@@ -84,6 +92,7 @@ export function GameScene({
   outdoorTimeOfDay = 'day',
   lookSensitivity,
   reducedMotion = false,
+  recoilEnabled = false,
   onShotResult,
   onHitFeedback,
   gameStarted,
@@ -93,10 +102,11 @@ export function GameScene({
 }: GameSceneProps) {
   const { camera, gl } = useThree()
   const settings = resolveTrainingSettings(difficulty, modeId)
+  const travelMaxY = targetTravelMaxY(settings.gameAreaSize, roofMaxYForMap(mapId))
   const targetLowLightBoost =
     mapId === 'outdoor' ? getOutdoorTargetReadabilityBoost(outdoorTimeOfDay) : 0
   const mapConfig = mapConfigs[mapId]
-  const [targets] = useState<TargetData[]>(() => createTargets(settings))
+  const [targets] = useState<TargetData[]>(() => createTargets(settings, travelMaxY))
   const targetObjects = useRef(new Map<number, THREE.Group>())
   const hitTargetIds = useRef(new Set<number>())
   const respawnTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
@@ -111,17 +121,22 @@ export function GameScene({
   const viewEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const muzzleFlashElapsed = useRef(-1)
   const recoilPitch = useRef(0)
-  const recoilYaw = useRef(0)
   const impactFXRef = useRef<ImpactFXHandle>(null)
   const hitWorldPosition = useRef(new THREE.Vector3())
   const onShotResultRef = useRef(onShotResult)
   const onHitFeedbackRef = useRef(onHitFeedback)
   const onFpsReportRef = useRef(onFpsReport)
   const lookSpeedRef = useRef(lookSpeedForSensitivity(lookSensitivity))
+  const recoilEnabledRef = useRef(recoilEnabled)
 
   useEffect(() => {
     lookSpeedRef.current = lookSpeedForSensitivity(lookSensitivity)
   }, [lookSensitivity])
+
+  useEffect(() => {
+    recoilEnabledRef.current = recoilEnabled
+    if (!recoilEnabled) recoilPitch.current = 0
+  }, [recoilEnabled])
 
   useEffect(() => {
     onShotResultRef.current = onShotResult
@@ -186,20 +201,19 @@ export function GameScene({
 
       const timer = setTimeout(() => {
         const current = targetObjects.current.get(id)
-        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern, id)
+        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern, id, travelMaxY)
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
       }, settings.respawnDelayMs)
 
       respawnTimers.current.set(id, timer)
     },
-    [settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern]
+    [settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern, travelMaxY]
   )
 
   const triggerGunFeel = useCallback(() => {
     muzzleFlashElapsed.current = 0
-    recoilPitch.current += RECOIL_KICK_PITCH
-    recoilYaw.current += randomRecoilYaw()
+    recoilPitch.current = kickUpwardRecoil(recoilPitch.current, recoilEnabledRef.current)
   }, [])
 
   const handleShoot = useCallback(() => {
@@ -212,6 +226,7 @@ export function GameScene({
     triggerGunFeel()
     playShotSound()
 
+    camera.updateMatrixWorld()
     raycaster.current.setFromCamera(screenCenter.current, camera)
     const objects = raycastObjects.current
     const intersections = objects.length > 0
@@ -261,12 +276,11 @@ export function GameScene({
     }
 
     recoilPitch.current = decayRecoil(recoilPitch.current, delta)
-    recoilYaw.current = decayRecoil(recoilYaw.current, delta)
 
     if (gameStarted && !useFallbackControls) {
       const base = lookRotation.current
       const view = viewEuler.current
-      view.set(base.x - recoilPitch.current, base.y + recoilYaw.current, 0)
+      view.set(viewPitchWithRecoil(base.x, recoilPitch.current), base.y, 0)
       camera.quaternion.setFromEuler(view)
     }
 
@@ -292,13 +306,15 @@ export function GameScene({
     if (useFallbackControls || !gameStarted) return
 
     const handleMouseDown = (event: MouseEvent) => {
-      if (event.button === 0) handleShoot()
+      if (event.button !== 0) return
+      if (!shouldAcceptLockedShot(document.pointerLockElement, gl.domElement, event.target)) return
+      handleShoot()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        event.preventDefault()
-        handleShoot()
-      }
+      if (event.code !== 'Space') return
+      if (!shouldAcceptLockedShot(document.pointerLockElement, gl.domElement)) return
+      event.preventDefault()
+      handleShoot()
     }
 
     window.addEventListener('mousedown', handleMouseDown)
@@ -307,7 +323,7 @@ export function GameScene({
       window.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [gameStarted, handleShoot, useFallbackControls])
+  }, [gameStarted, gl, handleShoot, useFallbackControls])
 
   useEffect(() => {
     if (!gameStarted || useFallbackControls) return
@@ -318,19 +334,12 @@ export function GameScene({
       // Apply pointer delta to the base look rotation only — never read camera.quaternion
       // here, since useFrame already layers recoil on top of lookRotation each frame.
       const rotation = lookRotation.current
-      const lookSpeed = lookSpeedRef.current
-      rotation.y -= event.movementX * lookSpeed
-      rotation.x -= event.movementY * lookSpeed
-      rotation.x = THREE.MathUtils.clamp(
-        rotation.x,
-        -Math.PI / 2 + 0.05,
-        Math.PI / 2 - 0.05
-      )
+      applyLookDelta(rotation, event.movementX, event.movementY, lookSpeedRef.current)
     }
 
     document.addEventListener('mousemove', handleMouseMove)
     return () => document.removeEventListener('mousemove', handleMouseMove)
-  }, [camera, gameStarted, gl.domElement, useFallbackControls])
+  }, [gameStarted, gl.domElement, useFallbackControls])
 
   useEffect(() => {
     const handleBeforeUnload = () => document.exitPointerLock?.()
@@ -385,6 +394,7 @@ export function GameScene({
           faceCamera={settings.faceCamera}
           orbitRadius={settings.orbitRadius}
           orbitSpeed={settings.orbitSpeed}
+          maxY={travelMaxY}
           modeId={modeId}
           targetShape={targetShape}
           lowLightBoost={targetLowLightBoost}

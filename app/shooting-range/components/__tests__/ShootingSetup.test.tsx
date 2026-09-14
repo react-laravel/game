@@ -19,12 +19,14 @@ describe('ShootingSetup', () => {
         mapId="indoor"
         modeId="moving"
         lookSensitivity={1}
+        recoilEnabled
         sfxVolume={0.85}
         sfxMuted={false}
         onDifficultyChange={onDifficultyChange}
         onMapChange={onMapChange}
         onModeChange={onModeChange}
         onLookSensitivityChange={vi.fn()}
+        onRecoilEnabledChange={vi.fn()}
         onSfxVolumeChange={vi.fn()}
         onSfxMutedChange={vi.fn()}
         targetShape="circle"
@@ -47,6 +49,8 @@ describe('ShootingSetup', () => {
     fireEvent.click(screen.getByRole('button', { name: /自定义场景与难度/ }))
     fireEvent.click(screen.getByRole('button', { name: /专家.*16 靶/ }))
     expect(onDifficultyChange).toHaveBeenCalledWith('hard')
+
+    expect(screen.getByRole('button', { name: /开火向上抬枪/ })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: /户外靶场/ }))
     expect(onMapChange).toHaveBeenCalledWith('outdoor')

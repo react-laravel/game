@@ -66,6 +66,7 @@ type PauseView = 'menu' | 'settings'
 interface ShootingPauseOverlayProps {
   drillLabel: string
   lookSensitivity: number
+  recoilEnabled: boolean
   sfxVolume: number
   sfxMuted: boolean
   motionPreference: MotionPreference
@@ -77,6 +78,7 @@ interface ShootingPauseOverlayProps {
   onExitTraining: () => void
   onChangeDrill?: () => void
   onSensitivityChange: (value: number) => void
+  onRecoilEnabledChange: (enabled: boolean) => void
   onSfxVolumeChange: (value: number) => void
   onSfxMutedChange: (muted: boolean) => void
   onMotionPreferenceChange: (value: MotionPreference) => void
@@ -90,6 +92,7 @@ interface ShootingPauseOverlayProps {
 export function ShootingPauseOverlay({
   drillLabel,
   lookSensitivity,
+  recoilEnabled,
   sfxVolume,
   sfxMuted,
   motionPreference,
@@ -101,6 +104,7 @@ export function ShootingPauseOverlay({
   onExitTraining,
   onChangeDrill,
   onSensitivityChange,
+  onRecoilEnabledChange,
   onSfxVolumeChange,
   onSfxMutedChange,
   onMotionPreferenceChange,
@@ -147,6 +151,8 @@ export function ShootingPauseOverlay({
     <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]"
       data-testid="shooting-pause-overlay"
+      onMouseDown={event => event.stopPropagation()}
+      onPointerDown={event => event.stopPropagation()}
     >
       {view === 'menu' ? (
         <div
@@ -216,6 +222,8 @@ export function ShootingPauseOverlay({
           onCrosshairReset={onCrosshairReset}
           lookSensitivity={lookSensitivity}
           onSensitivityChange={onSensitivityChange}
+          recoilEnabled={recoilEnabled}
+          onRecoilEnabledChange={onRecoilEnabledChange}
           sfxVolume={sfxVolume}
           sfxMuted={sfxMuted}
           onSfxVolumeChange={onSfxVolumeChange}

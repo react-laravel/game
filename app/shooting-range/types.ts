@@ -61,4 +61,5 @@ export interface ShootingSetupConfig {
   sfxMuted?: boolean
   targetShape?: TargetShape
   outdoorTimeOfDay?: OutdoorTimeOfDay
+  recoilEnabled?: boolean
 }

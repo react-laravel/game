@@ -17,5 +17,15 @@ describe('shootingHelp', () => {
         section.items.some(item => item.includes('ESC') || item.includes('灵敏度'))
       )
     ).toBe(true)
+    expect(
+      shootingHelpSections.some(section =>
+        section.items.some(item => item.includes('后坐力') && item.includes('向上'))
+      )
+    ).toBe(true)
+    expect(
+      shootingHelpSections.some(section =>
+        section.items.some(item => item.includes('设置') && item.includes('不会开枪'))
+      )
+    ).toBe(true)
   })
 })

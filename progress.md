@@ -40,8 +40,29 @@ Current prompt (2026-09-12): 贪吃蛇，除了按开始，wasd 或者方向键�
 
 Current prompt (2026-09-12): Blackjack `/blackjack` 玩家座位筹码应显示在最上方（高于名字与余额）。
 
+Current prompt (2026-09-14): `/shooting-range` 可以设置是否开启后坐力，后坐力应该是向上，但是我现在玩起来视角会四个方向乱跳
+
+Current prompt (2026-09-14): 人形靶追踪和乱战移动这两个怎么是一样的
+
+Current prompt (2026-09-14): 我打上面的，怎么命中的是下面
+
+Current prompt (2026-09-14): 去掉前面的玻璃和立杆，人物顶部的灯有摩尔纹
+
+Current prompt (2026-09-14): 标靶会穿过屋顶
+
+Current prompt (2026-09-14): 默认关闭后坐力
+
+Current prompt (2026-09-14): 我在设置页点击东西，游戏里怎么也开枪了，应该关闭开枪
+
 ## Current work
 
+- Shooting Range cycle 41 (2026-09-14): **no shooting through pause/settings UI** — live fire only while the canvas holds pointer lock (UI targets ignored even if lock is granted on the same click); pause overlay stops mouse/pointer bubbling; Space no longer shoots or steals keys while unlocked.
+- Shooting Range cycle 40 (2026-09-14): **recoil off by default** — `DEFAULT_RECOIL_ENABLED` / missing lastConfig now load as 关闭; explicit 开启 still persists.
+- Shooting Range cycle 39 (2026-09-14): **targets stay under the roof** — indoor play height capped at 6.8m (`INDOOR_TARGET_MAX_Y`) for spawn, respawn, linear bounce, orbit, and humanoid offset so plates no longer clip the 8.25m ceiling.
+- Shooting Range cycle 38 (2026-09-14): **indoor lane glass/poles + ceiling moiré** — ceiling beams/ducts were rotated around Z so a 50m box stood vertically in the firing lane (read as glass + poles); now Z-aligned side beams only. Dropped stacked soffit/strip lights; single matte troffer, no close-in fixtures over the player.
+- Shooting Range cycle 37 (2026-09-14): **static wall hit registration** — 静态精准 plates share one depth (`generateWallPosition` no longer pushes upper rows farther back); closer lower plates can no longer eat a center-aim shot at the row above. Uniform wall scale; `camera.updateMatrixWorld()` before `setFromCamera`.
+- Shooting Range cycle 36 (2026-09-14): **split overlapping warehouse drills** — 人形靶追踪 is indoor orbit tracking + humanoid (head 2×); 乱战移动 stays warehouse moving chaos with explicit circle targets; quick-start always applies the preset shape so humanoid no longer leaks into 乱战移动.
+- Shooting Range cycle 35 (2026-09-14): **optional upward-only recoil** — setup custom + pause「其他」tab 开启/关闭（`recoilEnabled` persisted); kick is pitch-up then recover, no random yaw; mouse look mutates `lookRotation` only (never bakes recoiled camera quaternion, which caused four-way view jumps). Focused tests for gunFeel / lastConfig / setup / pause / RecoilControl.
 - Shooting Range cycle 34 (2026-09-13, window ending ~10:30 Asia/Shanghai): **outdoor night clarity + matte targets + all-grass lawn** — night fog pushed past play space (`fog.near` 118 / `far` 228, no horizon wash); practical lamp intensity up, emissive bloom down on fixtures; circular + humanoid targets use `meshStandard` matte cardboard/painted-metal (no neon rings / LED cyan head); removed outdoor center gravel lane, chalk line, firing strip, and dirt patches — continuous grass with subtle patch variation only. Focused 166/166; eslint 0.
 - Shooting Range cycle 33 (2026-09-13, window ending ~10:30 Asia/Shanghai): **outdoor time-of-day environments** — selectable **白天 / 中午 / 傍晚 / 晚上** (`outdoorTimeOfDay` persisted in `lastConfigStorage`); setup custom + pause「其他」tab control; sky/fog/sun/ground tint + night solid range pole lights via `outdoorTimeOfDay.ts`; outdoor solid-detail pass retained (post-and-rail fence, berm tiers, distance plaques — no glass in lane). Focused tests green; eslint 0; `outdoor-*-training-hud.png` screenshots refreshed.
 - Shooting Range cycle 32 (2026-09-13, window ending ~10:30 Asia/Shanghai): **warehouse depth pass** — solid meshBasic only (ceiling cross-trusses, side pillars, conduit runs, accent distance plaques, transverse aisle bands, layered backstop boxes, deep crate + side-rack silhouettes, lane curb posts); **no glass/translucent planes in firing lane**. ESC compact pause + humanoid systems (#34) preserved. Focused 159/159; full 718/718; eslint 0 errors; `warehouse-training-hud.png` + screenshots refreshed.

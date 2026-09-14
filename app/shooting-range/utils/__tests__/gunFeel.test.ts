@@ -5,8 +5,10 @@ import {
   SHOT_COOLDOWN_MS,
   decayRecoil,
   hitFlashDurationForZone,
+  kickUpwardRecoil,
   muzzleFlashIntensity,
-  randomRecoilYaw,
+  normalizeRecoilEnabled,
+  viewPitchWithRecoil,
 } from '../gunFeel'
 
 describe('gunFeel', () => {
@@ -31,12 +33,16 @@ describe('gunFeel', () => {
     expect(kick).toBe(0)
   })
 
-  it('returns bounded random yaw kick', () => {
-    for (let i = 0; i < 20; i += 1) {
-      const yaw = randomRecoilYaw()
-      expect(yaw).toBeGreaterThanOrEqual(-0.0036)
-      expect(yaw).toBeLessThanOrEqual(0.0036)
-    }
+  it('kicks recoil only upward when enabled', () => {
+    expect(kickUpwardRecoil(0, true)).toBeCloseTo(0.019, 8)
+    expect(kickUpwardRecoil(0.01, false)).toBe(0.01)
+    expect(viewPitchWithRecoil(-0.1, 0.02)).toBeCloseTo(-0.12, 8)
+  })
+
+  it('treats missing recoil preference as disabled', () => {
+    expect(normalizeRecoilEnabled(undefined)).toBe(false)
+    expect(normalizeRecoilEnabled(true)).toBe(true)
+    expect(normalizeRecoilEnabled(false)).toBe(false)
   })
 
   it('exposes shared shot cadence and longer headshot flash timing', () => {

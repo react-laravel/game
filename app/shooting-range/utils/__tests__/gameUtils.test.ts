@@ -6,7 +6,12 @@ import {
   generateWallPosition,
   difficultySettings,
   respawnTarget,
+  WALL_PLATE_RADIUS,
+  WALL_TARGET_SCALE,
+  roofMaxYForMap,
+  targetTravelMaxY,
 } from '../gameUtils'
+import { INDOOR_TARGET_MAX_Y } from '../indoorCeiling'
 
 describe('shooting-range gameUtils', () => {
   describe('generateWallPosition', () => {
@@ -19,6 +24,37 @@ describe('shooting-range gameUtils', () => {
       expect(second[0]).not.toBeCloseTo(first[0], 0)
       expect(fifth[1]).toBeGreaterThan(first[1])
       expect(fifth[2]).toBeLessThan(0)
+    })
+
+    it('fits all wall rows under an indoor roof', () => {
+      for (let id = 0; id < 16; id += 1) {
+        const [, y] = generateWallPosition(id, 30, INDOOR_TARGET_MAX_Y)
+        expect(y).toBeLessThanOrEqual(INDOOR_TARGET_MAX_Y)
+      }
+    })
+
+    it('keeps every plate on one wall so a lower row cannot eat an aimed upper shot', () => {
+      const camera = { x: 0, y: 1.6, z: 0 }
+      const radius = WALL_PLATE_RADIUS * WALL_TARGET_SCALE
+      const positions = Array.from({ length: 12 }, (_, id) => generateWallPosition(id, 20))
+
+      expect(new Set(positions.map(position => position[2])).size).toBe(1)
+
+      for (let aimed = 0; aimed < positions.length; aimed += 1) {
+        const [ux, uy, uz] = positions[aimed]
+        const dx = ux - camera.x
+        const dy = uy - camera.y
+        const dz = uz - camera.z
+
+        for (let other = 0; other < positions.length; other += 1) {
+          if (other === aimed) continue
+          const [lx, ly, lz] = positions[other]
+          const t = (lz - camera.z) / dz
+          const px = camera.x + t * dx
+          const py = camera.y + t * dy
+          expect(Math.hypot(px - lx, py - ly)).toBeGreaterThan(radius)
+        }
+      }
     })
   })
 
@@ -37,11 +73,20 @@ describe('shooting-range gameUtils', () => {
 
     it('should generate positions within game area bounds', () => {
       const gameAreaSize = 20
+      const maxY = targetTravelMaxY(gameAreaSize)
       for (let i = 0; i < 100; i++) {
         const [x, y, z] = generateRandomPosition(gameAreaSize)
         expect(Math.abs(x)).toBeLessThanOrEqual(gameAreaSize / 2)
-        expect(y).toBeGreaterThanOrEqual(-gameAreaSize / 4 + 2)
-        expect(y).toBeLessThanOrEqual(gameAreaSize / 4 + 2)
+        expect(y).toBeGreaterThanOrEqual(0.8)
+        expect(y).toBeLessThanOrEqual(maxY)
+        expect(z).toBeLessThan(0)
+      }
+    })
+
+    it('stays under an indoor roof when maxY is provided', () => {
+      for (let i = 0; i < 40; i += 1) {
+        const [, y] = generateRandomPosition(30, INDOOR_TARGET_MAX_Y)
+        expect(y).toBeLessThanOrEqual(INDOOR_TARGET_MAX_Y)
       }
     })
 
@@ -52,6 +97,15 @@ describe('shooting-range gameUtils', () => {
       // Both should have valid coordinates
       expect(posSmall.every(n => typeof n === 'number' && !isNaN(n))).toBe(true)
       expect(posLarge.every(n => typeof n === 'number' && !isNaN(n))).toBe(true)
+    })
+  })
+
+  describe('roof height', () => {
+    it('caps indoor travel below the ceiling', () => {
+      expect(roofMaxYForMap('indoor')).toBe(INDOOR_TARGET_MAX_Y)
+      expect(roofMaxYForMap('outdoor')).toBe(Number.POSITIVE_INFINITY)
+      expect(targetTravelMaxY(30, INDOOR_TARGET_MAX_Y)).toBe(INDOOR_TARGET_MAX_Y)
+      expect(targetTravelMaxY(20)).toBeLessThanOrEqual(9)
     })
   })
 

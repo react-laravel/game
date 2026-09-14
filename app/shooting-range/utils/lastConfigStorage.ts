@@ -3,6 +3,7 @@ import { DEFAULT_LOOK_SENSITIVITY, normalizeLookSensitivity } from './lookSensit
 import { DEFAULT_SFX_VOLUME, normalizeSfxMuted, normalizeSfxVolume } from './sfxVolume'
 import { DEFAULT_TARGET_SHAPE, normalizeTargetShape } from './targetShape'
 import { DEFAULT_OUTDOOR_TIME_OF_DAY, normalizeOutdoorTimeOfDay } from './outdoorTimeOfDay'
+import { normalizeRecoilEnabled } from './gunFeel'
 
 export const LAST_CONFIG_KEY = 'shooting-range-last-config'
 export const LAST_DRILL_KEY = 'shooting-range-last-drill'
@@ -44,6 +45,7 @@ export function loadLastConfig(
       outdoorTimeOfDay: normalizeOutdoorTimeOfDay(
         parsed.outdoorTimeOfDay ?? DEFAULT_OUTDOOR_TIME_OF_DAY
       ),
+      recoilEnabled: normalizeRecoilEnabled(parsed.recoilEnabled),
     }
   } catch {
     return null

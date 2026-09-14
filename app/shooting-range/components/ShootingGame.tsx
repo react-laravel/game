@@ -44,9 +44,11 @@ interface ShootingGameProps {
   outdoorTimeOfDay: OutdoorTimeOfDay
   onOutdoorTimeOfDayChange: (value: OutdoorTimeOfDay) => void
   lookSensitivity: number
+  recoilEnabled: boolean
   sfxVolume: number
   sfxMuted: boolean
   onLookSensitivityChange: (value: number) => void
+  onRecoilEnabledChange: (enabled: boolean) => void
   onSfxVolumeChange: (value: number) => void
   onSfxMutedChange: (muted: boolean) => void
   crosshairConfig: CrosshairConfig
@@ -67,9 +69,11 @@ export default function ShootingGame({
   outdoorTimeOfDay,
   onOutdoorTimeOfDayChange,
   lookSensitivity,
+  recoilEnabled,
   sfxVolume,
   sfxMuted,
   onLookSensitivityChange,
+  onRecoilEnabledChange,
   onSfxVolumeChange,
   onSfxMutedChange,
   crosshairConfig,
@@ -336,6 +340,7 @@ export default function ShootingGame({
         outdoorTimeOfDay={outdoorTimeOfDay}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
+        recoilEnabled={recoilEnabled}
         gameStarted={gameStarted}
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
@@ -417,6 +422,7 @@ export default function ShootingGame({
         <ShootingPauseOverlay
           drillLabel={drillLabel}
           lookSensitivity={lookSensitivity}
+          recoilEnabled={recoilEnabled}
           sfxVolume={sfxVolume}
           sfxMuted={sfxMuted}
           crosshairConfig={crosshairConfig}
@@ -428,6 +434,7 @@ export default function ShootingGame({
           onChangeDrill={onChangeDrill ? handlePauseChangeDrill : undefined}
           motionPreference={motionPreference}
           onSensitivityChange={onLookSensitivityChange}
+          onRecoilEnabledChange={onRecoilEnabledChange}
           onSfxVolumeChange={onSfxVolumeChange}
           onSfxMutedChange={onSfxMutedChange}
           onMotionPreferenceChange={setMotionPreference}

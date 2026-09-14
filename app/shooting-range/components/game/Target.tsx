@@ -24,6 +24,7 @@ interface TargetProps {
   faceCamera: boolean
   orbitRadius: number
   orbitSpeed: number
+  maxY?: number
   modeId: TrainingModeId
   lowLightBoost?: number
   onClick: (id: number, hitZone?: HitZone) => void
@@ -112,6 +113,7 @@ function TargetComponent({
   faceCamera,
   orbitRadius,
   orbitSpeed,
+  maxY = 9,
   modeId,
   targetShape,
   lowLightBoost = 0,
@@ -252,7 +254,11 @@ function TargetComponent({
         const time = performance.now() * 0.001 * orbitSpeed + id * 1.7
         pos.set(
           orbitAnchor.current.x + Math.cos(time) * orbitRadius,
-          orbitAnchor.current.y + Math.sin(time * 0.85) * orbitRadius * 0.42,
+          THREE.MathUtils.clamp(
+            orbitAnchor.current.y + Math.sin(time * 0.85) * orbitRadius * 0.42,
+            isHumanoid ? 0.15 : 0.8,
+            maxY
+          ),
           orbitAnchor.current.z + Math.sin(time * 1.1) * orbitRadius * 0.55
         )
       } else if (movement === 'linear' && speed > 0) {
@@ -261,16 +267,16 @@ function TargetComponent({
 
         const halfWidth = gameAreaSize * 0.42
         const minY = isHumanoid ? 0.15 : 0.8
-        const maxY = Math.min(9, gameAreaSize * 0.42 + 2)
+        const travelMaxY = maxY
         const nearZ = -7
         const farZ = -(gameAreaSize + 9)
 
         if (pos.x < -halfWidth || pos.x > halfWidth) directionVector.x *= -1
-        if (pos.y < minY || pos.y > maxY) directionVector.y *= -1
+        if (pos.y < minY || pos.y > travelMaxY) directionVector.y *= -1
         if (pos.z > nearZ || pos.z < farZ) directionVector.z *= -1
 
         pos.x = THREE.MathUtils.clamp(pos.x, -halfWidth, halfWidth)
-        pos.y = THREE.MathUtils.clamp(pos.y, minY, maxY)
+        pos.y = THREE.MathUtils.clamp(pos.y, minY, travelMaxY)
         pos.z = THREE.MathUtils.clamp(pos.z, farZ, nearZ)
 
         if (jitterChance > 0 && Math.random() < delta * jitterChance) {
@@ -301,6 +307,12 @@ function TargetComponent({
       } else {
         root.position.copy(pos)
       }
+
+      root.position.y = THREE.MathUtils.clamp(
+        root.position.y,
+        isHumanoid ? 0.15 : 0.8,
+        maxY
+      )
 
       if (appearance.showMotionStreak && motionTrailRef.current && movement === 'linear' && speed > 0) {
         const trail = motionTrailRef.current

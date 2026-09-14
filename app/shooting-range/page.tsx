@@ -7,10 +7,11 @@ import { cn } from '@/lib/helpers'
 import { ShootingHistory } from './components/ShootingHistory'
 import { ShootingSetup } from './components/ShootingSetup'
 import { useCrosshairSettings } from './hooks/useCrosshairSettings'
-import type { DrillPreset } from './utils/drillPresets'
+import { targetShapeForPreset, type DrillPreset } from './utils/drillPresets'
 import { setShootingSfxSettings } from './utils/audioUtils'
 import { loadLastConfig, saveLastConfig } from './utils/lastConfigStorage'
 import { DEFAULT_LOOK_SENSITIVITY } from './utils/lookSensitivity'
+import { DEFAULT_RECOIL_ENABLED, normalizeRecoilEnabled } from './utils/gunFeel'
 import { DEFAULT_SFX_VOLUME } from './utils/sfxVolume'
 import type { ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId, OutdoorTimeOfDay } from './types'
 import { DEFAULT_TARGET_SHAPE, normalizeTargetShape } from './utils/targetShape'
@@ -38,6 +39,9 @@ export default function ShootingRangePage() {
   )
   const [lookSensitivity, setLookSensitivity] = useState(
     () => loadLastConfig()?.lookSensitivity ?? DEFAULT_LOOK_SENSITIVITY
+  )
+  const [recoilEnabled, setRecoilEnabled] = useState(
+    () => normalizeRecoilEnabled(loadLastConfig()?.recoilEnabled ?? DEFAULT_RECOIL_ENABLED)
   )
   const [sfxVolume, setSfxVolume] = useState(
     () => loadLastConfig()?.sfxVolume ?? DEFAULT_SFX_VOLUME
@@ -67,6 +71,7 @@ export default function ShootingRangePage() {
         mapId: ShootingMapId
         modeId: TrainingModeId
         lookSensitivity: number
+        recoilEnabled: boolean
         sfxVolume: number
         sfxMuted: boolean
         targetShape: TargetShape
@@ -80,6 +85,7 @@ export default function ShootingRangePage() {
           mapId: next.mapId,
           modeId: next.modeId,
           lookSensitivity: next.lookSensitivity,
+          recoilEnabled: next.recoilEnabled,
           sfxVolume: next.sfxVolume,
           sfxMuted: next.sfxMuted,
           targetShape: next.targetShape,
@@ -92,17 +98,18 @@ export default function ShootingRangePage() {
   )
 
   const applyPreset = useCallback((preset: DrillPreset) => {
-    const nextTargetShape = preset.targetShape ?? targetShape
+    const nextTargetShape = targetShapeForPreset(preset)
     setDifficulty(preset.difficulty)
     setMapId(preset.mapId)
     setModeId(preset.modeId)
-    if (preset.targetShape) setTargetShape(preset.targetShape)
+    setTargetShape(nextTargetShape)
     persistConfig(
       {
         difficulty: preset.difficulty,
         mapId: preset.mapId,
         modeId: preset.modeId,
         lookSensitivity,
+        recoilEnabled,
         sfxVolume,
         sfxMuted,
         targetShape: nextTargetShape,
@@ -110,7 +117,7 @@ export default function ShootingRangePage() {
       },
       preset.id
     )
-  }, [lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
+  }, [lookSensitivity, persistConfig, recoilEnabled, sfxMuted, sfxVolume, outdoorTimeOfDay])
 
   const handleQuickStart = useCallback(
     (preset: DrillPreset) => {
@@ -123,47 +130,55 @@ export default function ShootingRangePage() {
   const handleLookSensitivityChange = useCallback(
     (value: number) => {
       setLookSensitivity(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity: value, recoilEnabled, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay]
+    [difficulty, mapId, modeId, persistConfig, recoilEnabled, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay]
+  )
+
+  const handleRecoilEnabledChange = useCallback(
+    (enabled: boolean) => {
+      setRecoilEnabled(enabled)
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled: enabled, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
+    },
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay]
   )
 
   const handleSfxVolumeChange = useCallback(
     (value: number) => {
       setSfxVolume(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume: value, sfxMuted, targetShape, outdoorTimeOfDay })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled, sfxVolume: value, sfxMuted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, targetShape, outdoorTimeOfDay]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, recoilEnabled, sfxMuted, targetShape, outdoorTimeOfDay]
   )
 
   const handleSfxMutedChange = useCallback(
     (muted: boolean) => {
       setSfxMuted(muted)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted: muted, targetShape, outdoorTimeOfDay })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled, sfxVolume, sfxMuted: muted, targetShape, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxVolume, targetShape, outdoorTimeOfDay]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, recoilEnabled, sfxVolume, targetShape, outdoorTimeOfDay]
   )
 
   const handleTargetShapeChange = useCallback(
     (value: TargetShape) => {
       setTargetShape(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape: value, outdoorTimeOfDay })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled, sfxVolume, sfxMuted, targetShape: value, outdoorTimeOfDay })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume, outdoorTimeOfDay]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, recoilEnabled, sfxMuted, sfxVolume, outdoorTimeOfDay]
   )
 
   const handleOutdoorTimeOfDayChange = useCallback(
     (value: OutdoorTimeOfDay) => {
       setOutdoorTimeOfDay(value)
-      persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay: value })
+      persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay: value })
     },
-    [difficulty, mapId, modeId, lookSensitivity, persistConfig, sfxMuted, sfxVolume, targetShape]
+    [difficulty, mapId, modeId, lookSensitivity, persistConfig, recoilEnabled, sfxMuted, sfxVolume, targetShape]
   )
 
   const handleStart = useCallback(() => {
-    persistConfig({ difficulty, mapId, modeId, lookSensitivity, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
+    persistConfig({ difficulty, mapId, modeId, lookSensitivity, recoilEnabled, sfxVolume, sfxMuted, targetShape, outdoorTimeOfDay })
     setIsStarted(true)
-  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
+  }, [difficulty, lookSensitivity, mapId, modeId, persistConfig, recoilEnabled, sfxMuted, sfxVolume, targetShape, outdoorTimeOfDay])
 
   const handleReturnToSetup = useCallback(() => {
     setIsStarted(false)
@@ -204,12 +219,14 @@ export default function ShootingRangePage() {
             mapId={mapId}
             modeId={modeId}
             lookSensitivity={lookSensitivity}
+            recoilEnabled={recoilEnabled}
             sfxVolume={sfxVolume}
             sfxMuted={sfxMuted}
             onDifficultyChange={setDifficulty}
             onMapChange={setMapId}
             onModeChange={setModeId}
             onLookSensitivityChange={handleLookSensitivityChange}
+            onRecoilEnabledChange={handleRecoilEnabledChange}
             onSfxVolumeChange={handleSfxVolumeChange}
             onSfxMutedChange={handleSfxMutedChange}
             targetShape={targetShape}
@@ -244,9 +261,11 @@ export default function ShootingRangePage() {
               outdoorTimeOfDay={outdoorTimeOfDay}
               onOutdoorTimeOfDayChange={handleOutdoorTimeOfDayChange}
               lookSensitivity={lookSensitivity}
+              recoilEnabled={recoilEnabled}
               sfxVolume={sfxVolume}
               sfxMuted={sfxMuted}
               onLookSensitivityChange={handleLookSensitivityChange}
+              onRecoilEnabledChange={handleRecoilEnabledChange}
               onSfxVolumeChange={handleSfxVolumeChange}
               onSfxMutedChange={handleSfxMutedChange}
               crosshairConfig={crosshairConfig}

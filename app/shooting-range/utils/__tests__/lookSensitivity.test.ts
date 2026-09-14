@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyLookDelta,
   BASE_LOOK_SPEED,
   clampLookSensitivity,
   DEFAULT_LOOK_SENSITIVITY,
@@ -29,5 +30,15 @@ describe('lookSensitivity', () => {
     expect(lookSensitivityLabel(0.6)).toBe('较慢')
     expect(lookSensitivityLabel(1)).toBe('标准')
     expect(lookSensitivityLabel(1.5)).toBe('较快')
+  })
+
+  it('applies mouse delta onto the aim euler without extra yaw jitter', () => {
+    const rotation = { x: 0, y: 0 }
+    applyLookDelta(rotation, 10, 0, 0.002)
+    expect(rotation.y).toBeCloseTo(-0.02, 8)
+    expect(rotation.x).toBe(0)
+
+    applyLookDelta(rotation, 0, -8, 0.002)
+    expect(rotation.x).toBeCloseTo(0.016, 8)
   })
 })

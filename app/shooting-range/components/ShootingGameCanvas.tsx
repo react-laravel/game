@@ -16,6 +16,7 @@ interface ShootingGameCanvasProps {
   outdoorTimeOfDay?: OutdoorTimeOfDay
   lookSensitivity: number
   reducedMotion?: boolean
+  recoilEnabled?: boolean
   gameStarted: boolean
   gameOver: boolean
   useFallbackControls: boolean
@@ -34,6 +35,7 @@ function ShootingGameCanvasComponent({
   outdoorTimeOfDay = 'day',
   lookSensitivity,
   reducedMotion = false,
+  recoilEnabled = false,
   gameStarted,
   gameOver,
   useFallbackControls,
@@ -76,6 +78,7 @@ function ShootingGameCanvasComponent({
         outdoorTimeOfDay={outdoorTimeOfDay}
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
+        recoilEnabled={recoilEnabled}
         onShotResult={onShotResult}
         onHitFeedback={onHitFeedback}
         gameStarted={gameStarted && !gameOver}

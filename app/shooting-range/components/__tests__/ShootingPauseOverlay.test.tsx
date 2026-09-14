@@ -7,6 +7,7 @@ import { ShootingPauseOverlay } from '../ShootingGameOverlays'
 const baseProps = {
   drillLabel: '户外 · 移动靶',
   lookSensitivity: 1,
+  recoilEnabled: true,
   sfxVolume: 0.7,
   sfxMuted: false,
   motionPreference: 'system' as const,
@@ -17,6 +18,7 @@ const baseProps = {
   onRestart: vi.fn(),
   onExitTraining: vi.fn(),
   onSensitivityChange: vi.fn(),
+  onRecoilEnabledChange: vi.fn(),
   onSfxVolumeChange: vi.fn(),
   onSfxMutedChange: vi.fn(),
   onMotionPreferenceChange: vi.fn(),
@@ -41,6 +43,19 @@ describe('ShootingPauseOverlay', () => {
     expect(screen.queryByText('鼠标灵敏度')).not.toBeInTheDocument()
     expect(screen.queryByText('音效音量')).not.toBeInTheDocument()
     expect(screen.queryByText('动态效果')).not.toBeInTheDocument()
+  })
+
+  it('keeps pause and settings clicks from bubbling to the game window', () => {
+    const onWindowMouseDown = vi.fn()
+    window.addEventListener('mousedown', onWindowMouseDown)
+    render(<ShootingPauseOverlay {...baseProps} onChangeDrill={vi.fn()} />)
+
+    fireEvent.mouseDown(screen.getByRole('button', { name: '设置' }))
+    fireEvent.click(screen.getByRole('button', { name: '设置' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '准星' }))
+
+    expect(onWindowMouseDown).not.toHaveBeenCalled()
+    window.removeEventListener('mousedown', onWindowMouseDown)
   })
 
   it('opens tabbed settings from the pause popup', () => {
@@ -140,6 +155,7 @@ describe('ShootingPauseOverlay', () => {
     await user.click(screen.getByRole('tab', { name: '其他' }))
     const otherPanel = screen.getByRole('tabpanel', { hidden: false })
     expect(otherPanel).toHaveTextContent('快速参考')
+    expect(otherPanel).toHaveTextContent('后坐力')
     expect(otherPanel).toHaveTextContent('显示强度')
     expect(otherPanel).toHaveTextContent('户外时段')
   })

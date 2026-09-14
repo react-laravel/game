@@ -8,14 +8,12 @@ import {
   type OutdoorSkyParams,
 } from '../../utils/outdoorTimeOfDay'
 import { createSeededRandom } from '../../utils/seededRandom'
+import { indoorCeilingBeamXs, indoorTrofferSlots, INDOOR_CEILING_Y } from '../../utils/indoorCeiling'
 
 interface RangeEnvironmentProps {
   config: MapConfig
   outdoorTimeOfDay?: OutdoorTimeOfDay
 }
-
-/** Lowered so troffer rows sit inside the FPS upper field of view (~8m room height). */
-const INDOOR_CEILING_Y = 8.25
 
 function createCanvasTexture(
   width: number,
@@ -164,12 +162,12 @@ function useEarthTexture() {
   )
 }
 
-/** Recessed troffer — solid metal housing + emissive box face (no stacked planes). */
+/** Recessed troffer — one housing + one diffuser. Stacked emissive planes moiré in FPS view. */
 function CeilingTroffer({
   x,
   z,
   accent,
-  intensity = 1.35,
+  intensity = 1.15,
 }: {
   x: number
   z: number
@@ -177,83 +175,34 @@ function CeilingTroffer({
   intensity?: number
 }) {
   return (
-    <group position={[x, INDOOR_CEILING_Y - 0.06, z]}>
+    <group position={[x, INDOOR_CEILING_Y - 0.18, z]}>
       <mesh>
-        <boxGeometry args={[3.2, 0.2, 1.65]} />
-        <meshStandardMaterial color="#8a9aaa" metalness={0.48} roughness={0.38} />
+        <boxGeometry args={[3.2, 0.32, 1.65]} />
+        <meshStandardMaterial color="#8a9aaa" metalness={0.32} roughness={0.55} />
       </mesh>
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[2.75, 0.08, 1.3]} />
+      <mesh position={[0, -0.14, 0]}>
+        <boxGeometry args={[2.7, 0.12, 1.2]} />
         <meshStandardMaterial
-          color="#f6fcff"
+          color="#dce8ee"
           emissive={accent}
-          emissiveIntensity={2.1}
-          roughness={0.32}
-          toneMapped={false}
+          emissiveIntensity={0.48}
+          roughness={0.78}
         />
       </mesh>
-      <pointLight intensity={intensity} distance={18} color="#eef8ff" decay={2} position={[0, -0.22, 0]} />
-    </group>
-  )
-}
-
-function CeilingSoffitRow({
-  z,
-  accent,
-  width = 32,
-}: {
-  z: number
-  accent: string
-  width?: number
-}) {
-  return (
-    <group position={[0, INDOOR_CEILING_Y - 0.87, z]}>
-      <mesh>
-        <boxGeometry args={[width, 0.32, 1.4]} />
-        <meshStandardMaterial color="#8a9aaa" metalness={0.4} roughness={0.42} />
-      </mesh>
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[width - 1.5, 0.12, 1.1]} />
-        <meshStandardMaterial
-          color="#f8fcff"
-          emissive={accent}
-          emissiveIntensity={1.85}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh position={[0, -0.16, 0]}>
-        <boxGeometry args={[width - 3, 0.06, 0.85]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive="#e8f8ff"
-          emissiveIntensity={1.35}
-          toneMapped={false}
-        />
-      </mesh>
-      <pointLight intensity={1.1} distance={16} color="#eef8ff" decay={2} position={[0, -0.3, 0]} />
+      <pointLight intensity={intensity} distance={16} color="#eef8ff" decay={2} position={[0, -0.3, 0]} />
     </group>
   )
 }
 
 function IndoorCeilingLighting({ accent }: { accent: string }) {
-  const trofferSlots = useMemo(() => {
-    const slots: Array<{ x: number; z: number }> = []
-    for (const z of [-10, -24, -38]) {
-      for (const x of [-12, 0, 12]) {
-        slots.push({ x, z })
-      }
-    }
-    return slots
-  }, [])
-
-  const stripZs = [-6, -20, -34, -48]
-  const soffitZs = [-4, -18, -32, -46]
+  const trofferSlots = useMemo(() => indoorTrofferSlots(), [])
+  const beamXs = useMemo(() => indoorCeilingBeamXs(), [])
 
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y + 0.06, -24]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, INDOOR_CEILING_Y, -24]}>
         <planeGeometry args={[38, 56]} />
-        <meshStandardMaterial color="#dce8ee" roughness={0.88} metalness={0.04} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#dce8ee" roughness={0.92} metalness={0.04} />
       </mesh>
 
       {[-17.6, 17.6].map(x => (
@@ -263,64 +212,17 @@ function IndoorCeilingLighting({ accent }: { accent: string }) {
         </mesh>
       ))}
 
-      {[-10, 10].map(x => (
-        <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y + 0.06, -22]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[56, 0.28, 0.42]} />
+      {beamXs.map(x => (
+        <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y - 0.22, -22]}>
+          <boxGeometry args={[0.42, 0.28, 54]} />
           <meshStandardMaterial color="#9aacb8" metalness={0.42} roughness={0.45} />
         </mesh>
       ))}
 
-      {[-14, 0, 14].map(x => (
-        <mesh key={`duct-${x}`} position={[x, INDOOR_CEILING_Y - 0.87, -24]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[54, 0.5, 0.5]} />
-          <meshStandardMaterial color="#9aacb8" metalness={0.55} roughness={0.38} />
-        </mesh>
-      ))}
-
-      {stripZs.map(z => (
-        <CeilingLightStrip key={z} z={z} accent={accent} intensity={2.15} width={28} />
-      ))}
-
       {trofferSlots.map(slot => (
-        <CeilingTroffer key={`${slot.x}-${slot.z}`} x={slot.x} z={slot.z} accent={accent} intensity={1.45} />
-      ))}
-
-      {soffitZs.map(z => (
-        <CeilingSoffitRow key={z} z={z} accent={accent} width={28} />
+        <CeilingTroffer key={`${slot.x}-${slot.z}`} x={slot.x} z={slot.z} accent={accent} />
       ))}
     </>
-  )
-}
-
-function CeilingLightStrip({
-  z,
-  accent,
-  intensity,
-  width = 16,
-}: {
-  z: number
-  accent: string
-  intensity: number
-  width?: number
-}) {
-  return (
-    <group position={[0, INDOOR_CEILING_Y - 0.17, z]}>
-      <mesh>
-        <boxGeometry args={[width, 0.14, 0.55]} />
-        <meshStandardMaterial
-          color="#e8f4fc"
-          emissive={accent}
-          emissiveIntensity={1.12}
-          roughness={0.32}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh position={[0, -0.08, 0]}>
-        <boxGeometry args={[width + 0.6, 0.06, 0.72]} />
-        <meshStandardMaterial color="#8a9aa8" metalness={0.35} roughness={0.55} />
-      </mesh>
-      <pointLight intensity={intensity} distance={20} color={accent} decay={2} position={[0, -0.2, 0]} />
-    </group>
   )
 }
 
@@ -836,8 +738,8 @@ function IndoorRange({ config }: { config: MapConfig }) {
         </mesh>
       ))}
 
-      {/* meshBasic depth pass — ceiling beams and solid wall distance plaques */}
-      {[-10, 0, 10].map(x => (
+      {/* meshBasic depth pass — ceiling beams along the sides, not in the lane */}
+      {[-10, 10].map(x => (
         <mesh key={`beam-${x}`} position={[x, INDOOR_CEILING_Y - 0.42, -24]}>
           <boxGeometry args={[0.65, 0.22, 52]} />
           <meshBasicMaterial color="#1a2838" toneMapped={false} />
@@ -855,9 +757,9 @@ function IndoorRange({ config }: { config: MapConfig }) {
         </mesh>
       ))}
 
-      {[-14, 0, 14].map(x => (
-        <mesh key={`conduit-${x}`} position={[x, INDOOR_CEILING_Y - 1.15, -20]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[38, 0.14, 0.14]} />
+      {[-14, 14].map(x => (
+        <mesh key={`conduit-${x}`} position={[x, INDOOR_CEILING_Y - 1.15, -24]}>
+          <boxGeometry args={[0.14, 0.14, 48]} />
           <meshBasicMaterial color="#253848" toneMapped={false} />
         </mesh>
       ))}

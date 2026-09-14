@@ -6,6 +6,7 @@ import {
   drillPresets,
   findDrillPreset,
   isRecommendedEntryDrill,
+  targetShapeForPreset,
 } from '../drillPresets'
 
 describe('drillPresets', () => {
@@ -17,7 +18,21 @@ describe('drillPresets', () => {
   it('includes a humanoid quick-start drill', () => {
     const humanoid = findDrillPreset('humanoid-strafe')
     expect(humanoid?.targetShape).toBe('humanoid')
-    expect(humanoid?.modeId).toBe('moving')
+    expect(humanoid?.modeId).toBe('tracking')
+    expect(humanoid?.mapId).toBe('indoor')
+  })
+
+  it('keeps quick-start drills unique by map, mode, and target shape', () => {
+    const keys = drillPresets.map(
+      preset => `${preset.modeId}-${preset.mapId}-${preset.targetShape ?? 'circle'}`
+    )
+    expect(new Set(keys).size).toBe(keys.length)
+
+    const strafe = findDrillPreset('strafe-rush')
+    expect(strafe?.modeId).toBe('moving')
+    expect(strafe?.mapId).toBe('warehouse')
+    expect(targetShapeForPreset(strafe!)).toBe('circle')
+    expect(targetShapeForPreset(findDrillPreset('flick-reflex')!)).toBe('circle')
   })
 
   it('defaults to flick reflex drill', () => {
@@ -39,13 +54,16 @@ describe('drillPresets', () => {
   })
 
   it('only labels humanoid drill when target shape is humanoid', () => {
-    expect(drillLabelForConfig('moving', 'warehouse', 'medium')).toBe(
-      '动态追踪 · 工业仓库'
+    expect(drillLabelForConfig('tracking', 'indoor', 'medium')).toBe(
+      '环绕跟枪 · 室内靶场'
     )
-    expect(drillLabelForConfig('moving', 'warehouse', 'medium', 'humanoid')).toBe(
+    expect(drillLabelForConfig('tracking', 'indoor', 'medium', 'humanoid')).toBe(
       '人形靶追踪'
     )
     expect(drillLabelForConfig('moving', 'warehouse', 'hard')).toBe('乱战移动')
+    expect(drillLabelForConfig('moving', 'warehouse', 'hard', 'humanoid')).toBe(
+      '动态追踪 · 工业仓库'
+    )
   })
 
   it('exposes duration and difficulty meta for quick-start cards', () => {

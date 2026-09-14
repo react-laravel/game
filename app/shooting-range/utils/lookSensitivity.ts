@@ -28,6 +28,20 @@ export function lookSpeedForSensitivity(sensitivity: number): number {
   return BASE_LOOK_SPEED * clamped ** 1.06
 }
 
+const LOOK_PITCH_LIMIT = Math.PI / 2 - 0.05
+
+/** Apply mouse delta onto the aim euler. Never read a recoiled camera quaternion. */
+export function applyLookDelta(
+  rotation: { x: number; y: number },
+  movementX: number,
+  movementY: number,
+  lookSpeed: number
+) {
+  rotation.y -= movementX * lookSpeed
+  rotation.x -= movementY * lookSpeed
+  rotation.x = Math.min(LOOK_PITCH_LIMIT, Math.max(-LOOK_PITCH_LIMIT, rotation.x))
+}
+
 export function lookSensitivityLabel(value: number): string {
   const clamped = clampLookSensitivity(value)
   if (clamped <= 0.65) return '较慢'

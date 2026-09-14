@@ -64,6 +64,7 @@ export const drillPresets: DrillPreset[] = [
     mapId: 'warehouse',
     difficulty: 'hard',
     tag: 'Strafe',
+    targetShape: 'circle',
   },
   {
     id: 'speed-burst',
@@ -88,10 +89,10 @@ export const drillPresets: DrillPreset[] = [
   {
     id: 'humanoid-strafe',
     name: '人形靶追踪',
-    subtitle: '人形移动靶 · 头部双倍分',
+    subtitle: '室内环绕靶 · 头部双倍分',
     focus: 'humanoid',
-    modeId: 'moving',
-    mapId: 'warehouse',
+    modeId: 'tracking',
+    mapId: 'indoor',
     difficulty: 'medium',
     tag: 'Human',
     targetShape: 'humanoid',
@@ -121,6 +122,10 @@ export function drillLabelForConfig(
   const mode = trainingModes[modeId]
   const map = mapOptions.find(option => option.id === mapId)
   return `${mode.name} · ${map?.name ?? mapId}`
+}
+
+export function targetShapeForPreset(preset: DrillPreset): TargetShape {
+  return preset.targetShape ?? 'circle'
 }
 
 export function drillMetaForPreset(preset: DrillPreset): { duration: number; difficulty: string } {

@@ -9,8 +9,8 @@ export const BODY_HIT_FLASH_DURATION = 0.24
 /** Slightly longer headshot flash for QA readability without changing gameplay cadence. */
 export const HEADSHOT_FLASH_DURATION = 0.34
 export const RECOIL_KICK_PITCH = 0.019
-export const RECOIL_KICK_YAW = 0.0036
 export const RECOIL_RECOVERY_SPEED = 15.5
+export const DEFAULT_RECOIL_ENABLED = false
 
 export function hitFlashDurationForZone(hitZone?: 'head' | 'body' | 'limb'): number {
   return hitZone === 'head' ? HEADSHOT_FLASH_DURATION : BODY_HIT_FLASH_DURATION
@@ -37,7 +37,20 @@ export function decayRecoil(current: number, delta: number, speed = RECOIL_RECOV
   return Math.abs(next) < 0.00015 ? 0 : next
 }
 
-/** Random yaw kick within ±RECOIL_KICK_YAW. */
-export function randomRecoilYaw(): number {
-  return (Math.random() - 0.5) * RECOIL_KICK_YAW * 2
+export function normalizeRecoilEnabled(value: unknown): boolean {
+  return value === true
+}
+
+/** Recoil only kicks the view upward. Disabled shots leave the aim untouched. */
+export function kickUpwardRecoil(
+  current: number,
+  enabled: boolean,
+  amount = RECOIL_KICK_PITCH
+): number {
+  return enabled ? current + amount : current
+}
+
+/** Positive recoil pitch looks up in YXZ (camera.x decreases). */
+export function viewPitchWithRecoil(basePitch: number, recoilPitch: number): number {
+  return basePitch - recoilPitch
 }

@@ -1,8 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePointerLock } from '../usePointerLock'
 
 describe('usePointerLock', () => {
+  afterEach(() => vi.restoreAllMocks())
   beforeEach(() => {
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
@@ -68,6 +69,11 @@ describe('usePointerLock', () => {
   })
 
   it('retries pointer lock on the next animation frame when the first attempt does not stick', async () => {
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.push(callback)
+      return frames.length
+    })
     const requestPointerLock = vi.fn(() => {
       Object.defineProperty(document, 'pointerLockElement', {
         configurable: true,
@@ -90,9 +96,7 @@ describe('usePointerLock', () => {
     expect(requestPointerLock).toHaveBeenCalledOnce()
 
     await act(async () => {
-      await new Promise<void>(resolve => {
-        window.requestAnimationFrame(() => resolve())
-      })
+      frames.shift()?.(16)
     })
 
     expect(requestPointerLock).toHaveBeenCalledTimes(2)

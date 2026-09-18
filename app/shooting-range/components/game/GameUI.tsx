@@ -71,78 +71,30 @@ export function GameUI({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 text-white">
-      <div className="absolute top-[4.75rem] left-5 hidden max-w-[12.5rem] rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md sm:block">
-        <div className="text-[10px] font-semibold tracking-[0.16em] text-cyan-200/70 uppercase">
-          {mode.focus}
-        </div>
-        <div className="mt-0.5 text-sm leading-snug font-semibold">{drillLabel}</div>
-        <div className="mt-1 text-[11px] leading-4 text-white/50">{mode.hudHint}</div>
-        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-white/65">
-          <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
-          {motionBadge.label}
-          <span className="text-white/35">·</span>
-          {motionBadge.detail}
-        </div>
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#152422]/55 to-transparent" />
+      <div className="absolute left-1/2 top-5 flex -translate-x-1/2 items-center gap-6 rounded-md border border-white/15 bg-[#1c2b28]/90 px-6 py-2.5">
+        <div><div className="text-[9px] tracking-[.18em] text-[#b4c1b6]">SCORE / 得分</div><div className="mt-1 font-mono text-xl font-medium tabular-nums">{score.toLocaleString()}</div></div>
+        <div className="h-9 w-px bg-white/15" />
+        <div><div className="text-[9px] tracking-[.18em] text-[#b4c1b6]">TIME / 剩余</div><div className="mt-1 font-mono text-xl font-medium tabular-nums text-[#e4b584]">{timeLeft.toFixed(0).padStart(2,'0')}<span className="ml-1 text-[10px] text-white/45">s</span></div></div>
+        <div className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden"><div className="h-full bg-[#dda16b] transition-[width] duration-500" style={{width:`${timePercent}%`}}/></div>
       </div>
 
-      <div className="absolute top-4 right-4 flex flex-wrap justify-end gap-2 sm:top-5 sm:right-5">
-        <HudStat label="FPS" value={`${displayFps}`} accent="emerald" />
-        <HudStat label="命中 / 射击" value={`${hits} / ${shots}`} />
-        <HudStat label="精准度" value={shots > 0 ? `${accuracy}%` : '—'} />
-        <HudStat label="射速" value={`${shotsPerMinute}/分`} accent="amber" className="hidden sm:flex" />
-        {showReaction && avgReactionMs !== null && (
-          <HudStat label="反应" value={`${avgReactionMs}ms`} accent="rose" className="hidden md:flex" />
-        )}
+      <div className="absolute right-5 top-5 flex divide-x divide-white/15 rounded-md border border-white/15 bg-[#1c2b28]/90 px-1 py-3">
+        <div className="px-4"><div className="text-[9px] tracking-[.12em] text-[#b4c1b6]">ACCURACY / 精准度</div><div className="mt-1 font-mono text-xl tabular-nums">{shots > 0 ? `${accuracy}%` : '—'}</div></div>
+        <div className="hidden px-4 sm:block"><div className="text-[9px] tracking-[.12em] text-[#b4c1b6]">HITS / 命中</div><div className="mt-1 font-mono text-xl tabular-nums">{hits}<span className="ml-1 text-xs text-white/40">/ {shots}</span></div></div>
       </div>
 
-      <div className="absolute top-4 left-1/2 w-44 -translate-x-1/2 sm:top-5 sm:w-56">
-        <div className="rounded-xl border border-white/10 bg-slate-950/72 px-4 py-2 text-center shadow-xl backdrop-blur-md">
-          <div className="flex items-end justify-center gap-3">
-            <div>
-              <div className="text-[10px] font-semibold tracking-[0.18em] text-amber-200/75 uppercase">
-                得分
-              </div>
-              <div className="font-mono text-2xl font-black tracking-tight tabular-nums">{score}</div>
-            </div>
-            <div className="mb-1 h-7 w-px bg-white/10" />
-            <div>
-              <div className="text-[10px] font-semibold tracking-[0.18em] text-cyan-200/70 uppercase">
-                剩余
-              </div>
-              <div className="font-mono text-lg font-semibold tabular-nums">{timeLeft.toFixed(0)}s</div>
-            </div>
-            {bestStreak > 1 && (
-              <>
-                <div className="mb-1 h-7 w-px bg-white/10" />
-                <div>
-                  <div className="text-[10px] font-semibold tracking-[0.18em] text-orange-200/75 uppercase">
-                    连击
-                  </div>
-                  <div className="font-mono text-lg font-semibold tabular-nums text-orange-200">
-                    {bestStreak}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-cyan-300 transition-[width] duration-500"
-              style={{ width: `${timePercent}%` }}
-            />
-          </div>
+      {!gameOver && <>
+        <div className="absolute bottom-6 left-5 flex items-center gap-4 border-l-2 border-[#df9b64] bg-[#192825]/85 px-4 py-3">
+          <div><div className="text-[9px] tracking-[.2em] text-[#c3ad8b]">{mode.focus.toUpperCase()} / {motionBadge.label}</div><div className="mt-1 text-sm font-medium">{drillLabel}</div></div>
+          <div className="hidden border-l border-white/15 pl-4 text-[10px] leading-5 text-[#a3b4a7] sm:block"><div>{displayFps} FPS · {shotsPerMinute}/分</div><div>{showReaction && avgReactionMs !== null ? `反应 ${avgReactionMs}ms` : `最佳连击 ${bestStreak}`}</div></div>
         </div>
-      </div>
-
-      {!gameOver && (
-        <div className="absolute bottom-4 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/55 px-4 py-1.5 text-xs text-white/55 backdrop-blur sm:block">
-          移动鼠标瞄准 · 左键射击 · ESC 暂停 · ? 帮助
-        </div>
-      )}
+        <div className="absolute bottom-7 left-1/2 hidden -translate-x-1/2 gap-5 text-[10px] tracking-wide text-white/60 lg:flex"><span>鼠标 瞄准</span><span>左键 射击</span><span>ESC 暂停</span></div>
+      </>}
 
       {!gameOver && showTutorialTip && (
         <div
-          className="pointer-events-auto absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-2xl border border-cyan-200/20 bg-slate-950/78 px-4 py-3 text-center text-sm leading-6 text-white/80 shadow-xl backdrop-blur-md transition-all duration-700 ease-out"
+          className="pointer-events-auto absolute bottom-16 left-1/2 max-w-xs -translate-x-1/2 rounded-md border border-[#daaa72]/20 bg-[#21332c]/95 px-4 py-3 text-center text-xs leading-5 text-white/80 shadow-xl transition-opacity duration-300"
           style={{ opacity: showTutorialTip ? 1 : 0 }}
         >
           <span className="font-semibold text-cyan-100">模式提示 · {mode.name}</span>
@@ -160,11 +112,11 @@ export function GameUI({
       )}
 
       {gameOver && grade && comparison && (
-        <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-slate-950/82 p-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/95 p-7 shadow-2xl ring-1 ring-white/5">
+        <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-[#172520]/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-xl border border-white/10 bg-[#25342e] p-7 shadow-2xl ring-1 ring-white/5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-semibold tracking-[0.2em] text-cyan-200/65 uppercase">
+                <div className="text-xs font-semibold tracking-[0.2em] text-[#c1ad8f] uppercase">
                   训练完成
                 </div>
                 <h2 className="mt-1 text-xl font-bold">{drillLabel}</h2>
@@ -313,38 +265,6 @@ export function GameUI({
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function HudStat({
-  label,
-  value,
-  accent,
-  className = '',
-}: {
-  label: string
-  value: string
-  accent?: 'emerald' | 'amber' | 'rose'
-  className?: string
-}) {
-  const accentClass =
-    accent === 'emerald'
-      ? 'text-emerald-200/70'
-      : accent === 'amber'
-        ? 'text-amber-200/75'
-        : accent === 'rose'
-          ? 'text-rose-200/70'
-          : 'text-cyan-200/70'
-
-  return (
-    <div
-      className={`rounded-xl border border-white/10 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md ${className}`}
-    >
-      <div className={`text-[10px] font-semibold tracking-[0.18em] uppercase ${accentClass}`}>
-        {label}
-      </div>
-      <div className="mt-0.5 font-mono text-lg font-semibold tabular-nums">{value}</div>
     </div>
   )
 }

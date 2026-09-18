@@ -31,7 +31,7 @@ export function FPSWeapon({
   const flashHaloRef = useRef<THREE.Mesh>(null)
   const lightRef = useRef<THREE.PointLight>(null)
   const lastIntensity = useRef(0)
-  const localOffset = useRef(new THREE.Vector3(0.34, -0.29, -0.82))
+  const localOffset = useRef(new THREE.Vector3(0.29, -0.32, -0.85))
   const worldOffset = useRef(new THREE.Vector3())
   const swayQuaternion = useRef(new THREE.Quaternion())
   const swayEuler = useRef(new THREE.Euler())
@@ -86,7 +86,7 @@ export function FPSWeapon({
   })
 
   return (
-    <group ref={gunRef} scale={0.68}>
+    <group ref={gunRef} scale={0.62}>
       <pointLight
         ref={lightRef}
         position={[0.45, 0.5, 0.45]}

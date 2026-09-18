@@ -11,7 +11,7 @@ import { ShootingPauseSettingsPanel } from './ShootingPauseSettingsPanel'
 export function UnsupportedShootingDevice({ message }: { message: string }) {
   return (
     <div className="flex h-full items-center justify-center bg-slate-950 p-4 text-white">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center">
+      <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#24352d] p-7 text-center">
         <Crosshair className="mx-auto mb-4 h-10 w-10 text-amber-300" />
         <h2 className="text-xl font-bold">当前设备无法开始训练</h2>
         <p className="mt-3 text-sm text-white/60">{message}</p>
@@ -27,10 +27,10 @@ interface ShootingReadyOverlayProps {
 
 export function ShootingReadyOverlay({ onStart, resume = false }: ShootingReadyOverlayProps) {
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/48 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/95 p-7 text-center text-white shadow-2xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 ring-1 ring-cyan-200/20">
-          <Crosshair className="h-7 w-7 text-cyan-200" />
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#14281e]/45 p-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#24352d] p-7 text-center text-white shadow-2xl">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#daaa72]/10 ring-1 ring-[#daaa72]/20">
+          <Crosshair className="h-7 w-7 text-[#d8ad7c]" />
         </div>
         <div className="mt-5 text-xs font-semibold tracking-[0.22em] text-amber-300/80 uppercase">
           Tactical range
@@ -44,7 +44,7 @@ export function ShootingReadyOverlay({ onStart, resume = false }: ShootingReadyO
             : '锁定鼠标后移动瞄准，左键射击。按 ESC 可随时释放鼠标。'}
         </p>
         <Button
-          className="mt-6 w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
+          className="mt-6 w-full bg-[#d69b62] py-5 font-bold text-slate-950 hover:bg-[#e3ad76]"
           onClick={onStart}
         >
           <MousePointer2 className="h-4 w-4" />
@@ -156,14 +156,14 @@ export function ShootingPauseOverlay({
     >
       {view === 'menu' ? (
         <div
-          className="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900/95 p-5 text-white shadow-2xl"
+          className="w-full max-w-xs rounded-2xl border border-white/10 bg-[#24352d] p-5 text-white shadow-2xl"
           data-testid="shooting-pause-dialog"
           role="dialog"
           aria-modal="true"
           aria-labelledby="shooting-pause-title"
         >
           <div className="text-center">
-            <div className="text-[10px] font-bold tracking-[0.22em] text-cyan-200/65 uppercase">
+            <div className="text-[10px] font-bold tracking-[0.22em] text-[#d8ad7c]/65 uppercase">
               训练暂停
             </div>
             <h2 id="shooting-pause-title" className="mt-1 text-lg font-black">
@@ -175,7 +175,7 @@ export function ShootingPauseOverlay({
           <div className="mt-4 space-y-2">
             <Button
               id={resumeButtonId}
-              className="w-full bg-amber-400 py-5 font-bold text-slate-950 hover:bg-amber-300"
+              className="w-full bg-[#d69b62] py-5 font-bold text-slate-950 hover:bg-[#e3ad76]"
               onPointerDown={event => {
                 event.preventDefault()
                 onResume()
@@ -249,8 +249,8 @@ export function ShootingPointerLockError({
   onFallback,
 }: ShootingPointerLockErrorProps) {
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center text-white shadow-2xl">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#14281e]/80 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#24352d] p-7 text-center text-white shadow-2xl">
         <h2 className="text-xl font-bold">无法锁定鼠标</h2>
         <p className="mt-2 text-sm text-white/55">{message}</p>
         <div className="mt-6 flex gap-3">

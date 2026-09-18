@@ -187,11 +187,11 @@ export default function ShootingRangePage() {
   return (
     <main
       className={cn(
-        'relative flex flex-col items-center overflow-hidden bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_8%,transparent),_transparent_38%)]',
-        isStarted ? 'h-dvh p-0' : 'min-h-dvh p-3 sm:p-4'
+        'relative flex flex-col items-center overflow-hidden',
+        isStarted ? 'h-dvh bg-[#202b29] p-0' : 'min-h-dvh bg-[#eef0e8] dark:bg-[#1c2823]'
       )}
     >
-      <div className="absolute top-3 right-3 z-40 sm:top-4 sm:right-4">
+      {!isStarted && <div className="absolute right-3 top-[72px] z-40 sm:right-4 sm:top-[92px]">
         <GameRulesDialog
           title="战术射击场规则"
           rules={[
@@ -202,7 +202,7 @@ export default function ShootingRangePage() {
             '按 ESC 可释放鼠标并暂停操作',
           ]}
         />
-      </div>
+      </div>}
 
       {!isStarted ? (
         showHistory ? (

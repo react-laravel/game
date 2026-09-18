@@ -32,14 +32,14 @@ interface TargetProps {
   id: number
 }
 
-const plateIdleColor = new THREE.Color('#e8e0d4')
+const plateIdleColor = new THREE.Color('#e8e7d9')
 const plateLitColor = new THREE.Color('#f0eae0')
 const plateHitColor = new THREE.Color('#d84848')
 const plateHitEmissive = new THREE.Color('#5a1010')
 const ringHitColor = new THREE.Color('#c88830')
-const innerIdleColor = new THREE.Color('#4a4438')
+const innerIdleColor = new THREE.Color('#30453e')
 const innerHitColor = new THREE.Color('#f0e8d0')
-const centerIdleColor = new THREE.Color('#887058')
+const centerIdleColor = new THREE.Color('#df9553')
 const ringLitColor = new THREE.Color('#b0a898')
 const centerHitColor = new THREE.Color('#f0ece0')
 const MATTE = { metalness: 0.04, roughness: 0.9 }
@@ -150,8 +150,6 @@ function TargetComponent({
   const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
   const innerMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
   const centerMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
-  const outerRingMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
-  const frameRingMaterialRef = useRef<THREE.MeshStandardMaterial>(null)
   const spawnFlashRef = useRef<THREE.Mesh>(null)
   const spawnFlashMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const directionRef = useRef(new THREE.Vector3(...direction).normalize())
@@ -238,12 +236,6 @@ function TargetComponent({
           centerMaterialRef.current,
           nightBoost
         )
-        if (outerRingMaterialRef.current) {
-          outerRingMaterialRef.current.color.set('#3a3830')
-        }
-        if (frameRingMaterialRef.current) {
-          frameRingMaterialRef.current.color.set('#4a4438')
-        }
       }
     }
 
@@ -510,21 +502,12 @@ function TargetComponent({
           <meshStandardMaterial color="#2a3238" metalness={0.12} roughness={0.82} />
         </mesh>
 
-        <mesh position={[0, 0, 0.092]}>
-          <ringGeometry args={[0.96, 1.02, 32]} />
-          <meshStandardMaterial ref={outerRingMaterialRef} color="#3a3830" metalness={0.05} roughness={0.92} />
-        </mesh>
-
-        <mesh position={[0, 0, 0.095]}>
-          <ringGeometry args={[0.88, 0.98, 32]} />
-          <meshStandardMaterial ref={frameRingMaterialRef} color="#4a4438" metalness={0.05} roughness={0.92} />
-        </mesh>
 
         <mesh position={[0, 0, 0.1]}>
           <circleGeometry args={[0.91, 32]} />
           <meshStandardMaterial
             ref={plateMaterialRef}
-            color="#e8e0d4"
+            color="#e8e7d9"
             metalness={0.04}
             roughness={0.9}
           />
@@ -542,22 +525,14 @@ function TargetComponent({
 
         <mesh position={[0, 0, 0.125]}>
           <circleGeometry args={[0.33, 32]} />
-          <meshStandardMaterial ref={innerMaterialRef} color="#4a4438" metalness={0.02} roughness={0.94} />
+          <meshStandardMaterial ref={innerMaterialRef} color="#30453e" metalness={0.02} roughness={0.94} />
         </mesh>
 
         <mesh position={[0, 0, 0.135]}>
           <circleGeometry args={[0.13, 24]} />
-          <meshStandardMaterial ref={centerMaterialRef} color="#b89048" metalness={0.03} roughness={0.88} />
+          <meshStandardMaterial ref={centerMaterialRef} color="#df9553" metalness={0.03} roughness={0.88} />
         </mesh>
 
-        <mesh position={[-1.18, 0, 0]}>
-          <boxGeometry args={[0.24, 0.42, 0.22]} />
-          <meshStandardMaterial color="#3a4248" metalness={0.18} roughness={0.78} />
-        </mesh>
-        <mesh position={[1.18, 0, 0]}>
-          <boxGeometry args={[0.24, 0.42, 0.22]} />
-          <meshStandardMaterial color="#3a4248" metalness={0.18} roughness={0.78} />
-        </mesh>
 
         {appearance.showSpawnBrackets && (
           <>
@@ -581,28 +556,6 @@ function TargetComponent({
           </>
         )}
 
-        {appearance.showAimCross && (
-          <>
-            {[
-              [0, 0.62, 0.11],
-              [0, -0.62, 0.11],
-              [0.62, 0, 0.11],
-              [-0.62, 0, 0.11],
-            ].map(([cx, cy, cz], index) => (
-              <mesh key={`aim-cross-${index}`} position={[cx, cy, cz]}>
-                <boxGeometry args={[index < 2 ? 0.05 : 0.42, index < 2 ? 0.42 : 0.05, 0.02]} />
-                <meshStandardMaterial
-                  color={appearance.ringColor}
-                  transparent
-                  opacity={0.5}
-                  metalness={0.02}
-                  roughness={0.9}
-                  depthWrite={false}
-                />
-              </mesh>
-            ))}
-          </>
-        )}
 
         {appearance.showSpeedRing && (
           <mesh ref={speedRingRef} position={[0, 0, 0.08]} visible={false}>

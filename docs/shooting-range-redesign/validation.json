@@ -1,0 +1,816 @@
+{
+  "results": [
+    {
+      "name": "indoor-day-circle",
+      "seed": 20260919,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "renderer": {
+        "calls": 141,
+        "triangles": 6640,
+        "geometries": 152,
+        "textures": 7,
+        "dpr": 1,
+        "camera": [
+          0,
+          1.6,
+          0
+        ],
+        "postProcessing": false,
+        "shadowPasses": 0
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro, Unspecified Version)",
+      "frameMedianMs": 8.300000000000182,
+      "frameP95Ms": 9,
+      "state": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "indoor",
+        "modeId": "static",
+        "targetShape": "circle",
+        "score": 0,
+        "hits": 0,
+        "misses": 0,
+        "shots": 0,
+        "accuracy": 0,
+        "shotsPerMinute": 0,
+        "bestStreak": 0,
+        "avgReactionMs": null,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 57,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      },
+      "afterShot": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "indoor",
+        "modeId": "static",
+        "targetShape": "circle",
+        "score": 10,
+        "hits": 1,
+        "misses": 0,
+        "shots": 1,
+        "accuracy": 100,
+        "shotsPerMinute": 15,
+        "bestStreak": 1,
+        "avgReactionMs": 4955,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 56,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": true
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "warehouse-day-circle",
+      "seed": 20260919,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "renderer": {
+        "calls": 138,
+        "triangles": 6838,
+        "geometries": 149,
+        "textures": 4,
+        "dpr": 1,
+        "camera": [
+          0,
+          1.6,
+          0
+        ],
+        "postProcessing": false,
+        "shadowPasses": 0
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro, Unspecified Version)",
+      "frameMedianMs": 8.300000000000182,
+      "frameP95Ms": 9.099999999999909,
+      "state": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "warehouse",
+        "modeId": "static",
+        "targetShape": "circle",
+        "score": 0,
+        "hits": 0,
+        "misses": 0,
+        "shots": 0,
+        "accuracy": 0,
+        "shotsPerMinute": 0,
+        "bestStreak": 0,
+        "avgReactionMs": null,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 58,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "outdoor-day-circle",
+      "seed": 20260919,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "renderer": {
+        "calls": 150,
+        "triangles": 7836,
+        "geometries": 161,
+        "textures": 5,
+        "dpr": 1,
+        "camera": [
+          0,
+          1.6,
+          0
+        ],
+        "postProcessing": false,
+        "shadowPasses": 0
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro, Unspecified Version)",
+      "frameMedianMs": 8.300000000000182,
+      "frameP95Ms": 9.199999999999818,
+      "state": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "outdoor",
+        "modeId": "static",
+        "targetShape": "circle",
+        "score": 0,
+        "hits": 0,
+        "misses": 0,
+        "shots": 0,
+        "accuracy": 0,
+        "shotsPerMinute": 0,
+        "bestStreak": 0,
+        "avgReactionMs": null,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 58,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "outdoor-night-circle",
+      "seed": 20260919,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "renderer": {
+        "calls": 150,
+        "triangles": 7836,
+        "geometries": 161,
+        "textures": 5,
+        "dpr": 1,
+        "camera": [
+          0,
+          1.6,
+          0
+        ],
+        "postProcessing": false,
+        "shadowPasses": 0
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro, Unspecified Version)",
+      "frameMedianMs": 8.300000000000182,
+      "frameP95Ms": 8.700000000000273,
+      "state": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "outdoor",
+        "modeId": "static",
+        "targetShape": "circle",
+        "score": 0,
+        "hits": 0,
+        "misses": 0,
+        "shots": 0,
+        "accuracy": 0,
+        "shotsPerMinute": 0,
+        "bestStreak": 0,
+        "avgReactionMs": null,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 58,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 4.5,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 6.75,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "indoor-day-humanoid",
+      "seed": 819,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "renderer": {
+        "calls": 273,
+        "triangles": 12400,
+        "geometries": 272,
+        "textures": 7,
+        "dpr": 1,
+        "camera": [
+          0,
+          1.6,
+          0
+        ],
+        "postProcessing": false,
+        "shadowPasses": 0
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro, Unspecified Version)",
+      "frameMedianMs": 8.300000000000182,
+      "frameP95Ms": 8.5,
+      "state": {
+        "coordinateSystem": "origin at camera start; +x right, +y up, -z forward",
+        "mode": "playing",
+        "difficulty": "medium",
+        "mapId": "indoor",
+        "modeId": "static",
+        "targetShape": "humanoid",
+        "score": 0,
+        "hits": 0,
+        "misses": 0,
+        "shots": 0,
+        "accuracy": 0,
+        "shotsPerMinute": 0,
+        "bestStreak": 0,
+        "avgReactionMs": null,
+        "zoneHits": {
+          "head": 0,
+          "body": 0,
+          "limb": 0
+        },
+        "timeLeft": 58,
+        "pointerLocked": false,
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "targets": [
+          {
+            "id": 0,
+            "x": -6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 1,
+            "x": -2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 2,
+            "x": 2.08,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 3,
+            "x": 6.25,
+            "y": 2.25,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 4,
+            "x": -6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 5,
+            "x": -2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 6,
+            "x": 2.08,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 7,
+            "x": 6.25,
+            "y": 3.77,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 8,
+            "x": -6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 9,
+            "x": -2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 10,
+            "x": 2.08,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          },
+          {
+            "id": 11,
+            "x": 6.25,
+            "y": 5.28,
+            "z": -14.2,
+            "hit": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "responsive-390",
+      "overflow": false
+    },
+    {
+      "name": "responsive-820",
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

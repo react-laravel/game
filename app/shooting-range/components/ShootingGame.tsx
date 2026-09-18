@@ -329,7 +329,7 @@ export default function ShootingGame({
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl bg-slate-950 shadow-2xl ring-1 ring-white/10">
+    <div className="relative h-full w-full overflow-hidden bg-[#202b29]">
       <ShootingGameCanvas
         canvasRef={canvasRef}
         sceneSnapshot={sceneSnapshot}
@@ -369,7 +369,7 @@ export default function ShootingGame({
         <div className="absolute top-5 left-5 z-40 flex gap-2">
           <Button
             variant="ghost"
-            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
             onClick={handleBackToSettings}
           >
             <LogOut className="h-4 w-4" />
@@ -377,7 +377,7 @@ export default function ShootingGame({
           </Button>
           <Button
             variant="ghost"
-            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
             onClick={() => {
               releasePointerLock()
               setShowCrosshairSettings(true)
@@ -388,7 +388,7 @@ export default function ShootingGame({
           </Button>
           <Button
             variant="ghost"
-            className="border border-white/10 bg-slate-950/70 text-white shadow-xl backdrop-blur-md hover:bg-slate-900 hover:text-white"
+            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
             onClick={handleOpenHelp}
             aria-label="操作说明"
           >

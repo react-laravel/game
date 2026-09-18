@@ -7,10 +7,10 @@ import { impactColorForZone } from '../../utils/impactFx'
 import { hitFlashDurationForZone } from '../../utils/gunFeel'
 import { getTargetAppearance } from '../../utils/targetAppearance'
 
-const BODY_COLOR = '#3c444c'
-const HEAD_COLOR = '#c4a878'
-const LIMB_COLOR = '#343c44'
-const ACCENT_COLOR = '#a87848'
+const BODY_COLOR = '#b4bab0'
+const HEAD_COLOR = '#e2aa76'
+const LIMB_COLOR = '#536660'
+const ACCENT_COLOR = '#d58d50'
 const MATTE = { metalness: 0.05, roughness: 0.9 }
 
 const DEFAULT_MOTION: BotMotionSample = {
@@ -223,7 +223,7 @@ export function HumanoidVisual({
 
       <group ref={leftLegRef} position={[-0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
-          <boxGeometry args={[0.22, 0.74, 0.22]} />
+          <capsuleGeometry args={[0.12, 0.5, 3, 8]} />
           <meshStandardMaterial
             ref={node => {
               if (node) limbMaterialRefs.current[0] = node
@@ -243,7 +243,7 @@ export function HumanoidVisual({
       </group>
       <group ref={rightLegRef} position={[0.18, 0.38, 0]}>
         <mesh userData={{ hitZone: 'limb' }}>
-          <boxGeometry args={[0.22, 0.74, 0.22]} />
+          <capsuleGeometry args={[0.12, 0.5, 3, 8]} />
           <meshStandardMaterial
             ref={node => {
               if (node) limbMaterialRefs.current[2] = node
@@ -274,7 +274,7 @@ export function HumanoidVisual({
 
       <group ref={torsoRef} position={[0, 1.02, 0]}>
         <mesh position={[0, 0.08, 0]} userData={{ hitZone: 'body' }}>
-          <boxGeometry args={[0.68, 0.88, 0.36]} />
+          <cylinderGeometry args={[0.39, 0.27, 0.8, 6]} />
           <meshStandardMaterial
             ref={node => {
               if (node) bodyMaterialRefs.current[1] = node
@@ -317,7 +317,7 @@ export function HumanoidVisual({
 
         <group ref={leftArmRef} position={[-0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
-            <boxGeometry args={[0.18, 0.64, 0.18]} />
+            <capsuleGeometry args={[0.11, 0.42, 3, 8]} />
             <meshStandardMaterial
               ref={node => {
                 if (node) limbMaterialRefs.current[4] = node
@@ -328,7 +328,7 @@ export function HumanoidVisual({
         </group>
         <group ref={rightArmRef} position={[0.48, 0.02, 0]}>
           <mesh userData={{ hitZone: 'limb' }}>
-            <boxGeometry args={[0.18, 0.64, 0.18]} />
+            <capsuleGeometry args={[0.11, 0.42, 3, 8]} />
             <meshStandardMaterial
               ref={node => {
                 if (node) limbMaterialRefs.current[5] = node
@@ -340,7 +340,7 @@ export function HumanoidVisual({
 
         <group ref={headRef} position={[0, 0.72, 0]}>
           <mesh userData={{ hitZone: 'head' }}>
-            <boxGeometry args={[0.4, 0.4, 0.4]} />
+            <sphereGeometry args={[0.25, 12, 8]} />
             <meshStandardMaterial ref={headMaterialRef} {...matteProps(headIdle)} />
           </mesh>
           <mesh ref={headAccentRingRef} position={[0, 0, 0.22]} rotation={[0, 0, 0]}>

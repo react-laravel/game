@@ -5,6 +5,7 @@ import { GameScene, type ShootingSceneSnapshot } from './game/GameScene'
 import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { mapConfigs } from '../utils/mapConfigs'
 import { getOutdoorTimePreset } from '../utils/outdoorTimeOfDay'
+import { RangeDiagnostics } from './game/RangeDiagnostics'
 
 interface ShootingGameCanvasProps {
   canvasRef: RefObject<HTMLCanvasElement | null>
@@ -49,18 +50,18 @@ function ShootingGameCanvasComponent({
       : mapConfigs[mapId].background
   const toneMappingExposure =
     mapId === 'indoor'
-      ? 1.52
+      ? 1.05
       : mapId === 'outdoor'
         ? getOutdoorTimePreset(outdoorTimeOfDay).toneMappingExposure
-        : 1.18
+        : 1.05
 
   return (
     <Canvas
-      shadows
+      shadows={false}
       ref={canvasRef}
       dpr={[1, 1.5]}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 130 : 90 }}
+      camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 220 : 90 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(mapBackground)
         gl.toneMappingExposure = toneMappingExposure
@@ -69,6 +70,7 @@ function ShootingGameCanvasComponent({
       style={{ touchAction: 'none' }}
       className="outline-none"
     >
+      <RangeDiagnostics />
       <GameScene
         key={`${difficulty}-${mapId}-${modeId}-${targetShape}-${outdoorTimeOfDay}`}
         difficulty={difficulty}

@@ -58,6 +58,9 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 
 ## Current work
 
+- Current prompt (2026-09-19): Grok 4.6 修改后的 UI、场景和模型效果不好，重新设计射击训练场的场景、UI 与模型。
+- Shooting Range redesign (2026-09-19): replaced the accumulated environment mesh layers with material-instanced indoor bays, an industrial side-container hall, and a textured outdoor field with seeded ridges/forest/gradient sky. New bevel-profile carbine, articulated training-dummy silhouettes, simpler high-contrast targets, editorial training lobby and compact olive/orange HUD. Existing modes, scoring, input, recoil toggle and history are retained.
+- Added development-only renderer inspection (final/normals/wireframe and near/far camera positions), plus `scripts/verify-range-design.mjs` for seeded scene captures, real projected target clicks, responsive checks and honest hardware/software timing evidence.
 - Shooting Range cycle 42 (2026-09-14): **deploy type-check** — `HumanoidVisual` no longer assigns `emissiveIntensity` through optional chaining (`TS2779`).
 - Shooting Range cycle 41 (2026-09-14): **no shooting through pause/settings UI** — live fire only while the canvas holds pointer lock (UI targets ignored even if lock is granted on the same click); pause overlay stops mouse/pointer bubbling; Space no longer shoots or steals keys while unlocked.
 - Shooting Range cycle 40 (2026-09-14): **recoil off by default** — `DEFAULT_RECOIL_ENABLED` / missing lastConfig now load as 关闭; explicit 开启 still persists.
@@ -134,6 +137,9 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 
 ## Validation
 
+- September 19 final production build succeeds; ESLint and TypeScript pass. Preview images and measured hardware-frame evidence are retained in `docs/shooting-range-redesign/`.
+- Final September 19 checks: 112/112 test files, 752/752 tests. Stabilized the pre-existing pointer-lock retry test by manually advancing its RAF callback (no production input changes). Simulated Canvas lock in hardware Chrome verifies aiming, 16 moving targets, no firing through settings, resume and return-to-lobby. Native automated lock was denied by the browser; no native-lock success is claimed.
+- September 19 visual pass: standard develop-web-game client and all three maps/day-night/humanoid captures inspected. Hardware Chrome (Apple M3 Pro, Metal, 1440x900, DPR 1) reports median requestAnimationFrame intervals ~8.3ms, P95 <=9.3ms on the initial final pass. This is frame cadence, not a GPU timer query; headless software rendering is much slower and is recorded separately. Actual target click increments hits/score and results render. Setup has no horizontal overflow at 390px/820px. Focused suite: 193 tests passing before final checks.
 - Shooting Range audio redesign: focused suite 10/10 files and 72/72 tests. Playwright fallback clicks scored 30 with 3 recorded shots, `hit: true` on three targets, and no page/console errors while the new Web Audio voices ran.
 - Shooting Range hit-hitch fix: focused suite 10/10 files and 75/75 tests. Playwright fallback grid-clicks scored 20 with 2/2 shots (100% accuracy) at 58s remaining, scene screenshot intact, no page/console errors. Headless Chromium still cannot pointer-lock.
 - The September game-wide redesign batch passes lint, TypeScript, 70/70 test files with 569/569 tests, and the production build for all 18 generated routes including `/blackjack`.

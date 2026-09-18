@@ -1,133 +1,171 @@
-import { RoundedBox } from '@react-three/drei'
+import * as THREE from 'three'
 
-/** A compact near-future carbine assembled from low-cost primitives. */
+type Point = [number, number]
+function profile(points: Point[]) {
+  const shape = new THREE.Shape()
+  points.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)))
+  shape.closePath()
+  return shape
+}
+
+// Local X is width, Y up, -Z barrel. Profiles are dimensioned in length/height.
+const receiver = profile([
+  [-0.2, -0.07],
+  [0.47, -0.07],
+  [0.56, -0.01],
+  [0.54, 0.1],
+  [0.4, 0.14],
+  [-0.14, 0.14],
+  [-0.22, 0.07],
+])
+const stock = profile([
+  [-0.59, -0.15],
+  [-0.5, -0.17],
+  [-0.25, -0.04],
+  [-0.16, -0.02],
+  [-0.16, 0.09],
+  [-0.56, 0.09],
+])
+const grip = profile([
+  [-0.16, -0.05],
+  [-0.03, -0.06],
+  [-0.1, -0.32],
+  [-0.23, -0.28],
+])
+const magazine = profile([
+  [0.1, -0.05],
+  [0.25, -0.05],
+  [0.27, -0.3],
+  [0.17, -0.37],
+  [0.07, -0.33],
+])
+const guard = profile([
+  [-0.07, -0.07],
+  [0.12, -0.07],
+  [0.12, -0.2],
+  [-0.07, -0.2],
+])
+const guardHole = new THREE.Path()
+guardHole.moveTo(-0.045, -0.095)
+guardHole.lineTo(-0.045, -0.173)
+guardHole.lineTo(0.092, -0.173)
+guardHole.lineTo(0.092, -0.095)
+guardHole.closePath()
+guard.holes.push(guardHole)
+
+function Shell({
+  shape,
+  width,
+  color,
+  metalness = 0.35,
+}: {
+  shape: THREE.Shape
+  width: number
+  color: string
+  metalness?: number
+}) {
+  return (
+    <mesh position={[-width / 2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <extrudeGeometry
+        args={[
+          shape,
+          {
+            depth: width,
+            bevelEnabled: true,
+            bevelSize: 0.009,
+            bevelThickness: 0.009,
+            bevelSegments: 2,
+            steps: 1,
+            curveSegments: 6,
+          },
+        ]}
+      />
+      <meshStandardMaterial color={color} metalness={metalness} roughness={0.48} />
+    </mesh>
+  )
+}
+function Part({
+  position,
+  size,
+  color = '#283234',
+}: {
+  position: [number, number, number]
+  size: [number, number, number]
+  color?: string
+}) {
+  return (
+    <mesh position={position}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={color} roughness={0.55} metalness={0.45} />
+    </mesh>
+  )
+}
+
+/** Bevelled receiver, open trigger guard and a low-profile sight share a single bore axis. */
 export function GunModel() {
   return (
-    <group rotation={[-0.045, -0.14, -0.018]}>
-      {/* Main receiver */}
-      <RoundedBox position={[0, 0, -0.16]} args={[0.17, 0.13, 0.58]} radius={0.025} smoothness={4} castShadow>
-        <meshStandardMaterial
-          color="#637784"
-          emissive="#111b21"
-          emissiveIntensity={0.45}
-          metalness={0.76}
-          roughness={0.24}
-        />
-      </RoundedBox>
-
-      {/* Sloped upper shroud */}
-      <RoundedBox
-        position={[0, 0.075, -0.18]}
-        rotation={[0.04, 0, 0]}
-        args={[0.155, 0.052, 0.64]}
-        radius={0.016}
-        smoothness={3}
-        castShadow
-      >
-        <meshStandardMaterial
-          color="#91a4ad"
-          emissive="#101b20"
-          emissiveIntensity={0.35}
-          metalness={0.68}
-          roughness={0.28}
-        />
-      </RoundedBox>
-
-      {/* Front handguard */}
-      <RoundedBox
-        position={[0, -0.005, -0.48]}
-        args={[0.145, 0.115, 0.31]}
-        radius={0.025}
-        smoothness={4}
-        castShadow
-      >
-        <meshStandardMaterial color="#344852" metalness={0.62} roughness={0.38} />
-      </RoundedBox>
-      {[-0.085, 0, 0.085].map(z => (
-        <mesh key={z} position={[0.088, -0.005, -0.48 + z]}>
-          <boxGeometry args={[0.012, 0.085, 0.035]} />
-          <meshBasicMaterial color="#26c6da" toneMapped={false} />
+    <group name="carbine-MK01">
+      <Shell shape={receiver} width={0.17} color="#87968e" />
+      <Shell shape={stock} width={0.13} color="#303d3d" metalness={0.1} />
+      <Shell shape={grip} width={0.1} color="#283334" metalness={0.05} />
+      <Shell shape={magazine} width={0.1} color="#465451" />
+      <Shell shape={guard} width={0.035} color="#283334" />
+      <Part position={[0, 0.015, -0.63]} size={[0.14, 0.13, 0.27]} color="#4a5a56" />
+      <Part position={[0, 0.151, -0.23]} size={[0.095, 0.027, 0.64]} />
+      {Array.from({ length: 9 }, (_, i) => (
+        <Part key={i} position={[0, 0.17, -0.51 + i * 0.07]} size={[0.12, 0.018, 0.025]} />
+      ))}
+      {[-1, 1].flatMap((side) =>
+        [-0.53, -0.61, -0.69].map((z) => (
+          <Part
+            key={`${side}-${z}`}
+            position={[side * 0.071, 0.022, z]}
+            size={[0.007, 0.045, 0.055]}
+            color="#172325"
+          />
+        ))
+      )}
+      <mesh position={[0, 0.02, -0.825]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.023, 0.023, 0.22, 12]} />
+        <meshStandardMaterial color="#263235" metalness={0.7} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 0.02, -0.947]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.037, 0.032, 0.06, 8]} />
+        <meshStandardMaterial color="#485653" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.02, -0.979]} rotation={[0, Math.PI, 0]}>
+        <circleGeometry args={[0.022, 12]} />
+        <meshBasicMaterial color="#0b1518" />
+      </mesh>
+      {/* Ejection port, charging handle, serial plate and restrained orange safety markings. */}
+      <Part position={[0.087, 0.065, -0.08]} size={[0.006, 0.048, 0.18]} color="#1c292a" />
+      <Part position={[0.092, 0.057, -0.05]} size={[0.016, 0.012, 0.105]} color="#9caaa0" />
+      <Part position={[0.11, 0.07, 0.115]} size={[0.065, 0.028, 0.05]} />
+      <Part position={[0.091, -0.021, -0.33]} size={[0.008, 0.035, 0.09]} color="#d88f52" />
+      <Part position={[0.075, 0.02, 0.56]} size={[0.02, 0.19, 0.04]} />
+      {[-0.17, -0.26, 0.1].map((z) => (
+        <mesh key={z} position={[0.09, 0.03, z]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.013, 0.013, 0.009, 8]} />
+          <meshStandardMaterial color="#202c2e" metalness={0.7} roughness={0.5} />
         </mesh>
       ))}
-
-      {/* Barrel and muzzle brake */}
-      <mesh position={[0, 0.005, -0.7]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[0.027, 0.032, 0.34, 16]} />
-        <meshStandardMaterial color="#495a63" metalness={0.92} roughness={0.18} />
+      <Part position={[0, 0.19, -0.1]} size={[0.13, 0.038, 0.17]} />
+      <Part position={[-0.054, 0.255, -0.1]} size={[0.018, 0.11, 0.065]} />
+      <Part position={[0.054, 0.255, -0.1]} size={[0.018, 0.11, 0.065]} />
+      <Part position={[0, 0.314, -0.1]} size={[0.126, 0.018, 0.065]} />
+      <mesh position={[0, 0.263, -0.102]}>
+        <planeGeometry args={[0.088, 0.083]} />
+        <meshBasicMaterial
+          color="#85a1a2"
+          transparent
+          opacity={0.16}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
-      <mesh position={[0, 0.005, -0.88]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[0.046, 0.046, 0.09, 12]} />
-        <meshStandardMaterial color="#586a73" metalness={0.88} roughness={0.22} />
-      </mesh>
-      <mesh position={[0, 0.005, -0.927]} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.019, 0.039, 16]} />
-        <meshBasicMaterial color="#020405" />
-      </mesh>
-
-      {/* Pistol grip */}
-      <RoundedBox
-        position={[0, -0.17, 0.035]}
-        rotation={[-0.32, 0, 0]}
-        args={[0.11, 0.27, 0.13]}
-        radius={0.028}
-        smoothness={4}
-        castShadow
-      >
-        <meshStandardMaterial color="#30434c" metalness={0.28} roughness={0.7} />
-      </RoundedBox>
-      <mesh position={[0, -0.185, 0.09]} rotation={[-0.32, 0, 0]}>
-        <boxGeometry args={[0.116, 0.19, 0.02]} />
-        <meshStandardMaterial color="#52656e" metalness={0.42} roughness={0.52} />
-      </mesh>
-
-      {/* Trigger guard */}
-      <mesh position={[0, -0.1, -0.105]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.072, 0.012, 8, 20]} />
-        <meshStandardMaterial color="#4c5d66" metalness={0.68} roughness={0.34} />
-      </mesh>
-
-      {/* Open holographic optic */}
-      <mesh position={[-0.055, 0.155, -0.2]} castShadow>
-        <boxGeometry args={[0.018, 0.1, 0.12]} />
-        <meshStandardMaterial color="#465a64" metalness={0.62} roughness={0.32} />
-      </mesh>
-      <mesh position={[0.055, 0.155, -0.2]} castShadow>
-        <boxGeometry args={[0.018, 0.1, 0.12]} />
-        <meshStandardMaterial color="#465a64" metalness={0.62} roughness={0.32} />
-      </mesh>
-      <mesh position={[0, 0.205, -0.2]} castShadow>
-        <boxGeometry args={[0.125, 0.018, 0.12]} />
-        <meshStandardMaterial color="#465a64" metalness={0.62} roughness={0.32} />
-      </mesh>
-      <mesh position={[0, 0.158, -0.263]}>
-        <planeGeometry args={[0.085, 0.072]} />
-        <meshBasicMaterial color="#1a3040" transparent opacity={0.38} toneMapped={false} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0.158, -0.264]}>
-        <ringGeometry args={[0.028, 0.036, 16]} />
-        <meshBasicMaterial color="#ff3b30" toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.158, -0.265]}>
-        <circleGeometry args={[0.0045, 12]} />
-        <meshBasicMaterial color="#ff5548" toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.158, -0.262]}>
-        <ringGeometry args={[0.038, 0.042, 16]} />
-        <meshBasicMaterial color="#8ad8e8" transparent opacity={0.22} toneMapped={false} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0.114, -0.22]}>
-        <boxGeometry args={[0.15, 0.018, 0.25]} />
-        <meshStandardMaterial color="#0c1317" metalness={0.8} roughness={0.28} />
-      </mesh>
-
-      {/* Receiver accent and safety */}
-      <mesh position={[0.102, 0.01, -0.15]}>
-        <boxGeometry args={[0.008, 0.035, 0.28]} />
-        <meshBasicMaterial color="#ff9f1c" toneMapped={false} />
-      </mesh>
-      <mesh position={[0.108, 0.025, 0.005]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.026, 0.026, 0.018, 16]} />
-        <meshBasicMaterial color="#ff9f1c" toneMapped={false} />
+      <mesh position={[0, 0.258, -0.067]}>
+        <circleGeometry args={[0.003, 8]} />
+        <meshBasicMaterial color="#ef9b59" toneMapped={false} />
       </mesh>
     </group>
   )

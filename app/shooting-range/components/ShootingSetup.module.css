@@ -1,0 +1,378 @@
+.lobby {
+  --ink: #263634;
+  --subtle: #73807a;
+  --line: #d9ded5;
+  --panel: #f8f9f4;
+  width: min(1320px, 100%);
+  color: var(--ink);
+  margin: 0 auto;
+  padding: 0 28px 24px;
+}
+:global(.dark) .lobby {
+  --ink: #e5e8df;
+  --subtle: #9aa89f;
+  --line: #34443e;
+  --panel: #24312c;
+}
+.header {
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.brand svg {
+  color: #c57943;
+}
+.brandSuffix {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--subtle);
+}
+.tools {
+  display: flex;
+  gap: 8px;
+}
+.tools button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.tools button:hover {
+  background: var(--panel);
+}
+.tools b {
+  font-weight: 500;
+  color: #bb773f;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  align-items: stretch;
+  gap: 35px;
+  padding: 26px 0;
+}
+.heroCopy {
+  padding: 8px 0;
+}
+.eyebrow {
+  font:
+    10px ui-monospace,
+    monospace;
+  letter-spacing: 0.18em;
+  color: var(--subtle);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.eyebrow > span,
+.statusDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d98b51;
+}
+.hero h1 {
+  font-size: clamp(30px, 3.6vw, 48px);
+  font-weight: 650;
+  line-height: 1.28;
+  letter-spacing: -0.04em;
+  margin: 18px 0;
+}
+.hero h1 span {
+  color: var(--subtle);
+}
+.intro {
+  color: var(--subtle);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.primary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #fff;
+  background: #273d36;
+  border-radius: 5px;
+  padding: 12px 18px;
+  font-size: 12px;
+  margin-top: 24px;
+}
+.primary:hover {
+  background: #42604e;
+}
+.primary > span {
+  color: #bbcdc1;
+  font:
+    10px ui-monospace,
+    monospace;
+  padding-left: 24px;
+}
+.heroVisual {
+  align-self: center;
+  position: relative;
+  background: #202d2a;
+  color: #4a5e50;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 250px;
+}
+.heroVisual svg {
+  width: 100%;
+  height: 282px;
+  min-height: 250px;
+}
+.visualLabel {
+  position: absolute;
+  top: 18px;
+  left: 21px;
+  right: 21px;
+  color: #9bac9d;
+  display: flex;
+  justify-content: space-between;
+  font:
+    9px ui-monospace,
+    monospace;
+  letter-spacing: 0.16em;
+}
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.sectionHeading h2 {
+  margin-top: 7px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.sectionHeading > span {
+  font-size: 11px;
+  color: var(--subtle);
+}
+.sectionHeading > span span {
+  margin-left: 16px;
+}
+.drillGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.drillCard {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  text-align: left;
+  border-radius: 7px;
+  padding: 16px 18px 13px;
+  transition:
+    border-color 0.18s,
+    transform 0.18s;
+}
+.drillCard:hover {
+  border-color: #be8b61;
+  transform: translateY(-3px);
+}
+.cardTop {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font:
+    9px ui-monospace,
+    monospace;
+  letter-spacing: 0.13em;
+  color: var(--subtle);
+}
+.cardTop > span:first-child {
+  color: #c78651;
+}
+.cardTop svg {
+  margin-left: auto;
+  opacity: 0.5;
+}
+.drillArt {
+  height: 68px;
+  color: #9b754c;
+  opacity: 0.85;
+}
+.drillArt svg {
+  width: 100%;
+  height: 100%;
+}
+.drillCard h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 650;
+}
+.drillCard h3 span {
+  opacity: 0;
+  color: #ba7e47;
+  transition: opacity 0.18s;
+}
+.drillCard:hover h3 span {
+  opacity: 1;
+}
+.drillCard p {
+  font-size: 11px;
+  color: var(--subtle);
+  margin-top: 5px;
+}
+.drillCard footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  margin-top: 13px;
+  padding-top: 10px;
+  font:
+    10px ui-monospace,
+    monospace;
+  color: var(--subtle);
+}
+.customCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 9px;
+  padding: 24px;
+  text-align: left;
+  background: #263d34;
+  border: 1px solid #44614e;
+  border-radius: 7px;
+  color: #edf0e8;
+}
+.customCard svg {
+  color: #c99760;
+  margin-bottom: 8px;
+}
+.customCard h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.customCard p {
+  font-size: 11px;
+  color: #a0b4a4;
+}
+.customCard > span {
+  font-size: 11px;
+  margin-top: 12px;
+  color: #dbb186;
+}
+.customSettings > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  margin-top: 28px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.customSettings > div > :first-child {
+  grid-column: 1 / -1;
+}
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 23px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.bottomBar > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--subtle);
+}
+.lastConfig {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+@media (max-width: 1000px) {
+  .lobby {
+    padding-inline: 20px;
+  }
+  .hero {
+    gap: 20px;
+    padding-block: 28px;
+  }
+  .drillGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .drillArt {
+    height: 58px;
+  }
+}
+@media (max-width: 600px) {
+  .lobby {
+    padding-inline: 16px;
+  }
+  .header {
+    height: 68px;
+  }
+  .brandSuffix,
+  .tools span {
+    display: none;
+  }
+  .tools button {
+    padding: 9px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .heroVisual {
+    display: none;
+  }
+  .hero h1 {
+    font-size: 37px;
+  }
+  .sectionHeading > span {
+    display: none;
+  }
+  .drillCard {
+    padding: 13px;
+  }
+  .customCard {
+    padding: 16px;
+  }
+  .bottomBar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .customSettings > div {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .lastConfig {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drillCard {
+    transition: none;
+  }
+  .drillCard:hover {
+    transform: none;
+  }
+}

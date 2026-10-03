@@ -55,8 +55,6 @@ vi.mock('../../../utils/gameUtils', () => ({
   generateRandomPosition: vi.fn(() => [0, 5, 0]),
   generateRandomDirection: vi.fn(() => [1, 0, 0]),
   generateWallPosition: vi.fn(() => [0, 3, -14]),
-  nextGridPosition: vi.fn(() => [0, 4, -16]),
-  resetGridSpawnIndex: vi.fn(),
   targetTravelMaxY: vi.fn(() => 6.8),
   roofMaxYForMap: vi.fn(() => 6.8),
   WALL_TARGET_SCALE: 0.62,

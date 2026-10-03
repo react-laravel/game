@@ -58,6 +58,7 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 
 ## Current work
 
+- October 3 drill distinction: flick stays a single randomly positioned target; precision becomes three simultaneous targets on a flat 3×3 grid. Hit replacements select free cells, with scene-local reservation/release and a visual-only rack guide; preset/HUD descriptions and catalogue graphic now explain multi-target switching. Grid grading/highlights use accuracy + firing rate because waiting target age is not switching speed.
 - September 20 weapon request: add pistol (1), sniper (2), wheel switching, hold-right-button zoom/scope, a full-screen circular scope with horizontal/vertical reticle ticks, and pointer-lock/pause/blur cleanup. Camera projection has one frame-based owner; scoped sensitivity follows magnification and scoped shots use the zoomed camera ray.
 - September 20 history follow-up: format history precision and trend values to one decimal (peak, axes, bars, tooltips and accessible labels); keep underlying aggregated values unchanged.
 - September 20 follow-up: removed the in-game upper-left exit/settings/help toolbar. Escape retains the pause/settings/exit route, including click-target fallback; the obsolete in-game crosshair sheet is removed while the lobby sheet remains.
@@ -141,6 +142,7 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 
 ## Validation
 
+- October 4 drill validation: 42 shooting-range test files / 214 tests, type-check, lint and production build pass. Browser comparison confirms flick has one target and precision has three distinct planar grid targets; six consecutive real clicks produce six hits / 72 points, every replacement changes only the hit slot, no overlap occurs, and restart resets score with three valid targets.
 - Weapon delivery checks pass: 114 test files / 757 tests, ESLint, TypeScript and production build. The final browser sequence exercises 1/2, wheel, pistol zoom, sniper scope, real center-ray hit/scoring, cooldown, pause/settings isolation and return to lobby with zero browser errors. `docs/shooting-range-redesign/sniper-scope.png` records the scoped hit.
 - September 20 weapons: browser regression verifies pistol FOV 44, sniper FOV 16, normal FOV 62; 1/2 and wheel switching, right-button hold/release, scoped center-ray hit/score, sniper cooldown, hidden weapon/HUD while scoped, pause cleanup, settings input isolation and return-to-lobby. Pointer-lock platform boundary is simulated for automation; gameplay input/raycast/projection remain real. Added focused input lifecycle and camera projection/restore tests.
 - September 20 follow-ups: 193 shooting-range tests pass; type-check, lint and production build pass. Browser checks at 1280x720, 900x480 and 390x600 verify both settings previews remain visible at the end of the scroll region and reflect slider edits. The old gameplay toolbar is absent; Escape settings/resume/exit works in fallback. History daily/monthly charts format the repeating average 54.727... as 54.7%, including tooltips; average-score labels use one decimal as well.

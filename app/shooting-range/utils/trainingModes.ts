@@ -110,19 +110,19 @@ export const trainingModes: Record<TrainingModeId, TrainingModeConfig> = {
   precision: {
     id: 'precision',
     name: '网格速点',
-    description: '单靶按网格顺序闪现，练准度与手速',
+    description: '九宫格内同时出现三靶，命中后补到空格位，练连续切换与手速',
     durationSeconds: 60,
     baseSpeed: 0,
     targetCountMultiplier: 1,
-    maxActiveTargets: 1,
+    maxActiveTargets: 3,
     movement: 'static',
-    respawnDelayMs: 280,
+    respawnDelayMs: 180,
     scorePerHit: 12,
     jitterChance: 0,
     faceCamera: false,
     spawnPattern: 'grid',
     focus: 'Grid',
-    hudHint: '网格顺序 · 练准度手速',
+    hudHint: '九宫格三靶轮换 · 连续切换击破',
   },
 }
 

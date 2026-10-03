@@ -5,14 +5,14 @@ import { Target } from './Target'
 import { FPSWeapon } from './FPSWeapon'
 import { ImpactFX, type ImpactFXHandle } from './ImpactFX'
 import { RangeEnvironment } from './RangeEnvironment'
+import { GridDrillGuide } from './GridDrillGuide'
+import { createGridCycle, getGridPositions, GRID_TARGET_SCALE } from '../../utils/gridDrill'
 import {
   applyTargetHit,
   generateRandomDirection,
   generateRandomPosition,
   generateWallPosition,
   markTargetSpawned,
-  nextGridPosition,
-  resetGridSpawnIndex,
   respawnTarget,
   roofMaxYForMap,
   targetTravelMaxY,
@@ -50,17 +50,19 @@ function createTargets(
   settings: ReturnType<typeof resolveTrainingSettings>,
   maxY: number
 ) {
-  if (settings.spawnPattern === 'grid') resetGridSpawnIndex()
+  const gridPositions = getGridPositions(maxY)
   const speedVariance = settings.movement === 'linear' ? 0.018 : 0
   return Array.from({ length: settings.targetCount }, (_, id): TargetData => ({
     id,
     position:
       settings.spawnPattern === 'grid'
-        ? nextGridPosition(maxY)
+        ? gridPositions[(id * 4) % gridPositions.length]
         : settings.spawnPattern === 'wall'
           ? generateWallPosition(id, settings.gameAreaSize, maxY)
           : generateRandomPosition(settings.gameAreaSize, maxY),
-    scale: settings.spawnPattern === 'wall' ? WALL_TARGET_SCALE : Math.random() * 0.18 + 0.55,
+    scale: settings.spawnPattern === 'grid'
+      ? GRID_TARGET_SCALE
+      : settings.spawnPattern === 'wall' ? WALL_TARGET_SCALE : Math.random() * 0.18 + 0.55,
     speed: settings.targetSpeed + Math.random() * speedVariance,
     direction: generateRandomDirection(),
   }))
@@ -111,6 +113,7 @@ export function GameScene({
     mapId === 'outdoor' ? getOutdoorTargetReadabilityBoost(outdoorTimeOfDay) : 0
   const mapConfig = mapConfigs[mapId]
   const [targets] = useState<TargetData[]>(() => createTargets(settings, travelMaxY))
+  const [gridCycle] = useState(() => createGridCycle(travelMaxY))
   const targetObjects = useRef(new Map<number, THREE.Group>())
   const hitTargetIds = useRef(new Set<number>())
   const respawnTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
@@ -151,13 +154,17 @@ export function GameScene({
 
   const registerTarget = useCallback((id: number, target: THREE.Group | null) => {
     if (target) {
+      if (settings.spawnPattern === 'grid') {
+        gridCycle.reserve(id, [target.position.x, target.position.y, target.position.z])
+      }
       markTargetSpawned(target)
       targetObjects.current.set(id, target)
     } else {
+      gridCycle.release(id)
       targetObjects.current.delete(id)
     }
     raycastObjects.current = Array.from(targetObjects.current.values())
-  }, [])
+  }, [gridCycle, settings.spawnPattern])
 
   const resolveRaycastHit = useCallback((object: THREE.Object3D | null) => {
     let current: THREE.Object3D | null = object
@@ -206,14 +213,17 @@ export function GameScene({
 
       const timer = setTimeout(() => {
         const current = targetObjects.current.get(id)
-        if (current) respawnTarget(current, settings.gameAreaSize, settings.spawnPattern, id, travelMaxY)
+        if (current) {
+          const nextPosition = settings.spawnPattern === 'grid' ? gridCycle.next(id) : undefined
+          respawnTarget(current, settings.gameAreaSize, settings.spawnPattern, id, travelMaxY, nextPosition)
+        }
         hitTargetIds.current.delete(id)
         respawnTimers.current.delete(id)
       }, settings.respawnDelayMs)
 
       respawnTimers.current.set(id, timer)
     },
-    [settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern, travelMaxY]
+    [gridCycle, settings.gameAreaSize, settings.respawnDelayMs, settings.spawnPattern, travelMaxY]
   )
 
   const triggerGunFeel = useCallback(() => {
@@ -395,6 +405,7 @@ export function GameScene({
   return (
     <>
       <RangeEnvironment config={mapConfig} outdoorTimeOfDay={outdoorTimeOfDay} />
+      {settings.spawnPattern === 'grid' && <GridDrillGuide maxY={travelMaxY} />}
 
       {targets.map(target => (
         <Target

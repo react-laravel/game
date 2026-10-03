@@ -1,18 +1,10 @@
 import type { ShootingMapId, SpawnPattern } from '../types'
 import { INDOOR_TARGET_MAX_Y, WAREHOUSE_TARGET_MAX_Y } from './indoorCeiling'
+import { getGridPositions, type GridPosition } from './gridDrill'
 
 /**
  * 游戏工具函数
  */
-
-const GRID_POSITIONS: Array<[number, number, number]> = [
-  [-7, 4.5, -16], [0, 5.5, -18], [7, 4.5, -16],
-  [-5, 7.5, -22], [5, 7.5, -22],
-  [-8, 3.2, -24], [8, 3.2, -24],
-  [0, 8.5, -26], [-4, 6, -20], [4, 6, -20],
-]
-
-let gridSpawnIndex = 0
 
 /** Uniform plate size so a static wall reads as one range rack. */
 export const WALL_TARGET_SCALE = 0.62
@@ -52,16 +44,6 @@ export function generateWallPosition(
   const rowSpan = Math.max(0.9, (topY - WALL_BASE_Y) / 3)
   const y = WALL_BASE_Y + row * rowSpan
   return [x, y, WALL_Z]
-}
-
-export function nextGridPosition(maxY = TARGET_OPEN_MAX_Y): [number, number, number] {
-  const position = GRID_POSITIONS[gridSpawnIndex % GRID_POSITIONS.length]
-  gridSpawnIndex += 1
-  return [position[0], Math.min(position[1], maxY), position[2]]
-}
-
-export function resetGridSpawnIndex() {
-  gridSpawnIndex = 0
 }
 
 /**
@@ -131,14 +113,15 @@ export function respawnTarget(
   gameAreaSize: number,
   spawnPattern: SpawnPattern = 'random',
   targetId?: number,
-  maxY = targetTravelMaxY(gameAreaSize)
+  maxY = targetTravelMaxY(gameAreaSize),
+  positionOverride?: GridPosition
 ) {
   const [x, y, z] =
-    spawnPattern === 'grid'
-      ? nextGridPosition(maxY)
+    positionOverride ?? (spawnPattern === 'grid'
+      ? getGridPositions(maxY)[Math.floor(Math.random() * 9)]
       : spawnPattern === 'wall' && typeof targetId === 'number'
         ? generateWallPosition(targetId, gameAreaSize, maxY)
-        : generateRandomPosition(gameAreaSize, maxY)
+        : generateRandomPosition(gameAreaSize, maxY))
   target.position.set(x, y, z)
   target.userData.orbitAnchor?.set(x, y, z)
   target.userData.hit = false

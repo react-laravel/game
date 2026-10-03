@@ -25,10 +25,15 @@ export function computeSessionGrade(
   else if (accuracy >= 82) score += 2
   else if (accuracy >= 70) score += 1
 
-  if (modeId === 'flick' || modeId === 'precision') {
+  if (modeId === 'flick') {
     if (avgReactionMs !== null && avgReactionMs <= 320) score += 3
     else if (avgReactionMs !== null && avgReactionMs <= 450) score += 2
     else if (avgReactionMs !== null && avgReactionMs <= 600) score += 1
+  } else if (modeId === 'precision') {
+    // Three targets can wait on screen: spawn age is not the player's switching speed.
+    if (shotsPerMinute >= 70) score += 3
+    else if (shotsPerMinute >= 50) score += 2
+    else if (shotsPerMinute >= 35) score += 1
   } else if (modeId === 'timed' || modeId === 'moving') {
     if (shotsPerMinute >= 55) score += 2
     else if (shotsPerMinute >= 38) score += 1
@@ -139,9 +144,9 @@ export function buildPerformanceHighlights(
 
   if (shots === 0) {
     const emptySecondary =
-      modeId === 'flick' || modeId === 'precision'
+      modeId === 'flick'
         ? { label: '反应速度', value: '—' }
-        : modeId === 'timed' || modeId === 'moving'
+        : modeId === 'precision' || modeId === 'timed' || modeId === 'moving'
           ? { label: '射速', value: '—' }
           : { label: '最高连击', value: '0' }
 
@@ -160,7 +165,7 @@ export function buildPerformanceHighlights(
     },
   ]
 
-  if (modeId === 'flick' || modeId === 'precision') {
+  if (modeId === 'flick') {
     const reaction = avgReactionMs ?? 650
     const reactionScore = Math.max(8, Math.min(100, Math.round(100 - (reaction - 220) / 4.5)))
     highlights.push({
@@ -169,7 +174,7 @@ export function buildPerformanceHighlights(
       percent: reactionScore,
       accent: reaction <= 320 ? 'emerald' : reaction <= 450 ? 'cyan' : 'amber',
     })
-  } else if (modeId === 'timed' || modeId === 'moving') {
+  } else if (modeId === 'precision' || modeId === 'timed' || modeId === 'moving') {
     highlights.push({
       label: '射速',
       value: `${shotsPerMinute}/分`,

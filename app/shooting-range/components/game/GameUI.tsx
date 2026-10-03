@@ -46,7 +46,7 @@ export function GameUI({
   const hasZoneHits = zoneHits.head + zoneHits.body + zoneHits.limb > 0
   const timePercent = Math.max(0, Math.min(100, (timeLeft / durationSeconds) * 100))
   const mode = trainingModes[modeId]
-  const showReaction = modeId === 'flick' || modeId === 'precision'
+  const showReaction = modeId === 'flick'
   const elapsedSeconds = Math.max(0, durationSeconds - timeLeft)
   const motionBadge =
     mode.movement === 'static'
@@ -62,7 +62,7 @@ export function GameUI({
     flick: '单靶闪现换点 — 第一眼定位，命中后立刻找下一个。',
     tracking: '少量靶沿轨道环绕 — 压低灵敏度，练平滑追踪。',
     timed: '45 秒高密度移动靶 — 射速与精度并重，别贪枪。',
-    precision: '网格顺序闪现 — 按顺序击破，兼顾准度与手速。',
+    precision: '九宫格中有三个可击中靶位 — 自由选择顺序，连续击破，命中后补到空格位。',
   }
   const performanceHighlights =
     gameOver && grade ? buildPerformanceHighlights(stats, modeId) : []

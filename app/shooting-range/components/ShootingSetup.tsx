@@ -255,6 +255,12 @@ export function ShootingSetup({
                         <circle cx="90" cy="16" r="9" />
                         <path d="M70 65V42L64 49 58 43 70 28H110L122 43 116 49 110 42V65M83 65V47H97V65" />
                       </g>
+                    ) : preset.modeId === 'precision' ? (
+                      [0, 1, 2].flatMap(x => [0, 1, 2].map(y => (
+                        <circle key={`${x}-${y}`} cx={65 + x * 25} cy={13 + y * 23}
+                          r={x === y ? 5 : 3.5} stroke="currentColor"
+                          fill={x === y ? 'currentColor' : 'none'} />
+                      )))
                     ) : preset.focus === 'precision' ? (
                       [0, 1, 2].flatMap((x) =>
                         [0, 1].map((y) => (

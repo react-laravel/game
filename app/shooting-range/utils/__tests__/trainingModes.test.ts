@@ -43,7 +43,7 @@ describe('trainingModes', () => {
 
     const precisionSettings = resolveTrainingSettings('medium', 'precision')
     expect(precisionSettings.spawnPattern).toBe('grid')
-    expect(precisionSettings.targetCount).toBe(1)
+    expect(precisionSettings.targetCount).toBe(3)
     expect(precisionSettings.respawnDelayMs).toBeLessThanOrEqual(300)
   })
 })

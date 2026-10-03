@@ -38,7 +38,7 @@ export const drillPresets: DrillPreset[] = [
   {
     id: 'grid-speed',
     name: '网格速点',
-    subtitle: '顺序网格靶 · 准度与手速',
+    subtitle: '九宫格三靶 · 连续切换击破',
     focus: 'precision',
     modeId: 'precision',
     mapId: 'indoor',

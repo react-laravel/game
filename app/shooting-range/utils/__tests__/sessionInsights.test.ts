@@ -48,6 +48,15 @@ describe('sessionInsights', () => {
     )
   })
 
+  it('grades grid switching speed rather than how long unselected targets waited', () => {
+    const gridStats = { ...baseStats, shotsPerMinute: 80, avgReactionMs: 2400 }
+    expect(computeSessionGrade(gridStats, 'precision')).toBe('S')
+    expect(computeSessionGrade({ ...gridStats, shotsPerMinute: 20 }, 'precision')).toBe('B')
+    expect(buildPerformanceHighlights(gridStats, 'precision')[1]).toEqual(
+      expect.objectContaining({ label: '射速', value: '80/分' })
+    )
+  })
+
   it('builds accuracy breakdown with hit/miss split and coaching tip', () => {
     const breakdown = buildAccuracyBreakdown(baseStats)
     expect(breakdown.summary).toBe('命中 50 · 未中 5')

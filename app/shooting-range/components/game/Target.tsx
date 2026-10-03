@@ -170,7 +170,7 @@ function TargetComponent({
   const staticAnchorRef = useRef<THREE.Group>(null)
   const prevPosition = useRef(new THREE.Vector3(...position))
   const trailVelocity = useRef(new THREE.Vector3())
-  const botMotionScale = movement === 'static' && modeId === 'static' ? 0 : 1
+  const botMotionScale = movement === 'static' ? 0 : 1
 
   useEffect(() => {
     const root = rootRef.current

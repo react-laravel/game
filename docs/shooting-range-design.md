@@ -71,3 +71,17 @@ visibility changes; the view light stays mounted even inside the scope.
 
 Run `BROWSER_CHANNEL=chrome node scripts/verify-range-weapons.mjs` for the input,
 projection, scope visibility, center-hit and pause/restore regression sequence.
+
+## Distinct flick and grid drills — 2026-10-04
+
+Flick keeps one randomly positioned target and highlights acquisition latency.
+Grid speed now keeps three active targets on a fixed-depth 3×3 rack. The visual-only
+rack marks empty slots; any active target can be hit. Each replacement reserves an
+unused slot before moving the target and its orbit anchor, so concurrent hit timers
+cannot overlap targets or respawn at the just-hit position. Reservations belong to
+the scene and are restored during Strict Mode re-registration. Grid grades/highlights
+use accuracy and shots/minute, since an unselected target's wait time is not switching speed.
+
+The browser regression performed six actual clicks (six hits / 72 points), verified
+that other slots stayed fixed and checked a clean restart. The focused suite passes
+214 tests, including 15 allocator/layout lifecycle cases.

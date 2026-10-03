@@ -41,7 +41,7 @@ export function ShootingReadyOverlay({ onStart, resume = false }: ShootingReadyO
         <p className="mt-2 text-sm leading-6 text-white/55">
           {resume
             ? '按 ESC 后需要重新锁定鼠标才能转动视角。点击按钮或按 Enter / Space 继续瞄准。'
-            : '锁定鼠标后移动瞄准，左键射击。按 ESC 可随时释放鼠标。'}
+            : '移动鼠标瞄准，左键射击，按住右键放大或开镜。1 / 2 或滚轮切枪，ESC 暂停。'}
         </p>
         <Button
           className="mt-6 w-full bg-[#d69b62] py-5 font-bold text-slate-950 hover:bg-[#e3ad76]"

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type { WeaponId } from '../../utils/weapons'
 
 type Point = [number, number]
 function profile(points: Point[]) {
@@ -101,10 +102,53 @@ function Part({
   )
 }
 
-/** Bevelled receiver, open trigger guard and a low-profile sight share a single bore axis. */
-export function GunModel() {
+const pistolSlide = profile([
+  [-0.12, -0.04],
+  [0.39, -0.04],
+  [0.42, 0.01],
+  [0.4, 0.1],
+  [-0.12, 0.1],
+])
+const pistolFrame = profile([
+  [-0.12, -0.035],
+  [0.35, -0.035],
+  [0.31, -0.095],
+  [0.06, -0.095],
+  [-0.01, -0.32],
+  [-0.15, -0.29],
+  [-0.09, -0.1],
+])
+
+/** Two dimensioned training weapons share the same local forward axis (-Z). */
+export function GunModel({ weaponId = 'sniper' }: { weaponId?: WeaponId } = {}) {
+  if (weaponId === 'pistol') {
+    return (
+      <group name="pistol-model">
+        <Shell shape={pistolFrame} width={0.095} color="#283c3c" metalness={0.12} />
+        <Shell shape={pistolSlide} width={0.12} color="#9aaba2" metalness={0.62} />
+        <Shell shape={guard} width={0.035} color="#243232" />
+        <Part position={[0, 0.12, -0.375]} size={[0.023, 0.035, 0.025]} color="#293d39" />
+        <Part position={[-0.039, 0.118, 0.06]} size={[0.025, 0.03, 0.03]} />
+        <Part position={[0.039, 0.118, 0.06]} size={[0.025, 0.03, 0.03]} />
+        <Part position={[0, 0.13, -0.37]} size={[0.008, 0.025, 0.008]} color="#dfa568" />
+        <Part position={[0.063, 0.04, -0.16]} size={[0.005, 0.035, 0.09]} color="#283a37" />
+        {[0, 1, 2, 3].map((i) => (
+          <Part
+            key={i}
+            position={[0.063, 0.022, 0.065 - i * 0.025]}
+            size={[0.005, 0.07, 0.008]}
+            color="#425854"
+          />
+        ))}
+        <mesh position={[0, 0.02, -0.423]} rotation={[0, Math.PI, 0]}>
+          <circleGeometry args={[0.025, 12]} />
+          <meshBasicMaterial color="#142022" />
+        </mesh>
+      </group>
+    )
+  }
   return (
-    <group name="carbine-MK01">
+    <group name="sniper-model">
       <Shell shape={receiver} width={0.17} color="#87968e" />
       <Shell shape={stock} width={0.13} color="#303d3d" metalness={0.1} />
       <Shell shape={grip} width={0.1} color="#283334" metalness={0.05} />
@@ -149,23 +193,34 @@ export function GunModel() {
           <meshStandardMaterial color="#202c2e" metalness={0.7} roughness={0.5} />
         </mesh>
       ))}
-      <Part position={[0, 0.19, -0.1]} size={[0.13, 0.038, 0.17]} />
-      <Part position={[-0.054, 0.255, -0.1]} size={[0.018, 0.11, 0.065]} />
-      <Part position={[0.054, 0.255, -0.1]} size={[0.018, 0.11, 0.065]} />
-      <Part position={[0, 0.314, -0.1]} size={[0.126, 0.018, 0.065]} />
-      <mesh position={[0, 0.263, -0.102]}>
-        <planeGeometry args={[0.088, 0.083]} />
-        <meshBasicMaterial
-          color="#85a1a2"
-          transparent
-          opacity={0.16}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
+
+      {/* Long barrel and tubular optic give the sniper a distinct silhouette. */}
+      <mesh position={[0, 0.02, -1.19]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.024, 0.024, 0.53, 12]} />
+        <meshStandardMaterial color="#415450" metalness={0.7} roughness={0.4} />
       </mesh>
-      <mesh position={[0, 0.258, -0.067]}>
-        <circleGeometry args={[0.003, 8]} />
-        <meshBasicMaterial color="#ef9b59" toneMapped={false} />
+      <mesh position={[0, 0.02, -1.43]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.038, 0.038, 0.06, 12]} />
+        <meshStandardMaterial color="#273632" metalness={0.65} roughness={0.45} />
+      </mesh>
+      <Part position={[0, 0.22, -0.03]} size={[0.12, 0.12, 0.3]} />
+      <mesh position={[0, 0.31, -0.03]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.067, 0.067, 0.43, 20]} />
+        <meshStandardMaterial color="#293d3a" metalness={0.5} roughness={0.45} />
+      </mesh>
+      {[-0.27, 0.2].map((z) => (
+        <mesh key={z} position={[0, 0.31, z]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.088, 0.088, 0.065, 20]} />
+          <meshStandardMaterial color="#50605b" metalness={0.5} roughness={0.4} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.31, 0.236]}>
+        <circleGeometry args={[0.069, 20]} />
+        <meshStandardMaterial color="#1f6570" metalness={0.65} roughness={0.16} />
+      </mesh>
+      <mesh position={[0, 0.397, -0.03]}>
+        <cylinderGeometry args={[0.033, 0.033, 0.045, 12]} />
+        <meshStandardMaterial color="#273632" metalness={0.5} roughness={0.4} />
       </mesh>
     </group>
   )

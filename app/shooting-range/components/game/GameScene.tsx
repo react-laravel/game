@@ -24,13 +24,13 @@ import { resolveTrainingSettings } from '../../utils/trainingModes'
 import { playHitSound, playMissSound, playShotSound } from '../../utils/audioUtils'
 import {
   MUZZLE_FLASH_DURATION,
-  SHOT_COOLDOWN_MS,
   decayRecoil,
   kickUpwardRecoil,
   viewPitchWithRecoil,
 } from '../../utils/gunFeel'
 import { applyLookDelta, lookSpeedForSensitivity } from '../../utils/lookSensitivity'
 import { shouldAcceptLockedShot } from '../../utils/shootingInput'
+import { BASE_FOV, WEAPONS, zoomSensitivityScale, type WeaponId } from '../../utils/weapons'
 import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../../types'
 
 interface TargetData {
@@ -42,7 +42,7 @@ interface TargetData {
 }
 
 export interface ShootingSceneSnapshot {
-  camera: { yaw: number; pitch: number }
+  camera: { yaw: number; pitch: number; fov?: number }
   targets: Array<{ id: number; x: number; y: number; z: number; hit: boolean }>
 }
 
@@ -75,6 +75,8 @@ interface GameSceneProps {
   lookSensitivity: number
   reducedMotion?: boolean
   recoilEnabled?: boolean
+  weaponId?: WeaponId
+  isAiming?: boolean
   onShotResult: (didHit: boolean, reactionMs?: number, hitZone?: HitZone) => void
   onHitFeedback?: (hitZone?: HitZone) => void
   gameStarted: boolean
@@ -93,6 +95,8 @@ export function GameScene({
   lookSensitivity,
   reducedMotion = false,
   recoilEnabled = false,
+  weaponId = 'pistol',
+  isAiming = false,
   onShotResult,
   onHitFeedback,
   gameStarted,
@@ -119,6 +123,7 @@ export function GameScene({
   const fpsFrames = useRef(0)
   const lookRotation = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const viewEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const snapshotEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const muzzleFlashElapsed = useRef(-1)
   const recoilPitch = useRef(0)
   const impactFXRef = useRef<ImpactFXHandle>(null)
@@ -221,7 +226,7 @@ export function GameScene({
 
     const now = performance.now()
     if (now < nextShotAt.current) return
-    nextShotAt.current = now + SHOT_COOLDOWN_MS
+    nextShotAt.current = now + WEAPONS[weaponId].cooldownMs
 
     triggerGunFeel()
     playShotSound()
@@ -247,16 +252,24 @@ export function GameScene({
       playMissSound()
       onShotResultRef.current(false)
     }
-  }, [camera, gameStarted, handleTargetHit, resolveRaycastHit, triggerGunFeel])
+  }, [camera, gameStarted, handleTargetHit, resolveRaycastHit, triggerGunFeel, weaponId])
 
   const handleFallbackTargetClick = useCallback(
-    (id: number, hitZone?: HitZone) => {
+    (id: number, hitZone?: HitZone, event?: MouseEvent) => {
       if (!gameStarted || !useFallbackControls || hitTargetIds.current.has(id)) return
+      if (isAiming && weaponId === 'sniper' && event) {
+        const bounds = gl.domElement.getBoundingClientRect()
+        const radius = Math.min(bounds.width, bounds.height) * 0.44 - 5
+        if (Math.hypot(event.clientX - bounds.left - bounds.width / 2, event.clientY - bounds.top - bounds.height / 2) > radius) return
+      }
+      const now = performance.now()
+      if (now < nextShotAt.current) return
+      nextShotAt.current = now + WEAPONS[weaponId].cooldownMs
       triggerGunFeel()
       playShotSound()
       handleTargetHit(id, hitZone)
     },
-    [gameStarted, handleTargetHit, triggerGunFeel, useFallbackControls]
+    [gameStarted, gl.domElement, handleTargetHit, isAiming, triggerGunFeel, useFallbackControls, weaponId]
   )
 
   useFrame((_, delta) => {
@@ -289,9 +302,11 @@ export function GameScene({
     if (snapshotElapsed.current < 0.1) return
     snapshotElapsed.current = 0
 
+    snapshotEuler.current.setFromQuaternion(camera.quaternion, 'YXZ')
     sceneStateRef.current.camera = {
-      yaw: Number(camera.rotation.y.toFixed(3)),
-      pitch: Number(camera.rotation.x.toFixed(3)),
+      yaw: Number(snapshotEuler.current.y.toFixed(5)),
+      pitch: Number(snapshotEuler.current.x.toFixed(5)),
+      fov: Number(('fov' in camera ? camera.fov : BASE_FOV).toFixed(2)),
     }
     sceneStateRef.current.targets = Array.from(targetObjects.current, ([id, object]) => ({
       id,
@@ -334,12 +349,13 @@ export function GameScene({
       // Apply pointer delta to the base look rotation only — never read camera.quaternion
       // here, since useFrame already layers recoil on top of lookRotation each frame.
       const rotation = lookRotation.current
-      applyLookDelta(rotation, event.movementX, event.movementY, lookSpeedRef.current)
+      const fov = 'fov' in camera ? camera.fov : BASE_FOV
+      applyLookDelta(rotation, event.movementX, event.movementY, lookSpeedRef.current * zoomSensitivityScale(fov))
     }
 
     document.addEventListener('mousemove', handleMouseMove)
     return () => document.removeEventListener('mousemove', handleMouseMove)
-  }, [gameStarted, gl.domElement, useFallbackControls])
+  }, [camera, gameStarted, gl.domElement, useFallbackControls])
 
   useEffect(() => {
     const handleBeforeUnload = () => document.exitPointerLock?.()
@@ -405,6 +421,8 @@ export function GameScene({
 
       <ImpactFX ref={impactFXRef} reducedMotion={reducedMotion} />
       <FPSWeapon
+        weaponId={weaponId}
+        isAiming={isAiming}
         muzzleFlashElapsedRef={muzzleFlashElapsed}
         recoilPitchRef={recoilPitch}
         reducedMotion={reducedMotion}

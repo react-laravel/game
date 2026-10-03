@@ -21,6 +21,7 @@ interface CrosshairSettingsProps {
   compact?: boolean
   /** Dual light/dark preview panes for sheet modals */
   enhancedPreview?: boolean
+  previewSurface?: 'card' | 'dark'
 }
 
 export function CrosshairSettings({
@@ -29,6 +30,7 @@ export function CrosshairSettings({
   onReset,
   compact = false,
   enhancedPreview = false,
+  previewSurface = 'card',
 }: CrosshairSettingsProps) {
   return (
     <section className={compact ? 'space-y-4' : 'mt-6 space-y-4'}>
@@ -43,7 +45,11 @@ export function CrosshairSettings({
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-slate-950">
+      <div
+        className={`sticky -top-4 z-40 isolate pb-2 pt-4 ${previewSurface === 'dark' ? 'bg-slate-900' : 'bg-card'}`}
+        data-testid="crosshair-preview"
+      >
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-slate-950 shadow-lg">
         {enhancedPreview ? (
           <div className="relative">
             <div
@@ -56,13 +62,13 @@ export function CrosshairSettings({
               }}
             />
             <div className="grid grid-cols-2 divide-x divide-white/10">
-              <div className="relative flex h-40 items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_78%)]">
+              <div className="relative flex h-[clamp(5rem,18dvh,10rem)] items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_78%)]">
                 <Crosshair config={config} />
                 <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-white/55">
                   暗色场景
                 </span>
               </div>
-              <div className="relative flex h-40 items-center justify-center bg-[radial-gradient(circle_at_center,#e8eef4_0%,#c8d4dc_82%)]">
+              <div className="relative flex h-[clamp(5rem,18dvh,10rem)] items-center justify-center bg-[radial-gradient(circle_at_center,#e8eef4_0%,#c8d4dc_82%)]">
                 <Crosshair config={config} />
                 <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-slate-600">
                   亮色场景
@@ -74,13 +80,14 @@ export function CrosshairSettings({
             </div>
           </div>
         ) : (
-          <div className="relative flex h-36 items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_72%)]">
+          <div className="relative flex h-[clamp(5rem,18dvh,9rem)] items-center justify-center bg-[radial-gradient(circle_at_center,#1f3340_0%,#0b141c_72%)]">
             <Crosshair config={config} />
             <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
               实时预览
             </div>
           </div>
         )}
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
 import type { ShootingSceneSnapshot } from '../components/game/GameScene'
 import type { SessionStats, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
+import type { WeaponId } from '../utils/weapons'
 
 type ShootingWindow = Window &
   typeof globalThis & {
@@ -17,6 +18,8 @@ interface ShootingDebugBridgeOptions {
   mapId: ShootingMapId
   modeId: TrainingModeId
   targetShape: TargetShape
+  weaponId: WeaponId
+  isAiming: boolean
   gameOver: boolean
   gameStarted: boolean
   stats: SessionStats
@@ -32,6 +35,8 @@ export function useShootingDebugBridge({
   mapId,
   modeId,
   targetShape,
+  weaponId,
+  isAiming,
   gameOver,
   gameStarted,
   stats,
@@ -61,6 +66,9 @@ export function useShootingDebugBridge({
         mapId,
         modeId,
         targetShape,
+        weaponId,
+        isAiming,
+        scoped: weaponId === 'sniper' && isAiming,
         ...statsRef.current,
         timeLeft: timeLeftRef.current,
         pointerLocked: document.pointerLockElement === canvasRef.current,
@@ -103,6 +111,8 @@ export function useShootingDebugBridge({
     mapId,
     modeId,
     targetShape,
+    weaponId,
+    isAiming,
     onEndSession,
     onInjectStats,
     sceneSnapshot,

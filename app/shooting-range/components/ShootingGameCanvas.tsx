@@ -6,6 +6,8 @@ import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, Targ
 import { mapConfigs } from '../utils/mapConfigs'
 import { getOutdoorTimePreset } from '../utils/outdoorTimeOfDay'
 import { RangeDiagnostics } from './game/RangeDiagnostics'
+import { WeaponAimCamera } from './game/WeaponAimCamera'
+import { BASE_FOV, type WeaponId } from '../utils/weapons'
 
 interface ShootingGameCanvasProps {
   canvasRef: RefObject<HTMLCanvasElement | null>
@@ -18,6 +20,8 @@ interface ShootingGameCanvasProps {
   lookSensitivity: number
   reducedMotion?: boolean
   recoilEnabled?: boolean
+  weaponId: WeaponId
+  isAiming: boolean
   gameStarted: boolean
   gameOver: boolean
   useFallbackControls: boolean
@@ -37,6 +41,8 @@ function ShootingGameCanvasComponent({
   lookSensitivity,
   reducedMotion = false,
   recoilEnabled = false,
+  weaponId,
+  isAiming,
   gameStarted,
   gameOver,
   useFallbackControls,
@@ -61,7 +67,7 @@ function ShootingGameCanvasComponent({
       ref={canvasRef}
       dpr={[1, 1.5]}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 62, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 220 : 90 }}
+      camera={{ fov: BASE_FOV, position: [0, 1.6, 0], rotation: [0, 0, 0], near: 0.05, far: mapId === 'outdoor' ? 220 : 90 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(mapBackground)
         gl.toneMappingExposure = toneMappingExposure
@@ -71,6 +77,7 @@ function ShootingGameCanvasComponent({
       className="outline-none"
     >
       <RangeDiagnostics />
+      <WeaponAimCamera weaponId={weaponId} isAiming={isAiming} reducedMotion={reducedMotion} />
       <GameScene
         key={`${difficulty}-${mapId}-${modeId}-${targetShape}-${outdoorTimeOfDay}`}
         difficulty={difficulty}
@@ -81,6 +88,8 @@ function ShootingGameCanvasComponent({
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         recoilEnabled={recoilEnabled}
+        weaponId={weaponId}
+        isAiming={isAiming}
         onShotResult={onShotResult}
         onHitFeedback={onHitFeedback}
         gameStarted={gameStarted && !gameOver}

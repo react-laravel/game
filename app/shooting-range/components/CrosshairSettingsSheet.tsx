@@ -56,7 +56,7 @@ export function CrosshairSettingsSheet({
             : 'border-border/60 bg-card text-foreground'
         }`}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border/50 px-4 py-3.5 sm:px-5">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/50 px-4 py-3.5 sm:px-5">
           <div className="flex items-start gap-2.5">
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ${
@@ -99,6 +99,7 @@ export function CrosshairSettingsSheet({
           <CrosshairSettings
             compact
             enhancedPreview
+            previewSurface={isIngame ? 'dark' : 'card'}
             config={draft}
             onChange={patch => setDraft(previous => normalizeCrosshairConfig({ ...previous, ...patch }))}
             onReset={() => setDraft(DEFAULT_CROSSHAIR_CONFIG)}

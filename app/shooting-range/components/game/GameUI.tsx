@@ -89,7 +89,7 @@ export function GameUI({
           <div><div className="text-[9px] tracking-[.2em] text-[#c3ad8b]">{mode.focus.toUpperCase()} / {motionBadge.label}</div><div className="mt-1 text-sm font-medium">{drillLabel}</div></div>
           <div className="hidden border-l border-white/15 pl-4 text-[10px] leading-5 text-[#a3b4a7] sm:block"><div>{displayFps} FPS · {shotsPerMinute}/分</div><div>{showReaction && avgReactionMs !== null ? `反应 ${avgReactionMs}ms` : `最佳连击 ${bestStreak}`}</div></div>
         </div>
-        <div className="absolute bottom-7 left-1/2 hidden -translate-x-1/2 gap-5 text-[10px] tracking-wide text-white/60 lg:flex"><span>鼠标 瞄准</span><span>左键 射击</span><span>ESC 暂停</span></div>
+        <div className="absolute bottom-7 left-1/2 hidden -translate-x-1/2 gap-5 text-[10px] tracking-wide text-white/60 xl:flex"><span>左键 射击</span><span>右键 瞄准</span><span>ESC 暂停</span></div>
       </>}
 
       {!gameOver && showTutorialTip && (

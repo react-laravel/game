@@ -271,7 +271,6 @@ export default function ShootingRangePage() {
               crosshairConfig={crosshairConfig}
               onCrosshairChange={updateCrosshair}
               onCrosshairReset={resetCrosshair}
-              onCrosshairApply={applyCrosshair}
               setGameStarted={setIsStarted}
               onViewHistory={() => {
                 setIsStarted(false)

@@ -27,6 +27,7 @@ export function RangeDiagnostics() {
         camera: camera.position.toArray(),
         postProcessing: false,
         shadowPasses: 0,
+        weaponVisible: scene.getObjectByName('weapon-visual')?.visible,
       }
     }
     return () => {

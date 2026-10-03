@@ -83,7 +83,7 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
           {latest ? (
             <div className="grid gap-3 sm:grid-cols-4">
               <StatCard label="最近得分" value={`${latest.score}`} />
-              <StatCard label="最近精准度" value={`${latest.accuracy}%`} />
+              <StatCard label="最近精准度" value={`${latest.accuracy.toFixed(1)}%`} />
               <StatCard label="最近射速" value={`${latest.shotsPerMinute}/分`} />
               <StatCard
                 label="最近反应"
@@ -132,7 +132,7 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                           <div>
                             <div className="text-muted-foreground">均准</div>
                             <div className="font-mono text-base font-bold tabular-nums">
-                              {summary.avgAccuracy}%
+                              {summary.avgAccuracy.toFixed(1)}%
                             </div>
                           </div>
                           <div>
@@ -234,7 +234,7 @@ export function ShootingHistory({ onClose, highlightLatestSession = false }: Sho
                             </span>
                           </td>
                           <td className="hidden px-4 py-2.5 font-mono tabular-nums sm:table-cell">
-                            {record.accuracy}%
+                            {record.accuracy.toFixed(1)}%
                           </td>
                           <td className="hidden px-4 py-2.5 font-mono tabular-nums md:table-cell">
                             {record.shotsPerMinute}/分
@@ -419,6 +419,7 @@ function ChartPanel({
   const activeBuckets = buckets.filter(bucket => bucket.sessions > 0)
   const peakValue = maxBucketValue(activeBuckets, field)
   const hoveredBucket = buckets.find(bucket => bucket.key === hoveredKey) ?? null
+  const formatValue = (value: number) => `${value.toFixed(1)}${suffix}`
 
   return (
     <div>
@@ -428,12 +429,12 @@ function ChartPanel({
         </span>
         {hoveredBucket && hoveredBucket.sessions > 0 ? (
           <span className="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-[11px] tabular-nums text-foreground">
-            {hoveredBucket.label} · {(hoveredBucket[field] as number)}{suffix} ·{' '}
+            {hoveredBucket.label} · {formatValue(hoveredBucket[field])} ·{' '}
             {hoveredBucket.sessions} 场
           </span>
         ) : peakValue > 0 ? (
           <span className="text-muted-foreground text-[11px]">
-            峰值 <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{peakValue}{suffix}</span>
+            峰值 <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{formatValue(peakValue)}</span>
           </span>
         ) : null}
       </div>
@@ -458,8 +459,8 @@ function ChartPanel({
           </div>
 
           <div className="mb-1 flex items-center justify-between px-0.5 text-[10px] font-medium text-foreground/55">
-            <span>0{suffix}</span>
-            <span>{max}{suffix}</span>
+            <span>{formatValue(0)}</span>
+            <span>{formatValue(max)}</span>
           </div>
 
           <div className="flex h-40 items-end gap-1.5">
@@ -488,13 +489,13 @@ function ChartPanel({
                             : 'text-muted-foreground'
                       }`}
                     >
-                      {value}{suffix}
+                      {formatValue(value)}
                     </span>
                   )}
                   <div className="flex h-32 w-full items-end">
                     <button
                       type="button"
-                      aria-label={`${bucket.label}: ${value}${suffix}，${bucket.sessions} 场`}
+                      aria-label={`${bucket.label}: ${formatValue(value)}，${bucket.sessions} 场`}
                       className={`w-full rounded-t-md transition-[height,box-shadow,opacity] duration-300 focus-visible:ring-2 focus-visible:ring-cyan-400/50 focus-visible:outline-none ${
                         bucket.sessions > 0
                           ? isPeak

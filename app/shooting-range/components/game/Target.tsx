@@ -27,7 +27,7 @@ interface TargetProps {
   maxY?: number
   modeId: TrainingModeId
   lowLightBoost?: number
-  onClick: (id: number, hitZone?: HitZone) => void
+  onClick: (id: number, hitZone?: HitZone, event?: MouseEvent) => void
   onReady?: (id: number, target: THREE.Group | null) => void
   id: number
 }
@@ -387,6 +387,7 @@ function TargetComponent({
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
+    if (event.button !== 0) return
     if (rootRef.current?.userData.hit) return
 
     let hitZone: HitZone | undefined
@@ -397,7 +398,7 @@ function TargetComponent({
       }
       current = current.parent
     }
-    onClick(id, hitZone)
+    onClick(id, hitZone, event.nativeEvent)
   }
 
   return (

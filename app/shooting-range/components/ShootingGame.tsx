@@ -1,11 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CircleHelp, LogOut, Settings2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { primeShootingAudio, setShootingSfxSettings } from '../utils/audioUtils'
 import { useFpsMeter } from '../hooks/useFpsMeter'
 import { usePointerLock } from '../hooks/usePointerLock'
+import { useWeaponControls } from '../hooks/useWeaponControls'
 import { useShootingDebugBridge } from '../hooks/useShootingDebugBridge'
 import { useShootingSession } from '../hooks/useShootingSession'
 import type { CrosshairConfig } from '../utils/crosshairConfig'
@@ -21,11 +20,11 @@ import {
 import { loadSessionHistory } from '../utils/statsStorage'
 import type { HitZone, OutdoorTimeOfDay, ShootingDifficulty, ShootingMapId, TargetShape, TrainingModeId } from '../types'
 import { useMotionPreference } from '../hooks/useMotionPreference'
-import { CrosshairSettingsSheet } from './CrosshairSettingsSheet'
 import { ShootingHelpSheet } from './ShootingHelpSheet'
 import { Crosshair } from './game/Crosshair'
 import { GameUI } from './game/GameUI'
 import { SessionFeedback } from './game/SessionFeedback'
+import { ScopeOverlay, WeaponStatus } from './game/ScopeOverlay'
 import type { ShootingSceneSnapshot } from './game/GameScene'
 import { ShootingGameCanvas } from './ShootingGameCanvas'
 import {
@@ -54,7 +53,6 @@ interface ShootingGameProps {
   crosshairConfig: CrosshairConfig
   onCrosshairChange: (patch: Partial<CrosshairConfig>) => void
   onCrosshairReset: () => void
-  onCrosshairApply: (config: CrosshairConfig) => void
   setGameStarted?: (started: boolean) => void
   onViewHistory?: () => void
   onChangeDrill?: () => void
@@ -79,12 +77,11 @@ export default function ShootingGame({
   crosshairConfig,
   onCrosshairChange,
   onCrosshairReset,
-  onCrosshairApply,
   setGameStarted,
   onViewHistory,
   onChangeDrill,
 }: ShootingGameProps) {
-  const [showCrosshairSettings, setShowCrosshairSettings] = useState(false)
+  const [fallbackPaused, setFallbackPaused] = useState(false)
   const [showHelpSheet, setShowHelpSheet] = useState(false)
   const [showTutorialTip, setShowTutorialTip] = useState(() => !isTutorialTipDismissed(modeId))
   const { preference: motionPreference, reducedMotion, setPreference: setMotionPreference } =
@@ -137,7 +134,12 @@ export default function ShootingGame({
     !pointerLockError
 
   const showPauseOverlay =
-    (needsPointerLock && !showStartOverlay) || (forcePauseOverlay && gameStarted && !gameOver)
+    (needsPointerLock && !showStartOverlay) ||
+    ((fallbackPaused || forcePauseOverlay) && gameStarted && !gameOver)
+
+  const inputActive = gameStarted && !gameOver && !showPauseOverlay && !showHelpSheet &&
+    !showStartOverlay && !pointerLockError && (isPointerLocked || browserSupport.useFallback)
+  const { weaponId, isAiming, isScoped } = useWeaponControls(canvasRef, inputActive, browserSupport.useFallback)
 
   useShootingDebugBridge({
     canvasRef,
@@ -146,6 +148,8 @@ export default function ShootingGame({
     mapId,
     modeId,
     targetShape,
+    weaponId,
+    isAiming,
     gameOver,
     gameStarted,
     stats: sessionStats,
@@ -183,6 +187,7 @@ export default function ShootingGame({
   }, [beginTraining, modeId, requestPointerLock, sfxMuted, sfxVolume])
 
   const resumePointerLock = useCallback(() => {
+    setFallbackPaused(false)
     requestPointerLock()
     window.requestAnimationFrame(() => {
       requestPointerLock()
@@ -210,6 +215,7 @@ export default function ShootingGame({
   }, [])
 
   const handleRestart = useCallback(() => {
+    setFallbackPaused(false)
     primeShootingAudio()
     setShowTutorialTip(!isTutorialTipDismissed(modeId))
     restartTraining()
@@ -251,7 +257,6 @@ export default function ShootingGame({
         !showStartOverlay &&
         !pointerLockError &&
         !showHelpSheet &&
-        !showCrosshairSettings &&
         !showPauseOverlay
       ) {
         event.preventDefault()
@@ -265,6 +270,17 @@ export default function ShootingGame({
           handleOpenHelp()
         }
       }
+      if (
+        event.code === 'Escape' &&
+        browserSupport.useFallback &&
+        gameStarted &&
+        !gameOver &&
+        !showPauseOverlay &&
+        !showHelpSheet
+      ) {
+        event.preventDefault()
+        setFallbackPaused(true)
+      }
       if (event.code === 'Escape' && showHelpSheet) {
         event.preventDefault()
         handleCloseHelp()
@@ -274,6 +290,7 @@ export default function ShootingGame({
     window.addEventListener('keydown', handleKeyDown, { passive: false })
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
+    browserSupport.useFallback,
     gameOver,
     gameStarted,
     needsPointerLock,
@@ -281,7 +298,6 @@ export default function ShootingGame({
     resumePointerLock,
     showStartOverlay,
     showHelpSheet,
-    showCrosshairSettings,
     showPauseOverlay,
     handleCloseHelp,
     handleOpenHelp,
@@ -309,6 +325,7 @@ export default function ShootingGame({
   ])
 
   const handleBackToSettings = useCallback(() => {
+    setFallbackPaused(false)
     releasePointerLock()
     returnToSettings()
   }, [releasePointerLock, returnToSettings])
@@ -341,7 +358,9 @@ export default function ShootingGame({
         lookSensitivity={lookSensitivity}
         reducedMotion={reducedMotion}
         recoilEnabled={recoilEnabled}
-        gameStarted={gameStarted}
+        weaponId={weaponId}
+        isAiming={isAiming}
+        gameStarted={gameStarted && !showPauseOverlay && !showHelpSheet}
         gameOver={gameOver}
         useFallbackControls={browserSupport.useFallback}
         onShotResult={handleShotResult}
@@ -349,55 +368,26 @@ export default function ShootingGame({
         onFpsReport={reportFps}
       />
 
-      {gameStarted && !gameOver && (isPointerLocked || browserSupport.useFallback) && (
+      {gameStarted && !gameOver && !showPauseOverlay && (isPointerLocked || browserSupport.useFallback) && (
         <>
-          <Crosshair
+          {!isScoped && <Crosshair
             config={crosshairConfig}
             hit={hitMarker}
             headshot={headshotMarker}
             miss={missMarker}
-          />
-          <SessionFeedback
+          />}
+          {!isScoped && <SessionFeedback
             hitPulse={hitPulse}
             streakToast={streakToast}
             reducedMotion={reducedMotion}
-          />
+          />}
         </>
       )}
 
-      {gameStarted && !showPauseOverlay && (
-        <div className="absolute top-5 left-5 z-40 flex gap-2">
-          <Button
-            variant="ghost"
-            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
-            onClick={handleBackToSettings}
-          >
-            <LogOut className="h-4 w-4" />
-            结束训练
-          </Button>
-          <Button
-            variant="ghost"
-            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
-            onClick={() => {
-              releasePointerLock()
-              setShowCrosshairSettings(true)
-            }}
-            aria-label="准星设置"
-          >
-            <Settings2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="border border-white/10 bg-[#20332c]/90 text-white shadow-xl backdrop-blur-md hover:bg-[#24352d] hover:text-white"
-            onClick={handleOpenHelp}
-            aria-label="操作说明"
-          >
-            <CircleHelp className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      {inputActive && !isScoped && <WeaponStatus weaponId={weaponId} isAiming={isAiming} />}
+      {isScoped && <ScopeOverlay hit={hitMarker || headshotMarker} />}
 
-      <GameUI
+      {!isScoped && <GameUI
         stats={sessionStats}
         timeLeft={timeLeft}
         durationSeconds={durationSeconds}
@@ -412,7 +402,7 @@ export default function ShootingGame({
         onRestart={handleRestart}
         onViewHistory={onViewHistory}
         onChangeDrill={onChangeDrill}
-      />
+      />}
 
       {showStartOverlay && !gameOver && !pointerLockError && (
         <ShootingReadyOverlay onStart={startGame} />
@@ -453,21 +443,6 @@ export default function ShootingGame({
           message={pointerLockError}
           onRetry={resumePointerLock}
           onFallback={enableFallbackControls}
-        />
-      )}
-
-      {showCrosshairSettings && !showPauseOverlay && (
-        <CrosshairSettingsSheet
-          variant="ingame"
-          applyLabel="应用并继续"
-          config={crosshairConfig}
-          onApply={onCrosshairApply}
-          onClose={() => {
-            setShowCrosshairSettings(false)
-            if (gameStarted && !gameOver && !browserSupport.useFallback) {
-              requestPointerLock()
-            }
-          }}
         />
       )}
     </div>

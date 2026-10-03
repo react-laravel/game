@@ -73,7 +73,7 @@ export function ShootingPauseSettingsPanel({
       aria-modal="true"
       aria-labelledby="shooting-pause-settings-title"
     >
-      <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/8 px-4 py-3">
         <Button
           type="button"
           variant="ghost"
@@ -112,6 +112,7 @@ export function ShootingPauseSettingsPanel({
           <TabsContent value="crosshair" className="mt-0">
             <CrosshairSettings
               compact
+              previewSurface="dark"
               config={crosshairConfig}
               onChange={onCrosshairChange}
               onReset={onCrosshairReset}

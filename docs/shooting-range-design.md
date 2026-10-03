@@ -53,3 +53,21 @@ for other hardware. Full validation passed 752 tests, lint, TypeScript and Next 
 Browser pointer-lock acceptance still needs a real user gesture. Fallback raycasts
 and UI transitions are automated; simulated lock events can exercise mouse movement
 and pause/resume behavior without pretending the browser granted native lock.
+
+## Weapon controls — 2026-09-20
+
+`1` selects the pistol, `2` the sniper; the mouse wheel cycles between them. Hold the
+right mouse button to aim and release it to return. Base vertical FOV is 62°, pistol
+aim is 44° (~1.5×), sniper aim is 16° (~4.3×). Scoped view has a black exterior mask,
+centered horizontal/vertical tick marks and no weapon/normal HUD. Scoring still uses
+the actual camera-center ray, including during zoom transitions.
+
+`WeaponAimCamera` owns projection and restores it on disposal. Zoom follows a
+frame-independent exponential transition; pointer sensitivity follows the actual FOV.
+`useWeaponControls` gates input to active gameplay and clears held aim on switch,
+pause, pointer release, blur and visibility changes. The pistol retains the existing
+132ms cooldown; the sniper uses 700ms. Both models remain mounted and only their
+visibility changes; the view light stays mounted even inside the scope.
+
+Run `BROWSER_CHANNEL=chrome node scripts/verify-range-weapons.mjs` for the input,
+projection, scope visibility, center-hit and pause/restore regression sequence.

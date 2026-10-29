@@ -1,5 +1,7 @@
 Original prompt: 开始实现前端，工作目录只限新目录 /Users/sam/Code/DogeOW/game，避免改 central。以 /Users/sam/Code/DogeOW/rpg 的 standalone Next/SSO/部署骨架为基础，迁移 /Users/sam/Code/DogeOW/dogeow/app/game 除 rpg 外的 12 个游戏、48 个测试、共享依赖/组件/资源；路由改为根路径（/2048、/monopoly 等），首页为游戏中心；moon dice 独立为 /moon-dice 并迁测试；认证沿用中央一次性 SSO，app id 改 game，API 指向 game-api。保留 develop-web-game 的 progress.md 要求。不要创建 GitHub repo、不要提交/推送、不要改服务器。
 
+Current prompt (2026-10-03): 21 点 PC 界面的牌、筹码、玩家信息和其他控件可以大一点。
+
 Current prompt (2026-07-15): 修复 `https://game.dogeow.com/monopoly` 浅色、深色表现不对应的问题，并为 Monopoly 增加自己的顶部导航栏。
 
 Current prompt (2026-07-15): 修复 `/tetris` 空格硬降触底后仍能左右移动的问题，并增加游戏音效。
@@ -59,6 +61,7 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 ## Current work
 
 - October 3 drill distinction: flick stays a single randomly positioned target; precision becomes three simultaneous targets on a flat 3×3 grid. Hit replacements select free cells, with scene-local reservation/release and a visual-only rack guide; preset/HUD descriptions and catalogue graphic now explain multi-target switching. Grid grading/highlights use accuracy + firing rate because waiting target age is not switching speed.
+- Blackjack desktop table sections now grow together at 1024px+ (1.5×, then 1.75×/2× on larger/taller screens), including cards, chip stacks, names, totals, header and actions. Short desktop windows use 1.1× and compact empty-card placeholders; phone sizes are preserved. Added a visible-state text bridge for browser QA.
 - September 20 weapon request: add pistol (1), sniper (2), wheel switching, hold-right-button zoom/scope, a full-screen circular scope with horizontal/vertical reticle ticks, and pointer-lock/pause/blur cleanup. Camera projection has one frame-based owner; scoped sensitivity follows magnification and scoped shots use the zoomed camera ray.
 - September 20 history follow-up: format history precision and trend values to one decimal (peak, axes, bars, tooltips and accessible labels); keep underlying aggregated values unchanged.
 - September 20 follow-up: removed the in-game upper-left exit/settings/help toolbar. Escape retains the pause/settings/exit route, including click-target fallback; the obsolete in-game crosshair sheet is removed while the lobby sheet remains.
@@ -143,6 +146,7 @@ Current prompt (2026-09-14): https://github.com/react-laravel/game/actions/runs/
 ## Validation
 
 - October 4 drill validation: 42 shooting-range test files / 214 tests, type-check, lint and production build pass. Browser comparison confirms flick has one target and precision has three distinct planar grid targets; six consecutive real clicks produce six hits / 72 points, every replacement changes only the hit slot, no overlap occurs, and restart resets score with three valid targets.
+- October 3 Blackjack desktop sizing: 67/67 Blackjack tests, targeted ESLint, and TypeScript pass. The develop-web-game client exercises betting, auto play, cards and subsequent rounds with no console/page errors. Inspected light/dark four-seat gameplay at 1993×1248, laptop controls at 1024×768, compact betting at 1024×600, and unchanged phone scaling at 390×844. Desktop cards measure 64×88 (players) / 88×128 (dealer) at 2×; 1024×768 action buttons measure 48px tall. Short-window waiting placeholders end above the table log; no document overflow at checked sizes.
 - Weapon delivery checks pass: 114 test files / 757 tests, ESLint, TypeScript and production build. The final browser sequence exercises 1/2, wheel, pistol zoom, sniper scope, real center-ray hit/scoring, cooldown, pause/settings isolation and return to lobby with zero browser errors. `docs/shooting-range-redesign/sniper-scope.png` records the scoped hit.
 - September 20 weapons: browser regression verifies pistol FOV 44, sniper FOV 16, normal FOV 62; 1/2 and wheel switching, right-button hold/release, scoped center-ray hit/score, sniper cooldown, hidden weapon/HUD while scoped, pause cleanup, settings input isolation and return-to-lobby. Pointer-lock platform boundary is simulated for automation; gameplay input/raycast/projection remain real. Added focused input lifecycle and camera projection/restore tests.
 - September 20 follow-ups: 193 shooting-range tests pass; type-check, lint and production build pass. Browser checks at 1280x720, 900x480 and 390x600 verify both settings previews remain visible at the end of the scroll region and reflect slider edits. The old gameplay toolbar is absent; Escape settings/resume/exit works in fallback. History daily/monthly charts format the repeating average 54.727... as 54.7%, including tooltips; average-score labels use one decimal as well.
@@ -723,3 +727,43 @@ Multi-iteration visual pass (cycles 4–8) with Playwright canvas screenshots af
 - The throw button sits over the ball; a dedicated run-up animation or side throw pad could free the view.
 - Physical printer output was verified via print-media emulation, not a real printer.
 - Maze still auto-starts on mount and logs verbose console output from the original store.
+
+## Bowling rear pit (2026-10-03)
+
+- Current prompt: 保龄球应该掉进去的，是不是后面的洞不够大。
+- Confirmed rear wall front at z=-22.9 traps the 1.2-diameter ball against the deck lip at z=-22; the old pit was also a solid visual box, with carpet covering the drop area.
+- Added a four-unit-long, recessed catch pit, moved the rear collider to the back of the pit, aligned its visual walls/floor with colliders, lifted the pinsetter opening and cut the pit out of the carpet. The pin deck now ends at the lane edge.
+- Added actual Cannon simulations for center/edge paths at three speeds and retained rack stability. Live text state now includes ball/pin positions and pit bounds for browser verification.
+- Final bowling suite: 32 passing; bowling ESLint and type-check pass. Visual raycasts cover the open carpet hole and 27 ball cross-section rays through the entry.
+- Browser QA: actual Space-charge center/right-edge throws both cross z=-22 and y=0 into the pit, score 10/1 pins respectively, and return the ball to z=10 for frame 2 / spare throw. Screenshots inspected at `/tmp/bowling-pit-qa`; no page/console errors with the absent local auth API mocked.
+- Standard web-game client also completed and its screenshot/state were inspected at `/tmp/bowling-pit-client`; one unrelated missing-resource 404 was reported. The live browser QA above isolates the backend and has no errors. No deployment was performed.
+- TODOs for this fix: none. Very fast balls may still use the existing 15-second settlement timeout while rolling inside the pit.
+
+## Bowling indoor redesign (2026-10-03)
+
+- Current prompt: 保龄球室内场景完善下，现在室内场景不好看。
+- Visual contract: a five-lane warm maple/walnut bowling lounge with slate acoustic walls, cream/brass signage, layered ceiling fixtures, recognizable lounge/return equipment and an unobstructed central pit. Pins and ball remain the clearest gameplay subjects at player and deck camera distances.
+- Fixed architecture/plank inputs, no post-processing; material grain and roughness share the plank structure. One shadow light plus restrained practical lights, and a 128-pixel room PMREM for material reflections. Target desktop RAF frame budget 16.7ms; record draw calls/triangles and measured frame intervals without inferring GPU timing.
+- Development-only final/normals/wireframe modes with player/deck/room camera bookmarks; scene geometry, materials, maps and environment targets are disposed on unmount.
+- Completed five numbered pinsetter modules, framed club mural, walnut/acoustic wall bays, recessed ceiling fixtures, real sofa/table/return-rack modules, maple aprons and gutters, and forty instanced decorative neighbor pins. All five pit rectangles are cut out of the carpet; active physics geometry remains unchanged.
+- Corrected lane/pin/ball texture color spaces, moved the pin stripes to their necks, and replaced the orange deck/cyan rails with coordinated maple/brass materials. Fascia atlas aspect now preserves the natural digit proportions.
+- Browser verification: desktop center/edge throws and a real held-touch mobile throw all drop to the pit floor, score, and reset correctly. Fixed passive React touch preventDefault warnings with touch-action ownership; final QA has zero page/console errors. Desktop/mobile player/deck/room, normal/wireframe and DPR2 captures were inspected at `/tmp/bowling-interior-final-qa`; typography previews at `/tmp/bowling-interior-delivery-qa`.
+- Standard web-game client final capture/state pass at `/tmp/bowling-delivery-client`, with test-only absent auth API/favicon fixtures. Earlier unmocked local runs exposed the missing backend rather than scene failures.
+- Performance evidence on ANGLE Metal Apple M3 Pro: desktop player 73 draw calls / 32,258 triangles, room 75 draw calls; mobile emulated view 71 draw calls. After warm-up, 90 RAF intervals per view measured median 16.7ms / P95 16.8ms. These are Mac browser frame intervals, not GPU timing or phone hardware results. Environment RT 384x512, one 2048x2048 shadow RT, 15 textures.
+- Final checks: 32 bowling tests, bowling ESLint, full type-check and diff whitespace check pass. No deployment or Git delivery performed; concurrent blackjack/shooting-range changes preserved.
+- TODOs for this request: none. Existing bowling physics/scoring and follow-camera behavior retained.
+
+## Project UI, performance and interaction improvements (2026-10-04)
+
+- Current prompt: 改进项目，UI、性能、交互逻辑等。
+- Preserved pre-existing blackjack/bowling edits. Rebuilt hub with responsive light/dark layout, category and bilingual search, independent favorites, recent route visits, clear desktop-only shooting availability and a native SVG icon. Catalog links disable automatic prefetch. Storage validates IDs, handles corruption and blocked access, and synchronizes tabs.
+- Shared navigation/auth: deduplicated initial session restoration and eliminated route-change restoration; recoverable failures preserve a valid game. Added stale-response guards. Quick menu supports keyboard focus, Escape/outside closing, safe storage and bounded edge placement.
+- Core controls: corrected 2048 touch lifecycle and StrictMode repeated move/history/stat effects; Tetris uses actual drop cadence and current-state soft-drop/lock behavior; Snake uses consistent state/turn queues, tail-cell collision and single statistics updates. Hidden tabs pause arcade games/stop autoplay. Gameplay button focus still permits movement while preserving native activation and dialog input.
+- Puzzles: corrected even-grid solvability for number and picture puzzles, actual blank-piece mapping, one-time initialization and completed timer stopping. AI tic-tac-toe owns its delayed turn and cancels on reset. Maze cancels obsolete auto routes synchronously. Jigsaw checks committed state for single completion; minesweeper resize retains the ongoing board.
+- Initial production build passed after using sandbox-external Turbopack process communication. Initial full suite 881/881 passed with four workers; default concurrent run had one unrelated ShootingSetup timeout which passed in isolation. Final checks and extra puzzle browser verification pending below.
+- Browser QA already passes search/category/empty recovery, persistent favorites, dark mode, 2048 navigation/recent history and no repeated route auth requests, Tetris soft/hard drop, AI turn/reset, mobile overflow and menu bounds. Screenshots inspected in /tmp/game-project-qa; auth is a local fixture, not production SSO evidence.
+- Final verification: 129 test files / 897 tests pass (`npm test -- --maxWorkers=4`), full ESLint, TypeScript, whitespace check and production build pass. Production hub request recording after scrolling all cards reports zero game-route requests, zero prefetches and zero browser errors.
+- Puzzle DOM QA /tmp/game-puzzles-dom-qa/report.json proves numeric/picture 4x4 completion, frozen numeric timer, minesweeper board retention across resize with correct one-flag count, jigsaw completion on the final piece with statistics 1 then 2 across two rounds, and no obsolete maze movement after reset. Screenshots inspected.
+- Arcade browser review /tmp/game-controls-browser-qa/report.json confirms 2048 DOM/state tile conservation, settled text visibility, Snake click-start then keyboard movement and collision result overlay. The standard client captured mid-transition 2048 text; settled screenshot after 600ms displays all values. No product change was needed for that capture timing.
+- Final preview: /tmp/game-project-qa/home-production.png. Test auth/image fixtures do not establish real production SSO or image-provider behavior. No commits, pushes or deployment; pre-existing edits preserved.
+- TODOs for this request: none. Further improvements can target game-specific visual design or real-device profiling as separate follow-up work.

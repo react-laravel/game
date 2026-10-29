@@ -126,7 +126,7 @@ export function PlayerSeat({ seat, isActive, featured }: PlayerSeatProps) {
       <div className="h-4 text-[10px] tabular-nums text-emerald-100/55">{seat.chips}</div>
 
       {waiting ? (
-        <div className="flex h-[4.75rem] flex-col items-center justify-center">
+        <div className="blackjack-seat-waiting flex h-[4.75rem] flex-col items-center justify-center">
           <span className="h-4 text-[10px] text-emerald-100/40">
             {spectating ? '观战' : '…'}
           </span>

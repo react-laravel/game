@@ -43,7 +43,7 @@ export function ActionBar() {
   if (phase === 'setup') return null
 
   const shell =
-    'shrink-0 border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80'
+    'blackjack-desktop-scale shrink-0 border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80'
 
   if (phase === 'betting' && config.role === 'player') {
     if (autoPlay.enabled) {

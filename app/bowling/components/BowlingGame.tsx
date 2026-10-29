@@ -85,24 +85,6 @@ export function BowlingGame() {
     else play('pins')
   }, [showingResult, lastResultKind, play])
 
-  useEffect(() => {
-    const gameWindow = window as Window & { render_game_to_text?: () => string }
-    gameWindow.render_game_to_text = () =>
-      JSON.stringify({
-        coordinateSystem: 'lane origin center; +x right, +y up, -z toward pins',
-        mode: gameFinished ? 'gameOver' : showingResult ? 'result' : ballThrown ? 'rolling' : 'aiming',
-        currentFrame,
-        currentThrow: useBowlingStore.getState().currentThrow,
-        totalScore,
-        pinsStanding: useBowlingStore.getState().pinsStanding,
-        frames,
-        lastResultKind,
-      })
-    return () => {
-      delete gameWindow.render_game_to_text
-    }
-  }, [gameFinished, showingResult, ballThrown, currentFrame, totalScore, frames, lastResultKind])
-
   const scorecard = buildScorecard(frames)
 
   return (

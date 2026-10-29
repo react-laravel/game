@@ -61,18 +61,13 @@ export function GameControls({
       {canThrow && !ballThrown && (
         <button
           type="button"
-          className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-2xl border border-white/15 bg-amber-400 px-8 py-3 text-sm font-black text-zinc-950 shadow-[0_12px_40px_rgba(251,191,36,0.28)] active:scale-[0.98]"
+          className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 touch-none rounded-2xl border border-white/15 bg-amber-400 px-8 py-3 text-sm font-black text-zinc-950 shadow-[0_12px_40px_rgba(251,191,36,0.28)] active:scale-[0.98]"
           onMouseDown={onChargeStart}
           onMouseUp={onChargeEnd}
           onMouseLeave={onChargeEnd}
-          onTouchStart={event => {
-            event.preventDefault()
-            onChargeStart()
-          }}
-          onTouchEnd={event => {
-            event.preventDefault()
-            onChargeEnd()
-          }}
+          onTouchStart={onChargeStart}
+          onTouchEnd={onChargeEnd}
+          onTouchCancel={onChargeEnd}
         >
           {isCharging ? `蓄力 ${chargePower}%` : '按住投球'}
         </button>

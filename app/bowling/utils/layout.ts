@@ -11,6 +11,7 @@ export const LANE_SURFACE_Y = 0
 
 export const LANE_LENGTH = 32
 export const LANE_CENTER_Z = -6
+export const LANE_END_Z = LANE_CENTER_Z - LANE_LENGTH / 2
 
 export const APPROACH_LENGTH = 8
 export const APPROACH_CENTER_Z = 13.8
@@ -23,9 +24,19 @@ export const GUTTER_FLOOR_Y = LANE_SURFACE_Y - GUTTER_DEPTH
 
 export const PIN_DECK_CENTER_Z = -19.6
 export const PIN_DECK_THICKNESS = 0.08
+export const PIN_DECK_LENGTH = (PIN_DECK_CENTER_Z - LANE_END_Z) * 2
 
-export const BACK_WALL_CENTER_Z = -23.2
+/** Open catch pit behind the deck; leave room for the whole ball to clear the lip. */
+export const PIT_BACK_Z = -26
+export const PIT_FLOOR_Y = -2.4
+export const PIT_WIDTH = PHYSICS_CONFIG.LANE_WIDTH + PHYSICS_CONFIG.GUTTER_WIDTH * 2
+export const PIT_LENGTH = LANE_END_Z - PIT_BACK_Z
+export const PIT_CENTER_Z = (LANE_END_Z + PIT_BACK_Z) / 2
+export const PIT_WALL_THICKNESS = 0.3
+export const PIT_OPENING_HEIGHT = 2.2
+
 export const BACK_WALL_THICKNESS = 0.6
+export const BACK_WALL_CENTER_Z = PIT_BACK_Z - BACK_WALL_THICKNESS / 2
 
 export function lanePhysicsBodyY(): number {
   return LANE_SURFACE_Y - LANE_PHYSICS_HALF_HEIGHT

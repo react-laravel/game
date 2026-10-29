@@ -9,6 +9,7 @@ import { useBowlingControls } from '../hooks/useBowlingControls'
 import { useBowlingScene } from '../hooks/useBowlingScene'
 import { useBowlingAnimation } from '../hooks/useBowlingAnimation'
 import { useBowlingGameState } from '../hooks/useBowlingGameState'
+import { LANE_END_Z, LANE_SURFACE_Y, PIT_BACK_Z, PIT_FLOOR_Y, PIT_WIDTH } from '../utils/layout'
 
 export function BowlingCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -29,6 +30,43 @@ export function BowlingCanvas() {
     calculateKnockedDownPins,
     updateAimGuide,
   } = useBowlingScene(canvasRef)
+
+  useEffect(() => {
+    const gameWindow = window as Window & { render_game_to_text?: () => string }
+    const renderGameToText = () => {
+      const state = useBowlingStore.getState()
+      const ball = sceneRef.current?.ball?.body
+      return JSON.stringify({
+        coordinateSystem: 'lane origin center; +x right, +y up, -z toward pins',
+        mode: state.gameFinished
+          ? 'gameOver'
+          : state.showingResult
+            ? 'result'
+            : state.ballThrown
+              ? 'rolling'
+              : 'aiming',
+        currentFrame: state.currentFrame,
+        currentThrow: state.currentThrow,
+        totalScore: state.totalScore,
+        pinsStanding: state.pinsStanding,
+        frames: state.frames,
+        lastResultKind: state.lastResultKind,
+        ball: ball
+          ? {
+              ...ball.position,
+              velocity: { ...ball.velocity },
+              inPit: ball.position.z < LANE_END_Z && ball.position.y < LANE_SURFACE_Y,
+            }
+          : null,
+        pins: sceneRef.current?.pins.map(pin => ({ ...pin.body.position })),
+        pit: { entranceZ: LANE_END_Z, backZ: PIT_BACK_Z, floorY: PIT_FLOOR_Y, width: PIT_WIDTH },
+      })
+    }
+    gameWindow.render_game_to_text = renderGameToText
+    return () => {
+      if (gameWindow.render_game_to_text === renderGameToText) delete gameWindow.render_game_to_text
+    }
+  }, [sceneRef])
 
   const {
     isCharging,
@@ -141,17 +179,10 @@ export function BowlingCanvas() {
         onMouseUp={endCharging}
         onMouseLeave={endCharging}
         onTouchStart={e => {
-          e.preventDefault()
           startCharging(e, canvasRef.current || undefined)
         }}
-        onTouchEnd={e => {
-          e.preventDefault()
-          endCharging()
-        }}
-        onTouchCancel={e => {
-          e.preventDefault()
-          endCharging()
-        }}
+        onTouchEnd={endCharging}
+        onTouchCancel={endCharging}
       />
 
       <GameControls

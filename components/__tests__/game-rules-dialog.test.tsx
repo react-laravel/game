@@ -14,4 +14,16 @@ describe('GameRulesDialog', () => {
     expect(scroller).toHaveClass('overflow-y-auto')
     expect(screen.getByText('规则条目 18')).toBeInTheDocument()
   })
+
+  it('使用规则弹窗的键盘不会触发游戏快捷键', () => {
+    const gameKey = vi.fn()
+    window.addEventListener('keydown', gameKey)
+    render(<GameRulesDialog title="规则" rules={['使用方向键移动']} />)
+    fireEvent.click(screen.getByRole('button', { name: '游戏规则' }))
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'ArrowDown' })
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(gameKey).not.toHaveBeenCalled()
+    window.removeEventListener('keydown', gameKey)
+  })
 })

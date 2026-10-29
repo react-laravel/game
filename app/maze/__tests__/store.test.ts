@@ -184,8 +184,8 @@ describe('maze game store', () => {
       // Setup a maze with open path
       const cell: MazeCell = { top: true, right: false, bottom: true, left: true, visited: true }
       useMazeStore.setState({
-        maze: [[cell]],
-        mazeSize: 1,
+        maze: [[cell, { ...cell, left: false, right: true }]],
+        mazeSize: 2,
         gameStarted: true,
       })
 
@@ -194,6 +194,16 @@ describe('maze game store', () => {
         store.moveBall('right')
       })
       expect(useMazeStore.getState().moves).toBe(1)
+    })
+
+    it('does not leave the grid even if a boundary wall is open', () => {
+      useMazeStore.setState({
+        maze: [[{ top: true, right: false, bottom: true, left: true }]],
+        gameStarted: true,
+      })
+      useMazeStore.getState().moveBall('right')
+      expect(useMazeStore.getState().ball).toEqual({ x: 0, y: 0, z: 0 })
+      expect(useMazeStore.getState().moves).toBe(0)
     })
   })
 

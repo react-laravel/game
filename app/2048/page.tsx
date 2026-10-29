@@ -30,6 +30,14 @@ import {
   moveUp,
 } from './utils/gameEngine'
 
+interface GameSnapshot {
+  board: Board
+  score: number
+  gameOver: boolean
+  gameWon: boolean
+  history: { board: Board; score: number }[]
+}
+
 const RANDOM_DIRECTION_DISPLAY_TIME = 500
 const DIRECTIONS: Direction[] = ['up', 'right', 'down', 'left']
 const MOVE_HANDLERS = {
@@ -44,11 +52,19 @@ const getRandomDirection = (): Direction =>
 
 export default function Game2048() {
   const { bestScore, setBestScore, incrementGamesPlayed, incrementGamesWon } = useGame2048Store()
-  const [board, setBoard] = useState<Board>(initializeBoard)
-  const [score, setScore] = useState(0)
-  const [gameOver, setGameOver] = useState(false)
-  const [gameWon, setGameWon] = useState(false)
-  const [history, setHistory] = useState<{ board: Board; score: number }[]>([])
+  const [gameState, setGameState] = useState<GameSnapshot>(() => ({
+    board: initializeBoard(),
+    score: 0,
+    gameOver: false,
+    gameWon: false,
+    history: [],
+  }))
+  const { board, score, gameOver, gameWon, history } = gameState
+  const gameStateRef = useRef(gameState)
+  const updateGameState = useCallback((nextState: GameSnapshot) => {
+    gameStateRef.current = nextState
+    setGameState(nextState)
+  }, [])
   const [showRandomDirection, setShowRandomDirection] = useState<Direction | null>(null)
   const [isMobile] = useState(() => isMobileDevice())
   const randomDirectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,42 +72,35 @@ export default function Game2048() {
 
   const handleMove = useCallback(
     (direction: Direction) => {
-      if (gameOver) return
+      const current = gameStateRef.current
+      if (current.gameOver) return
 
-      setBoard(currentBoard => {
-        const result = MOVE_HANDLERS[direction](currentBoard)
-        if (!result.moved) return currentBoard
+      const result = MOVE_HANDLERS[direction](current.board)
+      if (!result.moved) return
 
-        void playSound()
-        const nextBoard = result.newBoard.map(row => [...row])
-        addRandomTile(nextBoard)
-
-        if (!gameWon && nextBoard.some(row => row.includes(2048))) {
-          setGameWon(true)
-          incrementGamesWon()
-        }
-
-        setScore(currentScore => {
-          setHistory(currentHistory => [
-            ...currentHistory.slice(-4),
-            {
-              board: currentBoard.map(row => [...row]),
-              score: currentScore,
-            },
-          ])
-          return currentScore + result.scoreGained
-        })
-
-        if (isGameOver(nextBoard)) {
-          setGameOver(true)
-          incrementGamesPlayed()
-          toast.error('游戏结束！')
-        }
-
-        return nextBoard
+      // Randomness, audio and statistics belong to the action, not a replayable updater.
+      const nextBoard = result.newBoard.map(row => [...row])
+      addRandomTile(nextBoard)
+      const nextWon = current.gameWon || nextBoard.some(row => row.includes(2048))
+      const nextGameOver = isGameOver(nextBoard)
+      updateGameState({
+        board: nextBoard,
+        score: current.score + result.scoreGained,
+        gameWon: nextWon,
+        gameOver: nextGameOver,
+        history: [
+          ...current.history.slice(-4),
+          { board: current.board.map(row => [...row]), score: current.score },
+        ],
       })
+      void playSound()
+      if (!current.gameWon && nextWon) incrementGamesWon()
+      if (nextGameOver) {
+        incrementGamesPlayed()
+        toast.error('游戏结束！')
+      }
     },
-    [gameOver, gameWon, incrementGamesPlayed, incrementGamesWon, playSound]
+    [incrementGamesPlayed, incrementGamesWon, playSound, updateGameState]
   )
 
   const {
@@ -142,25 +151,35 @@ export default function Game2048() {
 
   const resetGame = useCallback(() => {
     resetAutoPlay()
-    setBoard(initializeBoard())
-    setScore(0)
-    setGameOver(false)
-    setGameWon(false)
-    setHistory([])
+    updateGameState({
+      board: initializeBoard(),
+      score: 0,
+      gameOver: false,
+      gameWon: false,
+      history: [],
+    })
+    if (randomDirectionTimeoutRef.current !== null) {
+      clearTimeout(randomDirectionTimeoutRef.current)
+      randomDirectionTimeoutRef.current = null
+    }
     setShowRandomDirection(null)
-  }, [resetAutoPlay])
+  }, [resetAutoPlay, updateGameState])
 
   const undoMove = useCallback(() => {
-    const previous = history[history.length - 1]
+    const current = gameStateRef.current
+    const previous = current.history.at(-1)
     if (!previous) return
 
     stopAutoPlay()
-    setBoard(previous.board)
-    setScore(previous.score)
-    setHistory(currentHistory => currentHistory.slice(0, -1))
-    setGameOver(false)
+    updateGameState({
+      ...current,
+      board: previous.board,
+      score: previous.score,
+      history: current.history.slice(0, -1),
+      gameOver: false,
+    })
     void playSound()
-  }, [history, playSound, stopAutoPlay])
+  }, [playSound, stopAutoPlay, updateGameState])
 
   useEffect(() => {
     if (score > 0) setBestScore(score)

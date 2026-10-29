@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import type { Direction } from '../utils/gameEngine'
 
 const DIRECTIONS: Direction[] = ['up', 'right', 'down', 'left']
+
+function subscribeToVisibility(listener: () => void) {
+  document.addEventListener('visibilitychange', listener)
+  return () => document.removeEventListener('visibilitychange', listener)
+}
+
+function isPageVisible() {
+  return !document.hidden
+}
 
 type AutoPlayMode = 'idle' | 'random' | 'clockwise' | 'counter-clockwise'
 
@@ -36,13 +45,15 @@ export function useAutoPlay({
   const [currentDirection, setCurrentDirection] = useState<Direction>('down')
   const [speed, setSpeed] = useState(initialSpeed)
   const onMoveRef = useRef(onMove)
+  const directionRef = useRef<Direction>('down')
+  const pageVisible = useSyncExternalStore(subscribeToVisibility, isPageVisible, () => true)
 
   useEffect(() => {
     onMoveRef.current = onMove
   }, [onMove])
 
   useEffect(() => {
-    if (!enabled || mode === 'idle') return
+    if (!enabled || !pageVisible || mode === 'idle') return
 
     const interval = setInterval(() => {
       if (mode === 'random') {
@@ -51,15 +62,14 @@ export function useAutoPlay({
       }
 
       const clockwise = mode === 'clockwise'
-      setCurrentDirection(current => {
-        const nextDirection = getNextDirection(current, clockwise)
-        onMoveRef.current(nextDirection)
-        return nextDirection
-      })
+      const nextDirection = getNextDirection(directionRef.current, clockwise)
+      directionRef.current = nextDirection
+      setCurrentDirection(nextDirection)
+      onMoveRef.current(nextDirection)
     }, speed)
 
     return () => clearInterval(interval)
-  }, [enabled, mode, speed])
+  }, [enabled, mode, speed, pageVisible])
 
   const stop = useCallback(() => {
     setMode('idle')
@@ -122,10 +132,11 @@ export function useAutoPlay({
     setMode('idle')
     setIsClockwise(true)
     setCurrentDirection('down')
+    directionRef.current = 'down'
     setSpeed(initialSpeed)
   }, [initialSpeed])
 
-  const isRunning = enabled && mode !== 'idle'
+  const isRunning = enabled && pageVisible && mode !== 'idle'
   const isDirectional = enabled && (mode === 'clockwise' || mode === 'counter-clockwise')
 
   return {

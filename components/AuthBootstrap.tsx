@@ -6,14 +6,16 @@ import useAuthStore from '@/stores/authStore'
 
 export function AuthBootstrap() {
   const restoreSession = useAuthStore(state => state.restoreSession)
+  const hasRestoredSession = useAuthStore(state => state.hasRestoredSession)
   const pathname = usePathname()
 
   useEffect(() => {
     // The callback exchanges a one-time ticket and must be the only request
     // mutating the fresh game session during this route.
-    if (pathname.startsWith('/auth/callback')) return
-    void restoreSession()
-  }, [pathname, restoreSession])
+    if (pathname.startsWith('/auth/callback') || hasRestoredSession) return
+    // The store exposes a recoverable error through GameAuthGate.
+    void restoreSession().catch(() => {})
+  }, [hasRestoredSession, pathname, restoreSession])
 
   return null
 }

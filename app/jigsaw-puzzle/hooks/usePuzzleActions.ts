@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { PuzzlePiece, PuzzleSlot } from '../utils/puzzleUtils'
 import { isPieceCorrectlyPlaced, isGameComplete } from '../utils/puzzleUtils'
 
@@ -25,6 +25,20 @@ export const usePuzzleActions = ({
   setLastWronglyPlacedPiece,
   onComplete,
 }: UsePuzzleActionsProps) => {
+  const completionReported = useRef(false)
+
+  // Check the committed state, including moves performed by the interaction hook.
+  useEffect(() => {
+    const complete = pieces.length > 0 && pieces.length === slots.length && isGameComplete(pieces, slots)
+    if (!complete) {
+      completionReported.current = false
+      return
+    }
+    if (completionReported.current) return
+    completionReported.current = true
+    onComplete()
+  }, [pieces, slots, onComplete])
+
   // 统一的拼图块放置逻辑
   const placePieceInSlot = useCallback(
     (pieceId: number, slotId: number) => {
@@ -51,12 +65,6 @@ export const usePuzzleActions = ({
         }
         return newSet
       })
-
-      setTimeout(() => {
-        if (isGameComplete(pieces, slots)) {
-          onComplete()
-        }
-      }, 100)
     },
     [
       pieces,
@@ -66,7 +74,6 @@ export const usePuzzleActions = ({
       setSlots,
       setWronglyPlacedPieces,
       setLastWronglyPlacedPiece,
-      onComplete,
     ]
   )
 
@@ -122,12 +129,6 @@ export const usePuzzleActions = ({
 
         setLastWronglyPlacedPiece(newLastWronglyPlacedPiece)
       }
-
-      setTimeout(() => {
-        if (isGameComplete(pieces, slots)) {
-          onComplete()
-        }
-      }, 100)
     },
     [
       pieces,
@@ -136,7 +137,6 @@ export const usePuzzleActions = ({
       setSlots,
       setWronglyPlacedPieces,
       setLastWronglyPlacedPiece,
-      onComplete,
     ]
   )
 

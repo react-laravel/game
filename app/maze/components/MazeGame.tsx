@@ -16,7 +16,6 @@ export default function MazeGame() {
     moveToPosition,
     gameStarted,
     gameCompleted,
-    isAutoMoving,
     maze,
     mazeSize,
     mazeShape,
@@ -40,6 +39,8 @@ export default function MazeGame() {
       startGame()
     }
   }, [gameStarted, startGame])
+
+  useEffect(() => () => useMazeStore.getState().interruptAutoMove(), [])
 
   // 将屏幕坐标转换为迷宫网格坐标
   const screenToMazeCoordinates = useCallback(
@@ -168,59 +169,31 @@ export default function MazeGame() {
   // 键盘控制
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!gameStarted || gameCompleted) return
+      if (
+        event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey ||
+        (event.target instanceof Element && event.target.closest(
+          'input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="alertdialog"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"]'
+        ))
+      ) return
 
-      // 如果正在自动移动，先中断
-      if (isAutoMoving) {
-        const { interruptAutoMove } = useMazeStore.getState()
-        interruptAutoMove()
-        // 短暂延迟后再执行键盘移动
-        setTimeout(() => {
-          const { moveBall } = useMazeStore.getState()
-          executeKeyboardMove(event, moveBall)
-        }, 100)
-        return
+      const directions: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+        ArrowUp: 'up', w: 'up', W: 'up',
+        ArrowDown: 'down', s: 'down', S: 'down',
+        ArrowLeft: 'left', a: 'left', A: 'left',
+        ArrowRight: 'right', d: 'right', D: 'right',
       }
+      const direction = directions[event.key]
+      const state = useMazeStore.getState()
+      if (!direction || !state.gameStarted || state.gameCompleted) return
 
-      const { moveBall } = useMazeStore.getState()
-      executeKeyboardMove(event, moveBall)
-    }
-
-    const executeKeyboardMove = (
-      event: KeyboardEvent,
-      moveBall: (direction: 'up' | 'down' | 'left' | 'right') => void
-    ) => {
-      switch (event.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          event.preventDefault()
-          moveBall('up')
-          break
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          event.preventDefault()
-          moveBall('down')
-          break
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          event.preventDefault()
-          moveBall('left')
-          break
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          event.preventDefault()
-          moveBall('right')
-          break
-      }
+      event.preventDefault()
+      if (state.isAutoMoving) state.interruptAutoMove()
+      state.moveBall(direction)
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [gameStarted, gameCompleted, isAutoMoving])
+  }, [])
 
   const handlePrint = () => {
     if (maze.length === 0) {

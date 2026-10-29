@@ -79,7 +79,9 @@ export function useBowlingAnimation({
         )
 
         // 更新相机
-        updateCamera(sceneRef.current.camera, sceneRef.current.ball.body.position)
+        if (!sceneRef.current.debugView) {
+          updateCamera(sceneRef.current.camera, sceneRef.current.ball.body.position)
+        }
       }
 
       // 同步球瓶位置

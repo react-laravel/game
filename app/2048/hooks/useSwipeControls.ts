@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 import type { Direction } from '../utils/gameEngine'
 
 export interface UseSwipeControlsOptions {
@@ -12,21 +12,7 @@ export interface UseSwipeControlsOptions {
 const DEFAULT_MIN_DISTANCE = 30
 const DEFAULT_THROTTLE_MS = 200
 
-/**
- * Hook for touch swipe controls in 2048
- * Detects swipe gestures and calls onMove with direction
- *
- * Usage:
- * ```tsx
- * useSwipeControls({
- *   onMove: handleMove,
- *   enabled: !gameOver && !isGyroEnabled,
- *   minDistance: 30,
- *   throttleMs: 200,
- *   targetSelector: '[data-game-board]', // Only swipe on game board
- * })
- * ```
- */
+/** Track a single touch on the board; ignore page scrolls and cancelled gestures. */
 export function useSwipeControls({
   onMove,
   enabled = true,
@@ -34,79 +20,58 @@ export function useSwipeControls({
   throttleMs = DEFAULT_THROTTLE_MS,
   targetSelector = '[data-game-board]',
 }: UseSwipeControlsOptions) {
-  const stateRef = useRef({
-    startX: 0,
-    startY: 0,
-    lastMoveTime: 0,
-    touching: false,
-  })
+  const move = useEffectEvent(onMove)
 
   useEffect(() => {
     if (!enabled) return
 
-    const state = stateRef.current
-
-    const onStart = (e: TouchEvent) => {
-      // Only track swipes on the game board
-      const target = e.target as HTMLElement
-      state.touching = !!target.closest(targetSelector)
-
-      if (state.touching) {
-        state.startX = e.touches[0].clientX
-        state.startY = e.touches[0].clientY
-      }
+    let touch: { id: number; x: number; y: number } | null = null
+    let lastMoveTime: number | null = null
+    const reset = () => {
+      touch = null
+      lastMoveTime = null
     }
+    const onStart = (e: TouchEvent) => {
+      reset()
+      if (e.touches.length !== 1 || !(e.target instanceof Element) || !e.target.closest(targetSelector)) return
 
+      const started = e.touches[0]
+      touch = { id: started.identifier, x: started.clientX, y: started.clientY }
+    }
     const onTouchMove = (e: TouchEvent) => {
-      if (!state.touching || !state.startX || !state.startY) return
+      if (!touch) return
+      if (e.touches.length !== 1 || e.touches[0].identifier !== touch.id) {
+        reset()
+        return
+      }
+      if (e.cancelable) e.preventDefault()
 
       const now = Date.now()
-      // Throttle moves
-      if (now - state.lastMoveTime < throttleMs) return
+      if (lastMoveTime !== null && now - lastMoveTime < throttleMs) return
 
-      const currentX = e.touches[0].clientX
-      const currentY = e.touches[0].clientY
+      const current = e.touches[0]
+      const diffX = touch.x - current.clientX
+      const diffY = touch.y - current.clientY
+      if (Math.max(Math.abs(diffX), Math.abs(diffY)) <= minDistance) return
 
-      const diffX = state.startX - currentX
-      const diffY = state.startY - currentY
-
-      // Determine swipe direction (horizontal vs vertical)
-      if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Horizontal swipe
-        if (Math.abs(diffX) > minDistance) {
-          const direction: Direction = diffX > 0 ? 'left' : 'right'
-          onMove(direction)
-          // Update start position for next move
-          state.startX = currentX
-          state.startY = currentY
-          state.lastMoveTime = now
-        }
-      } else if (Math.abs(diffY) > minDistance) {
-        // Vertical swipe
-        const direction: Direction = diffY > 0 ? 'up' : 'down'
-        onMove(direction)
-        // Update start position for next move
-        state.startX = currentX
-        state.startY = currentY
-        state.lastMoveTime = now
-      }
+      const direction: Direction = Math.abs(diffX) > Math.abs(diffY)
+        ? diffX > 0 ? 'left' : 'right'
+        : diffY > 0 ? 'up' : 'down'
+      touch = { id: touch.id, x: current.clientX, y: current.clientY }
+      lastMoveTime = now
+      move(direction)
     }
 
-    const onEnd = () => {
-      state.startX = 0
-      state.startY = 0
-      state.lastMoveTime = 0
-      state.touching = false
-    }
-
-    document.addEventListener('touchstart', onStart)
-    document.addEventListener('touchmove', onTouchMove)
-    document.addEventListener('touchend', onEnd)
-
+    document.addEventListener('touchstart', onStart, { passive: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: false })
+    document.addEventListener('touchend', reset)
+    document.addEventListener('touchcancel', reset)
     return () => {
       document.removeEventListener('touchstart', onStart)
       document.removeEventListener('touchmove', onTouchMove)
-      document.removeEventListener('touchend', onEnd)
+      document.removeEventListener('touchend', reset)
+      document.removeEventListener('touchcancel', reset)
+      reset()
     }
-  }, [onMove, enabled, minDistance, throttleMs, targetSelector])
+  }, [enabled, minDistance, throttleMs, targetSelector])
 }

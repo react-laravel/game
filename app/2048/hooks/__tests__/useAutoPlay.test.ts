@@ -1,3 +1,4 @@
+import { createElement, StrictMode } from 'react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAutoPlay } from '../useAutoPlay'
@@ -17,6 +18,7 @@ describe('useAutoPlay', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   it('should initialize with default state', () => {
@@ -269,4 +271,35 @@ describe('useAutoPlay', () => {
 
     expect(result.current.isRunning).toBe(false)
   })
+  it('moves once per directional tick under StrictMode', () => {
+    vi.useFakeTimers()
+    const onMove = vi.fn()
+    const { result } = renderHook(() => useAutoPlay({ onMove }), {
+      wrapper: ({ children }) => createElement(StrictMode, null, children),
+    })
+    act(() => result.current.startDirectional(true))
+    act(() => vi.advanceTimersByTime(1500))
+    expect(onMove.mock.calls).toEqual([['left'], ['up'], ['right']])
+    expect(result.current.currentDirection).toBe('right')
+  })
+
+  it('suspends background autoplay and restarts its cadence when visible', () => {
+    vi.useFakeTimers()
+    const onMove = vi.fn()
+    const { result } = renderHook(() => useAutoPlay({ onMove }))
+    act(() => result.current.startRandom())
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(result.current.isRunning).toBe(false)
+    act(() => vi.advanceTimersByTime(5000))
+    expect(onMove).not.toHaveBeenCalled()
+    hidden.mockReturnValue(false)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(result.current.isRunning).toBe(true)
+    act(() => vi.advanceTimersByTime(499))
+    expect(onMove).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1))
+    expect(onMove).toHaveBeenCalledOnce()
+  })
+
 })

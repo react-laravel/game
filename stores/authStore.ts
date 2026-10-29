@@ -13,10 +13,21 @@ interface AuthState {
   user: GameUser | null
   isAuthenticated: boolean
   loading: boolean
+  hasRestoredSession: boolean
+  sessionError: string | null
   restoreSession: () => Promise<GameUser | null>
   exchangeTicket: (ticket: string) => Promise<GameUser>
   logout: () => Promise<void>
   beginLogin: () => void
+}
+
+let sessionRevision = 0
+let pendingRestoration: Promise<GameUser | null> | null = null
+
+function invalidateRestoration() {
+  sessionRevision += 1
+  pendingRestoration = null
+  return sessionRevision
 }
 
 function centralLoginUrl(): string {
@@ -28,31 +39,53 @@ function centralLoginUrl(): string {
   return `${accountUrl}/auth/sso/game?return_to=${encodeURIComponent(returnTo)}`
 }
 
-const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>(set => ({
   user: null,
   isAuthenticated: false,
   loading: true,
+  hasRestoredSession: false,
+  sessionError: null,
 
-  restoreSession: async () => {
-    set({ loading: true })
-    try {
-      const user = await apiRequest<GameUser>('/user', 'GET', undefined, {
-        suppressUnauthorizedRedirect: true,
-      })
-      set({ user, isAuthenticated: true, loading: false })
-      return user
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        set({ user: null, isAuthenticated: false, loading: false })
-        return null
+  restoreSession: () => {
+    // Strict Mode and multiple consumers share the same session lookup.
+    if (pendingRestoration) return pendingRestoration
+    const revision = ++sessionRevision
+    set({ loading: true, sessionError: null })
+    const request = (async () => {
+      try {
+        const user = await apiRequest<GameUser>('/user', 'GET', undefined, {
+          suppressUnauthorizedRedirect: true,
+        })
+        if (revision === sessionRevision) {
+          set({ user, isAuthenticated: true, loading: false, hasRestoredSession: true })
+        }
+        return user
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          if (revision === sessionRevision) {
+            set({ user: null, isAuthenticated: false, loading: false, hasRestoredSession: true })
+          }
+          return null
+        }
+        if (revision === sessionRevision) {
+          set({
+            loading: false,
+            hasRestoredSession: true,
+            sessionError: '暂时无法连接游戏服务，请检查网络后重试。',
+          })
+        }
+        throw error
+      } finally {
+        if (revision === sessionRevision) pendingRestoration = null
       }
-      set({ loading: false })
-      throw error
-    }
+    })()
+    pendingRestoration = request
+    return request
   },
 
   exchangeTicket: async ticket => {
-    set({ loading: true })
+    const revision = invalidateRestoration()
+    set({ loading: true, sessionError: null })
     try {
       const user = await apiRequest<GameUser>(
         '/auth/exchange',
@@ -60,21 +93,31 @@ const useAuthStore = create<AuthState>((set, get) => ({
         { ticket },
         { suppressUnauthorizedRedirect: true }
       )
-      set({ user, isAuthenticated: true, loading: false })
+      if (revision === sessionRevision) {
+        set({ user, isAuthenticated: true, loading: false, hasRestoredSession: true })
+      }
       return user
     } catch (error) {
-      set({ user: null, isAuthenticated: false, loading: false })
+      if (revision === sessionRevision) {
+        set({ user: null, isAuthenticated: false, loading: false, hasRestoredSession: true })
+      }
       throw error
     }
   },
 
   logout: async () => {
+    const revision = invalidateRestoration()
     try {
       await apiRequest('/auth/logout', 'POST', undefined, {
         suppressUnauthorizedRedirect: true,
       })
     } finally {
-      set({ user: null, isAuthenticated: false, loading: false })
+      if (revision === sessionRevision) {
+        set({
+          user: null, isAuthenticated: false, loading: false,
+          hasRestoredSession: true, sessionError: null,
+        })
+      }
     }
   },
 
@@ -86,9 +129,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
 if (typeof window !== 'undefined') {
   window.addEventListener('game:unauthorized', () => {
     const state = getSafeState()
-    if (state.isAuthenticated) {
-      useAuthStore.setState({ user: null, isAuthenticated: false, loading: false })
-    }
+    invalidateRestoration()
+    useAuthStore.setState({
+      user: null, isAuthenticated: false, loading: false,
+      hasRestoredSession: true, sessionError: null,
+    })
     state.beginLogin()
   })
 }

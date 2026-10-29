@@ -1,20 +1,23 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { createBoard, isSolved, isValidMove } from '../utils/board'
 
 // 内联组件 - 计时器
-function Timer({ startTime }: { startTime: Date }) {
+function Timer({ startTime, completedAt }: { startTime: Date; completedAt: Date | null }) {
   const [time, setTime] = useState(0)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date()
-      const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000)
-      setTime(elapsed)
-    }, 1000)
+    const updateTime = () => {
+      const now = completedAt ?? new Date()
+      setTime(Math.floor((now.getTime() - startTime.getTime()) / 1000))
+    }
+    updateTime()
+    if (completedAt) return
+    const interval = setInterval(updateTime, 1000)
 
     return () => clearInterval(interval)
-  }, [startTime])
+  }, [startTime, completedAt])
 
   const minutes = Math.floor(time / 60)
   const seconds = time % 60
@@ -48,88 +51,12 @@ interface PuzzleProps {
 export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
   const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 检查拼图是否有解
-  const checkSolvable = useCallback((board: number[], boardSize: number) => {
-    // 找到空格位置
-    const emptyIndex = board.indexOf(0)
-    const emptyRow = Math.floor(emptyIndex / boardSize)
-
-    // 计算逆序数
-    let inversions = 0
-    for (let i = 0; i < board.length; i++) {
-      if (board[i] === 0) continue
-
-      for (let j = i + 1; j < board.length; j++) {
-        if (board[j] === 0) continue
-        if (board[i] > board[j]) inversions++
-      }
-    }
-
-    // 根据棋盘大小和空格位置判断是否有解
-    if (boardSize % 2 === 1) {
-      // 奇数大小棋盘：逆序数为偶数才有解
-      return inversions % 2 === 0
-    } else {
-      // 偶数大小棋盘：空格所在行（从下往上数）加逆序数为奇数才有解
-      const emptyRowFromBottom = boardSize - 1 - emptyRow
-      return (inversions + emptyRowFromBottom) % 2 === 1
-    }
-  }, [])
-
-  // 随机打乱棋盘并确保有解
-  const shuffleBoard = useCallback(
-    (board: number[], boardSize: number) => {
-      const shuffled = [...board]
-      let solved = false
-
-      // 尝试最多10次生成有解的棋盘
-      for (let attempt = 0; attempt < 10 && !solved; attempt++) {
-        // 洗牌算法
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-        }
-
-        // 确保不是已经完成的状态
-        const isSolvable = checkSolvable(shuffled, boardSize)
-        const isAlreadySolved = shuffled.every(
-          (num, index) => num === index || (index === shuffled.length - 1 && num === 0)
-        )
-
-        solved = isSolvable && !isAlreadySolved
-      }
-
-      return shuffled
-    },
-    [checkSolvable]
-  )
-
-  // 生成初始棋盘
-  const createBoard = useCallback(
-    (boardSize: number) => {
-      const numbers = Array.from({ length: boardSize * boardSize }, (_, i) => i)
-      return shuffleBoard(numbers, boardSize)
-    },
-    [shuffleBoard]
-  )
-
   // 游戏状态
-  const [board, setBoard] = useState(createBoard(size))
+  const [board, setBoard] = useState(() => createBoard(size))
   const [moves, setMoves] = useState(0)
-  const [startTime, setStartTime] = useState(new Date())
+  const [startTime] = useState(() => new Date())
   const [isComplete, setIsComplete] = useState(false)
-
-  // 重置游戏
-  const resetGame = useCallback(() => {
-    if (completeTimerRef.current) {
-      clearTimeout(completeTimerRef.current)
-      completeTimerRef.current = null
-    }
-    setBoard(createBoard(size))
-    setMoves(0)
-    setStartTime(new Date())
-    setIsComplete(false)
-  }, [size, createBoard])
+  const [completedAt, setCompletedAt] = useState<Date | null>(null)
 
   // 移动方块
   const moveTile = useCallback(
@@ -138,15 +65,7 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
 
       const emptyIndex = board.indexOf(0)
 
-      // 检查是否可移动（与空白方块相邻）
-      const isValidMove =
-        // 同一行相邻
-        (Math.floor(index / size) === Math.floor(emptyIndex / size) &&
-          Math.abs(index - emptyIndex) === 1) ||
-        // 同一列相邻
-        (index % size === emptyIndex % size && Math.abs(index - emptyIndex) === size)
-
-      if (!isValidMove) return
+      if (!isValidMove(index, board, size)) return
 
       // 移动方块
       const newBoard = [...board]
@@ -156,13 +75,11 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
       setMoves(prev => prev + 1)
 
       // 检查是否完成
-      const completed = newBoard.every(
-        (value, index) =>
-          (index === newBoard.length - 1 && value === 0) || value === index + 1 || value === index
-      )
+      const completed = isSolved(newBoard)
 
       if (completed) {
         setIsComplete(true)
+        setCompletedAt(new Date())
         if (completeTimerRef.current) {
           clearTimeout(completeTimerRef.current)
         }
@@ -186,7 +103,16 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
   // 处理键盘控制
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isComplete) return
+      const target = e.target instanceof Element ? e.target : null
+      if (
+        isComplete || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey ||
+        (target?.closest(
+          'input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="alertdialog"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"]'
+        ) && !target.closest('[data-puzzle-tile]'))
+      ) return
+
+      if (!e.key.startsWith('Arrow')) return
+      e.preventDefault()
 
       const emptyIndex = board.indexOf(0)
 
@@ -227,7 +153,7 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
     <div className="w-full p-4">
       <div className="mb-4 flex items-center justify-between">
         <MoveCounter moves={moves} />
-        <Timer startTime={startTime} />
+        <Timer startTime={startTime} completedAt={completedAt} />
       </div>
 
       <div
@@ -238,13 +164,17 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
         }}
       >
         {board.map((value, index) => (
-          <div
+          <button
+            type="button"
+            data-puzzle-tile
             key={index}
             onClick={() => moveTile(index)}
+            aria-label={value === 0 ? '空位' : `移动方块 ${value}`}
+            disabled={isComplete || value === 0 || !isValidMove(index, board, size)}
             className={`flex items-center justify-center rounded-md transition-all select-none ${
               value === 0
                 ? 'border-muted border border-dashed bg-transparent'
-                : 'bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer shadow active:scale-95'
+                : 'bg-primary text-primary-foreground enabled:hover:bg-primary/80 enabled:cursor-pointer shadow enabled:active:scale-95 disabled:cursor-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
             } ${isComplete ? 'border-green-400' : ''} `}
             style={{
               aspectRatio: '1/1',
@@ -255,7 +185,7 @@ export default function SlidingPuzzle({ size, onComplete }: PuzzleProps) {
             }}
           >
             {value !== 0 && value}
-          </div>
+          </button>
         ))}
       </div>
     </div>

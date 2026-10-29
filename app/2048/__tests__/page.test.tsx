@@ -1,7 +1,21 @@
+import userEvent from '@testing-library/user-event'
+import { StrictMode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import Game2048 from '../page'
 import { useGame2048Store } from '../store'
+import { addRandomTile, initializeBoard, isGameOver, moveLeft, moveRight, moveUp, moveDown, type Board } from '../utils/gameEngine'
+import { toast } from 'sonner'
+
+const gameActions = vi.hoisted(() => ({
+  setBestScore: vi.fn(),
+  incrementGamesPlayed: vi.fn(),
+  incrementGamesWon: vi.fn(),
+  playSound: vi.fn(),
+}))
+vi.mock('../hooks/useGameSound', () => ({
+  useGameSound: () => ({ playSound: gameActions.playSound }),
+}))
 
 // Mock dependencies
 vi.mock('@/components/ui/button', () => ({
@@ -42,7 +56,12 @@ vi.mock('../components/GameBoard', () => ({
 }))
 
 vi.mock('../components/DirectionControls', () => ({
-  DirectionControls: vi.fn(() => <div data-testid="direction-controls">DirectionControls</div>),
+  DirectionControls: vi.fn(({ onMove }) => (
+    <div data-testid="direction-controls">
+      DirectionControls
+      <button onClick={() => onMove('left')}>向左移动</button>
+    </div>
+  )),
 }))
 
 vi.mock('../utils/gameEngine', () => ({
@@ -63,9 +82,9 @@ vi.mock('../utils/gameEngine', () => ({
 vi.mock('../store', () => ({
   useGame2048Store: vi.fn(() => ({
     bestScore: 0,
-    setBestScore: vi.fn(),
-    incrementGamesPlayed: vi.fn(),
-    incrementGamesWon: vi.fn(),
+    setBestScore: gameActions.setBestScore,
+    incrementGamesPlayed: gameActions.incrementGamesPlayed,
+    incrementGamesWon: gameActions.incrementGamesWon,
   })),
 }))
 
@@ -86,6 +105,18 @@ const mockMatchMedia = vi.fn(
 describe('Game2048', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useGame2048Store).mockReset().mockReturnValue({
+      bestScore: 0,
+      setBestScore: gameActions.setBestScore,
+      incrementGamesPlayed: gameActions.incrementGamesPlayed,
+      incrementGamesWon: gameActions.incrementGamesWon,
+    })
+    vi.mocked(initializeBoard).mockReset().mockImplementation(() => Array.from({ length: 4 }, () => [0, 0, 0, 0]))
+    vi.mocked(addRandomTile).mockReset()
+    vi.mocked(isGameOver).mockReset().mockReturnValue(false)
+    for (const move of [moveLeft, moveRight, moveUp, moveDown]) {
+      vi.mocked(move).mockReset().mockReturnValue({ moved: false, newBoard: [], scoreGained: 0 })
+    }
     vi.spyOn(window, 'matchMedia').mockImplementation(mockMatchMedia)
   })
 
@@ -235,4 +266,96 @@ describe('Game2048', () => {
       expect(screen.getByTestId('game-rules-dialog')).toBeInTheDocument()
     })
   })
+  describe('StrictMode move transactions', () => {
+    function readGame() {
+      const gameWindow = window as Window & { render_game_to_text: () => string }
+      return JSON.parse(gameWindow.render_game_to_text()) as { board: Board; score: number; mode: string }
+    }
+    function press(key: string) {
+      act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key })))
+    }
+
+    it('records one merge, random tile, sound and undo entry per move', () => {
+      const initialBoard = [[2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+      vi.mocked(initializeBoard).mockImplementation(() => initialBoard.map(row => [...row]))
+      vi.mocked(moveLeft).mockReturnValue({
+        moved: true, scoreGained: 4,
+        newBoard: [[4, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      })
+      vi.mocked(addRandomTile).mockImplementation(board => { board[3][3] = 2 })
+      render(<StrictMode><Game2048 /></StrictMode>)
+      press('ArrowLeft')
+      expect(readGame().score).toBe(4)
+      expect(readGame().board[3][3]).toBe(2)
+      expect(addRandomTile).toHaveBeenCalledOnce()
+      expect(gameActions.playSound).toHaveBeenCalledOnce()
+      fireEvent.click(screen.getByText('撤销'))
+      expect(readGame().board).toEqual(initialBoard)
+      expect(readGame().score).toBe(0)
+      expect(screen.getByText('撤销').closest('button')).toBeDisabled()
+    })
+
+    it('counts reaching 2048 once across batched moves and an undo', () => {
+      vi.mocked(initializeBoard).mockReturnValue([[1024, 1024, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+      const wonBoard = [[2048, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+      vi.mocked(moveLeft).mockReturnValue({ moved: true, scoreGained: 2048, newBoard: wonBoard })
+      vi.mocked(moveRight).mockReturnValue({ moved: true, scoreGained: 0, newBoard: wonBoard })
+      render(<StrictMode><Game2048 /></StrictMode>)
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+      })
+      expect(readGame().score).toBe(2048)
+      expect(gameActions.incrementGamesWon).toHaveBeenCalledOnce()
+      fireEvent.click(screen.getByText('撤销'))
+      press('ArrowRight')
+      expect(gameActions.incrementGamesWon).toHaveBeenCalledOnce()
+    })
+
+    it('rejects further batched input immediately after game over', () => {
+      vi.mocked(moveLeft).mockReturnValue({
+        moved: true, scoreGained: 4,
+        newBoard: [[4, 8, 16, 32], [8, 16, 32, 64], [16, 32, 64, 128], [32, 64, 128, 256]],
+      })
+      vi.mocked(isGameOver).mockReturnValue(true)
+      render(<StrictMode><Game2048 /></StrictMode>)
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+      })
+      expect(readGame().mode).toBe('game-over')
+      expect(gameActions.incrementGamesPlayed).toHaveBeenCalledOnce()
+      expect(toast.error).toHaveBeenCalledExactlyOnceWith('游戏结束！')
+      expect(moveRight).not.toHaveBeenCalled()
+    })
+
+
+    it('accepts arrow keys after clicking a direction button', async () => {
+      const user = userEvent.setup()
+      vi.mocked(moveLeft).mockReturnValue({
+        moved: true, scoreGained: 4,
+        newBoard: [[4, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      })
+      vi.mocked(moveRight).mockReturnValue({
+        moved: true, scoreGained: 0,
+        newBoard: [[0, 0, 0, 4], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+      })
+      render(<Game2048 />)
+      await user.click(screen.getByRole('button', { name: '向左移动' }))
+      await user.keyboard('{ArrowRight}')
+      expect(moveRight).toHaveBeenCalledOnce()
+      expect(readGame().board[0]).toEqual([0, 0, 0, 4])
+      expect(readGame().score).toBe(4)
+    })
+
+    it('does not create history, audio or random tiles for an unchanged board', () => {
+      render(<StrictMode><Game2048 /></StrictMode>)
+      press('ArrowLeft')
+      expect(readGame().score).toBe(0)
+      expect(addRandomTile).not.toHaveBeenCalled()
+      expect(gameActions.playSound).not.toHaveBeenCalled()
+      expect(screen.getByText('撤销').closest('button')).toBeDisabled()
+    })
+  })
+
 })

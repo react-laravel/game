@@ -42,5 +42,6 @@ describe('GameStage', () => {
 
     expect(screen.getByText('游戏结束')).toBeInTheDocument()
     expect(screen.getByText('最终分数: 90')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite')
   })
 })

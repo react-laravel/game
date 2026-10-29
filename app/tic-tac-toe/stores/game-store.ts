@@ -152,12 +152,26 @@ const getAiMove = (board: Board, difficulty: Difficulty): number => {
   }
 }
 
-export const useGameStore = create<GameState & GameActions>((set, get) => ({
-  ...initialState,
+export const useGameStore = create<GameState & GameActions>((set, get) => {
+  let aiTimer: ReturnType<typeof setTimeout> | null = null
 
-  makeMove: (index: number) => {
+  const cancelAiMove = () => {
+    if (aiTimer !== null) {
+      clearTimeout(aiTimer)
+      aiTimer = null
+    }
+  }
+
+  const applyMove = (index: number) => {
     const state = get()
-    if (state.board[index] || state.winner || state.gameOver) return
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= state.board.length ||
+      state.board[index] ||
+      state.winner ||
+      state.gameOver
+    ) return
 
     const newBoard = [...state.board]
     newBoard[index] = state.currentPlayer
@@ -191,55 +205,69 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         currentPlayer: nextPlayer,
       })
 
-      // 如果是 AI 模式且轮到 O（AI）
       if (state.gameMode === 'ai' && nextPlayer === 'O') {
-        setTimeout(() => {
-          get().makeAiMove()
-        }, 500) // 延迟让 AI 看起来在思考
+        get().makeAiMove()
       }
     }
-  },
+  }
 
-  makeAiMove: () => {
-    const state = get()
-    if (state.gameOver || state.currentPlayer !== 'O') return
+  return {
+    ...initialState,
 
-    set({ isAiThinking: true })
+    makeMove: (index: number) => {
+      const state = get()
+      // O belongs to the AI for its entire turn, including the thinking delay.
+      if (state.gameMode === 'ai' && state.currentPlayer === 'O') return
+      applyMove(index)
+    },
 
-    const aiMoveIndex = getAiMove([...state.board], state.difficulty)
+    makeAiMove: () => {
+      const state = get()
+      if (state.gameMode !== 'ai' || state.gameOver || state.currentPlayer !== 'O' || aiTimer !== null) return
 
-    if (aiMoveIndex !== -1) {
-      setTimeout(() => {
+      set({ isAiThinking: true })
+      const pendingBoard = state.board
+
+      aiTimer = setTimeout(() => {
+        aiTimer = null
+        const current = get()
+        if (
+          current.board !== pendingBoard ||
+          current.gameMode !== 'ai' ||
+          current.gameOver ||
+          current.currentPlayer !== 'O'
+        ) return
+
+        const aiMoveIndex = getAiMove([...current.board], current.difficulty)
         set({ isAiThinking: false })
-        get().makeMove(aiMoveIndex)
-      }, 300)
-    } else {
-      set({ isAiThinking: false })
-    }
-  },
+        if (aiMoveIndex !== -1) applyMove(aiMoveIndex)
+      }, 800)
+    },
 
-  resetGame: () => {
-    set({
-      board: Array(9).fill(null),
-      currentPlayer: 'X',
-      winner: null,
-      gameOver: false,
-      isAiThinking: false,
-    })
-  },
+    resetGame: () => {
+      cancelAiMove()
+      set({
+        board: Array(9).fill(null),
+        currentPlayer: 'X',
+        winner: null,
+        gameOver: false,
+        isAiThinking: false,
+      })
+    },
 
-  resetScores: () => {
-    set({
-      scores: { X: 0, O: 0, draws: 0 },
-    })
-  },
+    resetScores: () => {
+      set({
+        scores: { X: 0, O: 0, draws: 0 },
+      })
+    },
 
-  setGameMode: (mode: GameMode) => {
-    set({ gameMode: mode })
-    get().resetGame()
-  },
+    setGameMode: (mode: GameMode) => {
+      set({ gameMode: mode })
+      get().resetGame()
+    },
 
-  setDifficulty: (difficulty: Difficulty) => {
-    set({ difficulty })
-  },
-}))
+    setDifficulty: (difficulty: Difficulty) => {
+      set({ difficulty })
+    },
+  }
+})

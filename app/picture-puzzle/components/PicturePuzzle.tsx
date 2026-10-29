@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useGameStats } from '../hooks/useGameStats'
 import { useGameSounds } from '../hooks/useGameSounds'
+import { createBoard } from '../../sliding-puzzle/utils/board'
 
 // 计时器组件
 function Timer({ startTime }: { startTime: Date }) {
@@ -71,65 +72,14 @@ export default function PicturePuzzle({ imageUrl, size, onComplete }: PicturePuz
   const { stats, updateStats } = useGameStats(size)
   const { playMoveSound, playCompleteSound } = useGameSounds()
 
-  // 检查拼图是否有解
-  const checkSolvable = useCallback((board: number[], boardSize: number) => {
-    const emptyIndex = board.indexOf(0)
-    const emptyRow = Math.floor(emptyIndex / boardSize)
-
-    let inversions = 0
-    for (let i = 0; i < board.length; i++) {
-      if (board[i] === 0) continue
-
-      for (let j = i + 1; j < board.length; j++) {
-        if (board[j] === 0) continue
-        if (board[i] > board[j]) inversions++
-      }
-    }
-
-    if (boardSize % 2 === 1) {
-      return inversions % 2 === 0
-    } else {
-      const emptyRowFromBottom = boardSize - 1 - emptyRow
-      return (inversions + emptyRowFromBottom) % 2 === 1
-    }
-  }, [])
-
-  // 随机打乱并确保有解
-  const shuffleBoard = useCallback(
-    (board: number[], boardSize: number) => {
-      const shuffled = [...board]
-      let attempts = 0
-
-      do {
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-        }
-        attempts++
-      } while (
-        attempts < 100 &&
-        (!checkSolvable(shuffled, boardSize) ||
-          shuffled.every(
-            (num, index) => num === index || (index === shuffled.length - 1 && num === 0)
-          ))
-      )
-
-      return shuffled
-    },
-    [checkSolvable]
-  )
-
   // 初始化拼图
   const initializePuzzle = useCallback(() => {
     const totalPieces = size * size
     const puzzleSize = 320 // 拼图总大小
     const pieceSize = puzzleSize / size
 
-    // 创建初始顺序
-    const initialOrder = Array.from({ length: totalPieces }, (_, i) => i)
-
-    // 打乱顺序
-    const shuffledOrder = shuffleBoard(initialOrder, size)
+    // Numbered tiles use 0 as the blank; picture pieces use the last ID.
+    const shuffledOrder = createBoard(size).map(tile => tile === 0 ? totalPieces - 1 : tile - 1)
 
     // 创建拼图块
     const newPieces: PuzzlePiece[] = shuffledOrder.map((pieceId, currentIndex) => {
@@ -157,7 +107,7 @@ export default function PicturePuzzle({ imageUrl, size, onComplete }: PicturePuz
     setMoves(0)
     setStartTime(new Date())
     setIsComplete(false)
-  }, [imageUrl, size, shuffleBoard])
+  }, [imageUrl, size])
 
   // 图片加载完成后初始化拼图
   useEffect(() => {
@@ -321,6 +271,8 @@ export default function PicturePuzzle({ imageUrl, size, onComplete }: PicturePuz
         {/* 拼图游戏区域 */}
         <div className="flex flex-col items-center">
           <div
+            role="group"
+            aria-label="图片滑块拼图"
             className="grid gap-1 rounded-xl border-2 border-gray-300 bg-white p-2 shadow-lg"
             style={{
               gridTemplateColumns: `repeat(${size}, 1fr)`,

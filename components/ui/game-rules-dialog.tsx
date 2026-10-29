@@ -28,11 +28,15 @@ export function GameRulesDialog({ title, rules, className = '' }: GameRulesDialo
           size="icon"
           className={`text-primary hover:text-primary/80 p-0 hover:bg-transparent ${className}`}
           title="游戏规则"
+          aria-label="游戏规则"
         >
           <HelpCircle className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex max-h-[min(85dvh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-md flex-col gap-3 overflow-hidden">
+      <DialogContent
+        className="flex max-h-[min(85dvh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-md flex-col gap-3 overflow-hidden"
+        onKeyDown={event => event.stopPropagation()}
+      >
         <DialogHeader className="shrink-0 pr-6">
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="text-primary h-5 w-5" />

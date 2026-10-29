@@ -11,6 +11,8 @@ export interface SceneRef {
   pins: Array<{ mesh: THREE.Mesh; body: CANNON.Body }>
   lane: { mesh: THREE.Mesh; body: CANNON.Body } | null
   animationId: number | null
+  debugView?: 'player' | 'deck' | 'room'
+  environmentTarget?: THREE.WebGLRenderTarget
   throwStartTime?: number
   aimLine?: THREE.Line
   powerBar?: THREE.Line

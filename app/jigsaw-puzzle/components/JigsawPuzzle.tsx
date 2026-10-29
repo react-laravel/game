@@ -85,13 +85,13 @@ export default function JigsawPuzzle({ imageUrl, size, onComplete }: JigsawPuzzl
 
   // 检查游戏完成状态
   const checkGameCompletion = useCallback(() => {
-    if (isGameComplete(pieces, slots)) {
+    if (!isComplete && imageLoaded && pieces.length > 0 && isGameComplete(pieces, slots)) {
       setIsComplete(true)
       const completionTime = Math.floor((new Date().getTime() - startTime.getTime()) / 1000)
       updateStats(completionTime, pieces.length)
       onComplete()
     }
-  }, [pieces, slots, startTime, updateStats, onComplete])
+  }, [pieces, slots, startTime, updateStats, onComplete, isComplete, imageLoaded])
 
   // 使用拼图操作 hooks
   const { placePieceInSlot, swapPieces, replacePieceWithUnplaced } = usePuzzleActions({

@@ -21,7 +21,14 @@ export function useKeyboardControls({
     if (!enabled) return
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (gameOver) return
+      if (
+        gameOver || e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey ||
+        (e.target instanceof Element && e.target.closest(
+          'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="alertdialog"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"]'
+        )) ||
+        ((e.key === ' ' || e.key === 'Enter') && e.target instanceof Element &&
+          e.target.closest('button, a, [role="button"]'))
+      ) return
 
       switch (e.key.toLowerCase()) {
         case 'arrowleft':
@@ -43,6 +50,7 @@ export function useKeyboardControls({
         case 'w':
         case ' ':
           e.preventDefault()
+          if (e.repeat) return
           if (e.key === ' ') {
             hardDrop()
           } else {
@@ -51,6 +59,7 @@ export function useKeyboardControls({
           break
         case 'p':
           e.preventDefault()
+          if (e.repeat) return
           togglePause()
           break
       }

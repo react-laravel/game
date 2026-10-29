@@ -3,11 +3,13 @@
 import { useRef, useEffect, useCallback } from 'react'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { PHYSICS_CONFIG, CAMERA_CONFIG } from '../config/constants'
 import { ballRestPosition, pinRestPosition } from '../utils/layout'
 import type { SceneRef } from '../types/scene'
 import { createPhysicsMaterials } from '../utils/physics'
 import { createAlleyInterior } from '../utils/alley'
+import { disposeBowlingScene, installBowlingVisualDebug } from '../utils/visualDebug'
 import {
   createSceneElements,
   createBall,
@@ -27,7 +29,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
 
     const canvas = canvasRef.current
     const scene = new THREE.Scene()
-    const bgColor = new THREE.Color(0x2a1f28)
+    const bgColor = new THREE.Color(0x242c30)
     scene.background = bgColor
     scene.fog = new THREE.Fog(bgColor, 48, 110)
 
@@ -55,10 +57,18 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
     renderer.setSize(canvas.clientWidth, canvas.clientHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFShadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.18
+    renderer.toneMappingExposure = 1.05
+
+    const environmentRoom = new RoomEnvironment()
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const environmentTarget = pmrem.fromScene(environmentRoom, 0.04, 0.1, 100, { size: 128 })
+    scene.environment = environmentTarget.texture
+    scene.environmentIntensity = 0.35
+    environmentRoom.dispose()
+    pmrem.dispose()
 
     // 物理世界
     const world = new CANNON.World()
@@ -83,6 +93,7 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
       scene,
       camera,
       renderer,
+      environmentTarget,
       world,
       ball,
       pins,
@@ -209,6 +220,9 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
   // 初始化场景
   useEffect(() => {
     const scene = initializeScene()
+    const disposeDebug = scene && process.env.NODE_ENV !== 'production'
+      ? installBowlingVisualDebug(scene)
+      : undefined
     if (scene) {
       sceneRef.current = scene
       isMounted.current = true
@@ -222,7 +236,10 @@ export function useBowlingScene(canvasRef: React.RefObject<HTMLCanvasElement | n
       if (sceneRef.current?.animationId) {
         cancelAnimationFrame(sceneRef.current.animationId)
       }
-      sceneRef.current?.renderer.dispose()
+      disposeDebug?.()
+      if (scene) disposeBowlingScene(scene)
+      if (sceneRef.current === scene) sceneRef.current = null
+      isMounted.current = false
     }
   }, [initializeScene, handleResize])
 

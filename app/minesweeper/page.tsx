@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { toast } from 'sonner'
 import { GameResultOverlay, GameStage } from '@/components/game'
 import { getDynamicDifficulties } from './config'
@@ -9,19 +9,14 @@ import { MINESWEEPER_RULES, MinesweeperHeader } from './components/MinesweeperHe
 import { MinesweeperStats } from './components/MinesweeperStats'
 import { useMinesweeperStore } from './store'
 import type { Cell, Difficulty, DifficultyConfig, MinesweeperGameState } from './types'
-import { canRevealCell, createEmptyBoard, cycleCellMark, remainingMinesDelta } from './utils/board'
+import { canRevealCell, createEmptyBoard, cycleCellMark } from './utils/board'
 
 export default function MinesweeperGame() {
   const { stats, updateStats } = useMinesweeperStore()
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
-  const [difficulties, setDifficulties] = useState(() => getDynamicDifficulties())
-  const [board, setBoard] = useState<Cell[][]>(() => {
-    const initialDifficulties = getDynamicDifficulties()
-    const initialConfig = initialDifficulties.easy
-    return createEmptyBoard(initialConfig.rows, initialConfig.cols)
-  })
+  const [config, setConfig] = useState(() => getDynamicDifficulties().easy)
+  const [board, setBoard] = useState<Cell[][]>(() => createEmptyBoard(config.rows, config.cols))
   const [gameState, setGameState] = useState<MinesweeperGameState>('playing')
-  const [mineCount, setMineCount] = useState(() => getDynamicDifficulties().easy.mines)
   const [firstClick, setFirstClick] = useState(true)
   const [timer, setTimer] = useState(0)
   const [gameStarted, setGameStarted] = useState(false)
@@ -29,8 +24,10 @@ export default function MinesweeperGame() {
   const advanceTimeRemainderRef = useRef(0)
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const config = difficulties[difficulty]
+  const mineCount = useMemo(() =>
+    config.mines - board.reduce((total, row) => total + row.filter(cell => cell.state === 'flagged').length, 0),
+    [board, config.mines]
+  )
 
   // 放置地雷
   const placeMines = useCallback(
@@ -92,31 +89,23 @@ export default function MinesweeperGame() {
   )
 
   // 重置游戏
+  // Keep the current board intact on resize; sample the viewport for each new round.
   const resetGame = useCallback(
-    (targetConfig: DifficultyConfig = config) => {
+    (targetConfig: DifficultyConfig = getDynamicDifficulties()[difficulty]) => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+      setConfig(targetConfig)
       setBoard(createEmptyBoard(targetConfig.rows, targetConfig.cols))
       setGameState('playing')
-      setMineCount(targetConfig.mines)
       setFirstClick(true)
       setTimer(0)
       setGameStarted(false)
       advanceTimeRemainderRef.current = 0
     },
-    [config]
+    [difficulty]
   )
-
-  // 监听屏幕大小变化
-  useEffect(() => {
-    const handleResize = () => {
-      const newDifficulties = getDynamicDifficulties()
-      setDifficulties(newDifficulties)
-      resetGame(newDifficulties[difficulty])
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => window.removeEventListener('resize', handleResize)
-  }, [difficulty, resetGame])
 
   const checkWinCondition = useCallback(
     (nextBoard: Cell[][]) => {
@@ -183,7 +172,6 @@ export default function MinesweeperGame() {
         if (nextState === currentState) return currentBoard
 
         newBoard[row][col].state = nextState
-        setMineCount(prev => prev + remainingMinesDelta(currentState, nextState))
 
         if (checkWinCondition(newBoard)) {
           setGameState('won')
@@ -377,7 +365,7 @@ export default function MinesweeperGame() {
           gameState={gameState}
           onDifficultyChange={nextDifficulty => {
             setDifficulty(nextDifficulty)
-            resetGame(difficulties[nextDifficulty])
+            resetGame(getDynamicDifficulties()[nextDifficulty])
           }}
           onReset={() => resetGame()}
         />

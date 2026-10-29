@@ -162,8 +162,9 @@ const TicTacToe = () => {
                   whileHover={{ scale: cell ? 1 : 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => makeMove(index)}
+                  aria-label={`第 ${Math.floor(index / 3) + 1} 行，第 ${(index % 3) + 1} 列：${cell ?? '空位'}`}
                   className={`aspect-square rounded-2xl border-2 border-border bg-card text-4xl font-black shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md ${cell ? 'cursor-default' : 'cursor-pointer'} ${cell === 'X' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} ${isAiThinking && gameMode === 'ai' ? 'pointer-events-none opacity-50' : ''} `}
-                  disabled={!!cell || gameOver || isAiThinking}
+                  disabled={!!cell || gameOver || isAiThinking || (gameMode === 'ai' && currentPlayer === 'O')}
                 >
                   <AnimatePresence>
                     {cell && (
@@ -186,7 +187,6 @@ const TicTacToe = () => {
                 onClick={resetGame}
                 variant="outline"
                 className="flex items-center gap-2"
-                disabled={isAiThinking}
               >
                 <RotateCcw className="h-4 w-4" />
                 重新开始
@@ -209,7 +209,6 @@ const TicTacToe = () => {
             <Button
               className="mt-6 w-full bg-amber-400 py-5 font-bold text-zinc-950 hover:bg-amber-300"
               onClick={resetGame}
-              disabled={isAiThinking}
             >
               重新开始
             </Button>

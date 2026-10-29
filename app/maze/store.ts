@@ -49,6 +49,16 @@ export interface MazeStore {
 }
 
 let gameTimer: ReturnType<typeof setInterval> | null = null
+let autoMoveTimer: ReturnType<typeof setTimeout> | null = null
+let autoMoveRevision = 0
+
+function cancelAutoMove() {
+  autoMoveRevision++
+  if (autoMoveTimer !== null) {
+    clearTimeout(autoMoveTimer)
+    autoMoveTimer = null
+  }
+}
 
 function stopGameTimer() {
   if (gameTimer !== null) {
@@ -108,6 +118,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
 
   resetGame: () => {
     stopGameTimer()
+    cancelAutoMove()
     set({
       gameStarted: false,
       gameCompleted: false,
@@ -131,6 +142,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     }
 
     stopGameTimer()
+    cancelAutoMove()
     set({
       mazeSize: nextSize,
       gameStarted: false,
@@ -154,6 +166,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     }
 
     stopGameTimer()
+    cancelAutoMove()
     set({
       mazeShape: shape,
       gameStarted: false,
@@ -171,12 +184,13 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
   },
 
   generateMaze: () => {
+    cancelAutoMove()
     const { mazeSize, mazeShape } = get()
     const { cols, rows } = getMazeDimensions(mazeShape, mazeSize)
     console.log('🏗️ 生成迷宫, 大小:', `${cols}×${rows}`)
     const maze = generateMazeGrid({ cols, rows })
 
-    set({ maze })
+    set({ maze, isAutoMoving: false, autoPath: [] })
     console.log('✅ 迷宫生成完成')
     console.log('🚪 起点(0,0)墙壁状态:', maze[0][0])
     console.log('🎯 终点墙壁状态:', maze[rows - 1][cols - 1])
@@ -187,7 +201,7 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
 
     console.log('🎯 尝试移动:', direction, '当前位置:', { x: state.ball.x, z: state.ball.z })
 
-    if (state.isMoving || state.gameCompleted) {
+    if (!state.gameStarted || state.isMoving || state.gameCompleted) {
       console.log(
         '❌ 移动被阻止 - isMoving:',
         state.isMoving,
@@ -225,12 +239,13 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     const nextPos = getNextPosition(gridX, gridY, direction)
     console.log('🎯 下一个位置:', nextPos)
 
-    set({ isMoving: true, moves: state.moves + 1 })
-
-    // 立即更新位置（2D不需要动画）
+    cancelAutoMove()
     set({
       ball: { ...ball, x: nextPos.x, z: nextPos.y },
+      moves: state.moves + 1,
       isMoving: false,
+      isAutoMoving: false,
+      autoPath: [],
     })
 
     console.log('✅ 移动完成，新位置:', { x: nextPos.x, z: nextPos.y })
@@ -239,25 +254,18 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     if (nextPos.x === cols - 1 && nextPos.y === rows - 1) {
       console.log('🎉 到达终点!')
       set({ gameCompleted: true })
+      stopGameTimer()
     }
   },
 
   moveToPosition: (targetX: number, targetY: number) => {
     const state = get()
-    if (state.maze.length === 0) {
+    if (!state.gameStarted || state.gameCompleted || state.maze.length === 0) {
       return
     }
-
-    // 如果当前正在自动移动，先中断
-    if (state.isAutoMoving) {
-      console.log('🛑 中断当前自动移动')
-      set({ autoMoveInterrupt: true })
-      // 等待一小段时间确保中断生效
-      setTimeout(() => {
-        get().moveToPosition(targetX, targetY)
-      }, 50)
-      return
-    }
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return
+    cancelAutoMove()
+    set({ isAutoMoving: false, autoPath: [], autoMoveInterrupt: false })
 
     const { ball, maze } = state
     const { cols, rows } = getMazeBounds(maze)
@@ -271,8 +279,8 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
     // 确保坐标在有效范围内
     const startX = Math.max(0, Math.min(cols - 1, gridX))
     const startY = Math.max(0, Math.min(rows - 1, gridY))
-    const endX = Math.max(0, Math.min(cols - 1, targetX))
-    const endY = Math.max(0, Math.min(rows - 1, targetY))
+    const endX = Math.max(0, Math.min(cols - 1, Math.floor(targetX)))
+    const endY = Math.max(0, Math.min(rows - 1, Math.floor(targetY)))
 
     // console.log('🎯 坐标处理:', {
     //   start: { x: startX, y: startY },
@@ -292,25 +300,13 @@ export const useMazeStore = create<MazeStore>((set, get) => ({
 
       set({ autoPath: path, isAutoMoving: true, autoMoveInterrupt: false })
 
-      // 开始自动移动
-      autoMove(ball, path, () => {
-        const currentState = get()
-        if (!currentState.autoMoveInterrupt) {
-          console.log('🎉 到达目标位置!')
-          set({ isAutoMoving: false })
-
-          // 如果目标是终点，确保游戏完成
-          if (endX === cols - 1 && endY === rows - 1) {
-            console.log('🏆 确认到达终点，游戏完成!')
-            set({ gameCompleted: true })
-          }
-        }
-      })
+      autoMove(path, maze)
     }
   },
 
   interruptAutoMove: () => {
-    set({ autoMoveInterrupt: true })
+    cancelAutoMove()
+    set({ autoMoveInterrupt: true, isAutoMoving: false, autoPath: [] })
   },
 }))
 
@@ -326,6 +322,8 @@ function canMoveInDirection(
   }
 
   const cell = maze[y][x]
+  const next = getNextPosition(x, y, direction)
+  if (next.x < 0 || next.x >= cols || next.y < 0 || next.y >= rows) return false
 
   switch (direction) {
     case 'up':
@@ -467,45 +465,40 @@ function findPath(
   return [] // 没有找到路径
 }
 
-function autoMove(ball: Ball, path: { x: number; y: number }[], onComplete: () => void) {
-  if (path.length === 0) {
-    onComplete()
-    return
-  }
-
+function autoMove(path: { x: number; y: number }[], maze: MazeCell[][]) {
+  const revision = autoMoveRevision
+  const { cols, rows } = getMazeBounds(maze)
   let currentIndex = 0
 
   const moveToNext = () => {
-    // 检查是否需要中断
     const state = useMazeStore.getState()
-    if (state.autoMoveInterrupt) {
-      console.log('🛑 自动移动被中断')
-      useMazeStore.setState({
-        isAutoMoving: false,
-        autoMoveInterrupt: false,
-      })
-      return
-    }
-
-    if (currentIndex >= path.length) {
-      onComplete()
-      return
-    }
-
+    // A cancelled route must never write into a later route or a new maze.
+    if (
+      revision !== autoMoveRevision ||
+      state.maze !== maze ||
+      !state.gameStarted ||
+      state.gameCompleted ||
+      state.autoMoveInterrupt
+    ) return
+    autoMoveTimer = null
     const target = path[currentIndex]
-    const newX = target.x
-    const newZ = target.y
+    if (!target) return
+    currentIndex++
+    const gameCompleted = target.x === cols - 1 && target.y === rows - 1
+    const routeCompleted = gameCompleted || currentIndex === path.length
 
-    // 更新小球位置和移动次数
     useMazeStore.setState({
-      ball: { ...state.ball, x: newX, z: newZ },
+      ball: { ...state.ball, x: target.x, z: target.y },
       moves: state.moves + 1,
+      gameCompleted,
+      isAutoMoving: !routeCompleted,
+      autoPath: routeCompleted ? [] : path,
     })
 
-    currentIndex++
-
-    // 延迟执行下一步
-    setTimeout(moveToNext, 200)
+    if (gameCompleted) stopGameTimer()
+    if (!routeCompleted && revision === autoMoveRevision) {
+      autoMoveTimer = setTimeout(moveToNext, 200)
+    }
   }
 
   moveToNext()

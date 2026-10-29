@@ -1,0 +1,43 @@
+.blackjack-game {
+  --blackjack-desktop-scale: 1;
+}
+
+/* Zoom participates in layout, so cards, chip stacks and their reserved space
+   grow together without changing the mobile layout or animation transforms. */
+.blackjack-desktop-scale {
+  zoom: var(--blackjack-desktop-scale);
+}
+
+@media (min-width: 1024px) {
+  .blackjack-game {
+    --blackjack-desktop-scale: 1.5;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 850px) {
+  .blackjack-game {
+    --blackjack-desktop-scale: 1.75;
+  }
+}
+
+@media (min-width: 1536px) and (min-height: 950px) {
+  .blackjack-game {
+    --blackjack-desktop-scale: 2;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 699px) {
+  .blackjack-game {
+    --blackjack-desktop-scale: 1.1;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 849px) {
+  .blackjack-dealer-cards {
+    min-height: 2.5rem;
+  }
+
+  .blackjack-seat-waiting {
+    height: 2rem;
+  }
+}

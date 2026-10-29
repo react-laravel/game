@@ -4,6 +4,7 @@ import { AuthBootstrap } from '@/components/AuthBootstrap'
 import { GameAuthGate } from '@/components/GameAuthGate'
 import { GameThemeProvider } from '@/components/GameThemeProvider'
 import { GameQuickMenu } from '@/components/GameQuickMenu'
+import { GameActivityTracker } from '@/components/home/GameActivityTracker'
 import { GAME_THEME_STORAGE_KEY } from '@/lib/theme'
 import './globals.css'
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <GameThemeProvider>
           <AuthBootstrap />
           <GameAuthGate>
+            <GameActivityTracker />
             {children}
             <GameQuickMenu />
           </GameAuthGate>

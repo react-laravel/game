@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Gamepad2, Grip, House, Moon, Sun } from 'lucide-react'
 import { useGameTheme } from '@/components/GameThemeProvider'
@@ -8,6 +8,7 @@ import { useGameTheme } from '@/components/GameThemeProvider'
 const POSITION_STORAGE_KEY = 'game-quick-menu-position'
 const BUTTON_SIZE = 52
 const VIEWPORT_MARGIN = 14
+const MENU_GAP = 10
 
 interface Position {
   x: number
@@ -48,7 +49,10 @@ function readStoredPosition(): Position {
     const stored = window.localStorage.getItem(POSITION_STORAGE_KEY)
     if (!stored) return defaultPosition()
     const parsed = JSON.parse(stored) as Partial<Position>
-    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') return defaultPosition()
+    if (
+      typeof parsed.x !== 'number' || typeof parsed.y !== 'number' ||
+      !Number.isFinite(parsed.x) || !Number.isFinite(parsed.y)
+    ) return defaultPosition()
     return clampPosition({ x: parsed.x, y: parsed.y })
   } catch {
     return defaultPosition()
@@ -60,10 +64,43 @@ export function GameQuickMenu() {
   const router = useRouter()
   const { theme, setTheme } = useGameTheme()
   const [open, setOpen] = useState(false)
+  const [menuPathname, setMenuPathname] = useState(pathname)
   const [position, setPosition] = useState<Position | null>(null)
   const positionRef = useRef<Position | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const suppressClickRef = useRef(false)
+  const menuId = useId()
+
+  // Closing while rendering avoids briefly displaying an old route's menu.
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname)
+    setOpen(false)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    const closeOutside = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+      buttonRef.current?.focus()
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    // Capture before game listeners so closing the menu does not pause/restart a game.
+    window.addEventListener('keydown', closeOnEscape, true)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      window.removeEventListener('keydown', closeOnEscape, true)
+    }
+  }, [open])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -94,6 +131,7 @@ export function GameQuickMenu() {
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return
+    suppressClickRef.current = false
     const bounds = event.currentTarget.getBoundingClientRect()
     dragRef.current = {
       pointerId: event.pointerId,
@@ -125,12 +163,15 @@ export function GameQuickMenu() {
     dragRef.current = null
 
     if (drag.moved) {
+      suppressClickRef.current = true
       const currentPosition = positionRef.current
       if (currentPosition) {
-        window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(currentPosition))
+        try {
+          window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(currentPosition))
+        } catch {
+          // Dragging remains usable when storage is full or disabled.
+        }
       }
-    } else {
-      setOpen(current => !current)
     }
   }
 
@@ -140,26 +181,47 @@ export function GameQuickMenu() {
     router.push('/')
   }
 
-  const isOnRight = position ? position.x > window.innerWidth / 2 : true
+  const isNearBottom = position ? position.y > window.innerHeight / 2 : true
+  const menuMaxHeight = position
+    ? Math.max(44, (isNearBottom ? position.y : window.innerHeight - position.y - BUTTON_SIZE) - VIEWPORT_MARGIN - MENU_GAP)
+    : undefined
   const wrapperStyle = position
     ? { left: position.x, top: position.y }
     : { right: 22, bottom: 28 }
 
   const actionButtonClass =
-    'flex size-11 shrink-0 items-center justify-center rounded-full border border-border/80 bg-popover text-popover-foreground shadow-lg backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground'
+    'flex size-11 shrink-0 items-center justify-center rounded-full border border-border/80 bg-popover text-popover-foreground shadow-lg backdrop-blur-md transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
   return (
     <div
+      ref={wrapperRef}
       className="fixed z-[999] print:hidden"
       style={wrapperStyle}
       data-testid="game-quick-menu"
       suppressHydrationWarning
+      onKeyDown={event => {
+        // Game shortcuts must not run while a quick-menu control has focus.
+        event.stopPropagation()
+        if (!open || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+        event.preventDefault()
+        const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+        const index = items.indexOf(document.activeElement as HTMLButtonElement)
+        const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
+        items[nextIndex]?.focus()
+      }}
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
+      }}
     >
       {open && (
         <div
-          className={`absolute top-1/2 flex -translate-y-1/2 items-center gap-2 ${
-            isOnRight ? 'right-[calc(100%+0.6rem)] flex-row' : 'left-[calc(100%+0.6rem)] flex-row-reverse'
+          ref={menuRef}
+          id={menuId}
+          className={`absolute left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 overflow-y-auto p-1 ${
+            isNearBottom ? 'bottom-[calc(100%+0.6rem)]' : 'top-[calc(100%+0.6rem)]'
           }`}
+          style={{ maxHeight: menuMaxHeight }}
           role="menu"
           aria-label="游戏快捷菜单"
         >
@@ -179,7 +241,8 @@ export function GameQuickMenu() {
             onClick={() => setTheme('light')}
             aria-label="切换到浅色模式"
             title="浅色模式"
-            role="menuitem"
+            role="menuitemradio"
+            aria-checked={theme === 'light'}
           >
             <Sun className="size-5" />
           </button>
@@ -189,7 +252,8 @@ export function GameQuickMenu() {
             onClick={() => setTheme('dark')}
             aria-label="切换到深色模式"
             title="深色模式"
-            role="menuitem"
+            role="menuitemradio"
+            aria-checked={theme === 'dark'}
           >
             <Moon className="size-5" />
           </button>
@@ -204,17 +268,32 @@ export function GameQuickMenu() {
         }`}
         aria-label={open ? '收起游戏快捷菜单' : '展开游戏快捷菜单'}
         aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={open ? menuId : undefined}
         title="拖动位置，点击展开"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={() => {
           dragRef.current = null
+          suppressClickRef.current = true
+        }}
+        onLostPointerCapture={() => {
+          dragRef.current = null
+        }}
+        onClick={() => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false
+            return
+          }
+          setOpen(current => !current)
         }}
         onKeyDown={event => {
           if (event.key === 'Enter' || event.key === ' ') {
+            suppressClickRef.current = false
+          } else if (!open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
             event.preventDefault()
-            setOpen(current => !current)
+            setOpen(true)
           }
         }}
       >

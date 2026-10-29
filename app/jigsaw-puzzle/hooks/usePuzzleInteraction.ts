@@ -35,7 +35,6 @@ export const usePuzzleInteraction = ({
   placePieceInSlot,
   swapPieces,
   replacePieceWithUnplaced,
-  checkGameCompletion,
 }: UsePuzzleInteractionProps) => {
   // 处理拖拽开始
   const handleDragStart = useCallback(
@@ -182,10 +181,6 @@ export const usePuzzleInteraction = ({
                 setLastWronglyPlacedPiece(null)
               }
             }
-
-            setTimeout(() => {
-              checkGameCompletion()
-            }, 100)
           }
           return
         }
@@ -248,7 +243,6 @@ export const usePuzzleInteraction = ({
       replacePieceWithUnplaced,
       placePieceInSlot,
       handlePlacedPieceClick,
-      checkGameCompletion,
     ]
   )
 

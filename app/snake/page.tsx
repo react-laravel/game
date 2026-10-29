@@ -51,9 +51,10 @@ export default function SnakeGame() {
   const [score, setScore] = useState(0)
 
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
-  const touchStartRef = useRef({ x: 0, y: 0 })
+  const touchStartRef = useRef<{ x: number; y: number; id: number } | null>(null)
 
   // 使用 ref 存储最新的状态值，避免闭包问题
+  const snakeRef = useRef<Position[]>(INITIAL_SNAKE)
   const directionRef = useRef<Direction>('RIGHT')
   const foodRef = useRef<Position>(INITIAL_FOOD)
   const gameOverRef = useRef(false)
@@ -100,58 +101,48 @@ export default function SnakeGame() {
     return body.some(segment => segment.x === head.x && segment.y === head.y)
   }, [])
 
-  // 游戏主循环
+  // Tick effects happen outside React updaters so StrictMode cannot replay them.
   const gameLoop = useCallback(() => {
-    setSnake(currentSnake => {
-      if (gameOverRef.current || !gameStartedRef.current) return currentSnake
+    if (gameOverRef.current || !gameStartedRef.current) return
+    const currentSnake = snakeRef.current
 
-      // 处理方向队列
-      if (directionQueueRef.current.length > 0) {
-        const nextDirection = directionQueueRef.current.shift()!
-        // 防止反向移动
-        if (OPPOSITE_DIRECTIONS[directionRef.current] !== nextDirection) {
-          directionRef.current = nextDirection
-          setDirection(nextDirection)
-        }
-      }
+    const nextDirection = directionQueueRef.current.shift()
+    if (nextDirection && OPPOSITE_DIRECTIONS[directionRef.current] !== nextDirection) {
+      directionRef.current = nextDirection
+      setDirection(nextDirection)
+    }
 
-      const newSnake = [...currentSnake]
-      const head = { ...newSnake[0] }
-      const movement = DIRECTION_MAP[directionRef.current]
+    const movement = DIRECTION_MAP[directionRef.current]
+    const head = {
+      x: currentSnake[0].x + movement.x,
+      y: currentSnake[0].y + movement.y,
+    }
+    const willGrow = head.x === foodRef.current.x && head.y === foodRef.current.y
+    // The tail vacates its cell in the same tick unless the snake is growing.
+    const collisionBody = willGrow ? currentSnake : currentSnake.slice(0, -1)
+    if (checkCollision(head, collisionBody)) {
+      gameOverRef.current = true
+      gameStartedRef.current = false
+      directionQueueRef.current = []
+      setGameOver(true)
+      setGameStarted(false)
+      incrementGamesPlayed()
+      toast.error('游戏结束！')
+      return
+    }
 
-      head.x += movement.x
-      head.y += movement.y
-
-      // 检查碰撞
-      if (checkCollision(head, newSnake)) {
-        if (!gameOverRef.current) {
-          setGameOver(true)
-          setGameStarted(false)
-          // 使用 setTimeout 将状态更新延迟到下一个事件循环
-          setTimeout(() => {
-            incrementGamesPlayed()
-          }, 0)
-          toast.error('游戏结束！')
-        }
-        return currentSnake
-      }
-
-      newSnake.unshift(head)
-
-      // 检查是否吃到食物
-      if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
-        setScore(prev => prev + 10)
-        // 使用 setTimeout 将状态更新延迟到下一个事件循环
-        setTimeout(() => {
-          addFoodEaten(1)
-        }, 0)
-        setFood(generateFood(newSnake))
-      } else {
-        newSnake.pop()
-      }
-
-      return newSnake
-    })
+    const newSnake = [head, ...currentSnake]
+    if (willGrow) {
+      setScore(prev => prev + 10)
+      addFoodEaten(1)
+      const newFood = generateFood(newSnake)
+      foodRef.current = newFood
+      setFood(newFood)
+    } else {
+      newSnake.pop()
+    }
+    snakeRef.current = newSnake
+    setSnake(newSnake)
   }, [checkCollision, generateFood, addFoodEaten, incrementGamesPlayed])
 
   const startGameWithDirection = useCallback(
@@ -177,7 +168,8 @@ export default function SnakeGame() {
   const changeDirection = useCallback((newDirection: Direction) => {
     if (!gameStartedRef.current || gameOverRef.current) return
 
-    if (!canChangeToDirection(directionRef.current, newDirection)) return
+    const queuedDirection = directionQueueRef.current.at(-1) ?? directionRef.current
+    if (!canChangeToDirection(queuedDirection, newDirection)) return
 
     // 将方向变化加入队列，避免快速按键时丢失
     if (directionQueueRef.current.length < 2) {
@@ -205,6 +197,15 @@ export default function SnakeGame() {
   // 键盘控制
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (
+        e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey ||
+        (e.target instanceof Element && e.target.closest(
+          'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="alertdialog"], [role="slider"], [role="menu"], [role="listbox"], [role="combobox"]'
+        )) ||
+        ((e.key === ' ' || e.key === 'Enter') && e.target instanceof Element &&
+          e.target.closest('button, a, [role="button"]'))
+      ) return
+
       const nextDirection = directionFromKey(e.key)
       if (nextDirection) {
         e.preventDefault()
@@ -219,10 +220,12 @@ export default function SnakeGame() {
         changeDirection(nextDirection)
       } else if (e.key === ' ') {
         e.preventDefault()
+        if (e.repeat) return
         if (gameOverRef.current) {
           resetGameRef.current()
         } else {
-          setGameStarted(prev => !prev)
+          gameStartedRef.current = !gameStartedRef.current
+          setGameStarted(gameStartedRef.current)
         }
       }
     }
@@ -234,17 +237,25 @@ export default function SnakeGame() {
   // 触摸控制
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = null
+      if (
+        e.touches.length !== 1 || !(e.target instanceof Element) ||
+        !e.target.closest('[data-snake-board]')
+      ) return
       touchStartRef.current = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
+        id: e.touches[0].identifier,
       }
     }
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (!gameStartedRef.current || gameOverRef.current) return
+      const start = touchStartRef.current
+      touchStartRef.current = null
+      if (!start || e.changedTouches.length !== 1 || e.touches.length !== 0) return
+      if (e.changedTouches[0].identifier !== start.id) return
 
-      const { x: startX, y: startY } = touchStartRef.current
-      if (!startX || !startY) return
+      const { x: startX, y: startY } = start
 
       const endX = e.changedTouches[0].clientX
       const endY = e.changedTouches[0].clientY
@@ -252,27 +263,37 @@ export default function SnakeGame() {
       const diffX = startX - endX
       const diffY = startY - endY
 
-      if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
-          changeDirection(diffX > 0 ? 'LEFT' : 'RIGHT')
-        }
-      } else {
-        if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
-          changeDirection(diffY > 0 ? 'UP' : 'DOWN')
-        }
-      }
-
-      touchStartRef.current = { x: 0, y: 0 }
+      if (Math.max(Math.abs(diffX), Math.abs(diffY)) <= MIN_SWIPE_DISTANCE) return
+      const nextDirection = Math.abs(diffX) > Math.abs(diffY)
+        ? diffX > 0 ? 'LEFT' : 'RIGHT'
+        : diffY > 0 ? 'UP' : 'DOWN'
+      if (!gameStartedRef.current || gameOverRef.current) startGameWithDirection(nextDirection)
+      else changeDirection(nextDirection)
     }
+    const cancelTouch = () => { touchStartRef.current = null }
 
     document.addEventListener('touchstart', handleTouchStart)
     document.addEventListener('touchend', handleTouchEnd)
+    document.addEventListener('touchcancel', cancelTouch)
 
     return () => {
       document.removeEventListener('touchstart', handleTouchStart)
       document.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('touchcancel', cancelTouch)
     }
-  }, [changeDirection])
+  }, [changeDirection, startGameWithDirection])
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden || !gameStartedRef.current) return
+      gameStartedRef.current = false
+      directionQueueRef.current = []
+      touchStartRef.current = null
+      setGameStarted(false)
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   // 更新最高分
   useEffect(() => {
@@ -291,11 +312,13 @@ export default function SnakeGame() {
     setScore(0)
 
     // 重置 ref 值
+    snakeRef.current = INITIAL_SNAKE
     directionRef.current = 'RIGHT'
     foodRef.current = INITIAL_FOOD
     gameOverRef.current = false
     gameStartedRef.current = false
     directionQueueRef.current = []
+    touchStartRef.current = null
   }, [])
 
   // 同步 resetGame ref
@@ -308,7 +331,8 @@ export default function SnakeGame() {
     if (gameOver) {
       resetGame()
     } else {
-      setGameStarted(prev => !prev)
+      gameStartedRef.current = !gameStartedRef.current
+      setGameStarted(gameStartedRef.current)
     }
   }, [gameOver, resetGame])
 
@@ -361,6 +385,7 @@ export default function SnakeGame() {
         <div className="relative mx-auto flex min-h-0 w-full max-w-[min(100%,calc(100dvh-15rem))] flex-1 items-center">
           <div
             className="w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+            data-snake-board
             style={{ touchAction: 'none' }}
           >
             <SnakeBoard snake={snake} food={food} direction={direction} boardSize={BOARD_SIZE} />

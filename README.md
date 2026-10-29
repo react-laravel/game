@@ -4,13 +4,18 @@ Standalone Next.js game hub for `game.dogeow.com`.
 
 ## Included games
 
-- 2048, Bowling, Jigsaw Puzzle, Maze, Minesweeper and Monopoly
+- 2048, Blackjack, Bowling, Jigsaw Puzzle, Maze, Minesweeper and Monopoly
 - Moon Dice, Picture Puzzle, Shooting Range and Sliding Puzzle
 - Snake, Tetris and Tic-Tac-Toe
 
 All routes live at the domain root, for example `/2048`, `/monopoly` and
 `/moon-dice`. The former `/game/:path*` URLs redirect to their root-route
 equivalents.
+
+The hub supports category filters, Chinese/English search, favorites, recent
+visits and light/dark themes. Favorites and visits stay in browser storage;
+catalog links load games on demand. Shooting Range requires a desktop mouse
+and keyboard. Arcade games pause or suspend autoplay when the tab is hidden.
 
 ## Boundaries
 

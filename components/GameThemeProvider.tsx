@@ -19,10 +19,16 @@ interface GameThemeContextValue {
 
 const GameThemeContext = createContext<GameThemeContextValue | null>(null)
 const themeListeners = new Set<() => void>()
+let temporaryTheme: GameTheme | null = null
 
 function getStoredTheme(): GameTheme | null {
-  const storedTheme = window.localStorage.getItem(GAME_THEME_STORAGE_KEY)
-  return isGameTheme(storedTheme) ? storedTheme : null
+  if (temporaryTheme) return temporaryTheme
+  try {
+    const storedTheme = window.localStorage.getItem(GAME_THEME_STORAGE_KEY)
+    return isGameTheme(storedTheme) ? storedTheme : null
+  } catch {
+    return null
+  }
 }
 
 function getSystemTheme(): GameTheme {
@@ -56,7 +62,10 @@ function subscribeToTheme(listener: () => void) {
     if (!getStoredTheme()) emitThemeChange()
   }
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === GAME_THEME_STORAGE_KEY) emitThemeChange()
+    if (event.key === GAME_THEME_STORAGE_KEY || event.key === null) {
+      temporaryTheme = null
+      emitThemeChange()
+    }
   }
 
   themeListeners.add(listener)
@@ -84,7 +93,13 @@ export function GameThemeProvider({ children }: { children: ReactNode }) {
   }, [theme])
 
   const setTheme = useCallback((nextTheme: GameTheme) => {
-    window.localStorage.setItem(GAME_THEME_STORAGE_KEY, nextTheme)
+    try {
+      window.localStorage.setItem(GAME_THEME_STORAGE_KEY, nextTheme)
+      temporaryTheme = null
+    } catch {
+      // Theme controls still work in browsers that block persistent storage.
+      temporaryTheme = nextTheme
+    }
     applyTheme(nextTheme)
     themeListeners.forEach(listener => listener())
   }, [])

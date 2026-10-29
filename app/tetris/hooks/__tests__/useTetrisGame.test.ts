@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTetrisGame } from '../useTetrisGame'
 
@@ -42,6 +42,7 @@ vi.mock('sonner', () => ({
 describe('useTetrisGame', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
     mockUseTetrisStore.mockReturnValue({
       bestScore: 0,
       gamesPlayed: 0,
@@ -63,6 +64,11 @@ describe('useTetrisGame', () => {
       resetStats: vi.fn(),
       resetSessionStats: vi.fn(),
     })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   it('should initialize with empty board', () => {
@@ -184,4 +190,88 @@ describe('useTetrisGame', () => {
       (nextPieceBeforeMove?.position.x ?? 0) - 1
     )
   })
+  it('advances soft drop on every tick and awards one point per actual row', () => {
+    const { result } = renderHook(() => useTetrisGame())
+    const initialY = result.current.gameState.currentPiece!.position.y
+    act(() => result.current.startSoftDrop())
+    act(() => vi.advanceTimersByTime(200))
+    expect(result.current.gameState.currentPiece!.position.y).toBe(initialY + 5)
+    expect(result.current.gameState.score).toBe(5)
+    act(() => result.current.stopSoftDrop())
+    act(() => vi.advanceTimersByTime(200))
+    expect(result.current.gameState.currentPiece!.position.y).toBe(initialY + 5)
+    expect(result.current.gameState.score).toBe(5)
+  })
+
+  it('preserves consecutive moves dispatched before React renders', () => {
+    const { result } = renderHook(() => useTetrisGame())
+    const initialX = result.current.gameState.currentPiece!.position.x
+    act(() => {
+      result.current.movePiece('left')
+      result.current.movePiece('left')
+    })
+    expect(result.current.gameState.currentPiece!.position.x).toBe(initialX - 2)
+  })
+
+  it('does not reset horizontal movement while soft dropping', () => {
+    const { result } = renderHook(() => useTetrisGame())
+    const initialX = result.current.gameState.currentPiece!.position.x
+    act(() => result.current.startSoftDrop())
+    act(() => result.current.movePiece('left'))
+    act(() => vi.advanceTimersByTime(100))
+    expect(result.current.gameState.currentPiece!.position.x).toBe(initialX - 1)
+    expect(result.current.gameState.currentPiece!.position.y).toBe(3)
+  })
+
+  it('clears soft drop immediately on pause and starts a fresh gravity cadence on resume', () => {
+    const { result } = renderHook(() => useTetrisGame())
+    act(() => result.current.startSoftDrop())
+    act(() => result.current.togglePause())
+    const pausedPiece = result.current.gameState.currentPiece
+    act(() => vi.advanceTimersByTime(5000))
+    expect(result.current.gameState.currentPiece).toEqual(pausedPiece)
+    expect(result.current.isSoftDropping).toBe(false)
+    act(() => result.current.togglePause())
+    act(() => vi.advanceTimersByTime(999))
+    expect(result.current.gameState.currentPiece).toEqual(pausedPiece)
+    act(() => vi.advanceTimersByTime(1))
+    expect(result.current.gameState.currentPiece!.position.y).toBe(pausedPiece!.position.y + 1)
+  })
+
+  it('drops at game cadence without restarting the timer for horizontal movement', () => {
+    const timer = vi.spyOn(globalThis, 'setTimeout')
+    const { result } = renderHook(() => useTetrisGame())
+    timer.mockClear()
+    act(() => result.current.movePiece('left'))
+    act(() => vi.advanceTimersByTime(999))
+    expect(result.current.gameState.currentPiece!.position.y).toBe(0)
+    expect(timer).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1))
+    expect(result.current.gameState.currentPiece!.position.y).toBe(1)
+    expect(timer).toHaveBeenCalledOnce()
+  })
+
+  it('pauses when the page is hidden and waits for an explicit resume', () => {
+    const { result } = renderHook(() => useTetrisGame())
+    act(() => result.current.startSoftDrop())
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(result.current.gameState.paused).toBe(true)
+    expect(result.current.isSoftDropping).toBe(false)
+    const piece = result.current.gameState.currentPiece
+    act(() => vi.advanceTimersByTime(5000))
+    expect(result.current.gameState.currentPiece).toEqual(piece)
+    hidden.mockReturnValue(false)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(result.current.gameState.paused).toBe(true)
+  })
+
+  it('cleans up both gravity and soft drop timers on unmount', () => {
+    const { result, unmount } = renderHook(() => useTetrisGame())
+    act(() => result.current.startSoftDrop())
+    expect(vi.getTimerCount()).toBe(2)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
 })

@@ -81,14 +81,47 @@ export default function BlackjackGame() {
     dealer.cards.length === 2 &&
     displayTotal(dealer.cards) === '黑杰克'
 
+  useEffect(() => {
+    const gameWindow = window as Window & { render_game_to_text?: () => string }
+    gameWindow.render_game_to_text = () => {
+      const state = useBlackjackStore.getState()
+      const hidden = !state.dealer.holeRevealed && state.dealer.cards.length >= 2
+      return JSON.stringify({
+        phase: state.phase,
+        role: state.config.role,
+        message: state.message,
+        dealer: {
+          cards: state.dealer.cards.map((card, index) =>
+            hidden && index === 1 ? 'hidden' : `${card.rank} ${card.suit}`
+          ),
+          total: displayTotal(state.dealer.cards, hidden),
+        },
+        seats: state.seats.map(seat => ({
+          name: seat.name,
+          isHuman: seat.isHuman,
+          chips: seat.chips,
+          hands: seat.hands.map(hand => ({
+            cards: hand.cards.map(card => `${card.rank} ${card.suit}`),
+            total: displayTotal(hand.cards, false, hand.fromSplit),
+            status: hand.status,
+            bet: hand.bet,
+          })),
+        })),
+      })
+    }
+    return () => {
+      delete gameWindow.render_game_to_text
+    }
+  }, [])
+
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-background">
+    <div className="blackjack-game relative flex h-dvh flex-col overflow-hidden bg-background">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,color-mix(in_oklab,var(--primary)_12%,transparent),transparent_46%)]"
       />
 
-      <header className="relative z-20 flex shrink-0 items-center justify-between gap-2 px-3 pt-3 pb-2 sm:px-4">
+      <header className="blackjack-desktop-scale relative z-20 flex shrink-0 items-center justify-between gap-2 px-3 pt-3 pb-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-1.5">
           <Spade className="h-4 w-4 shrink-0" />
           <h1 className="text-sm font-bold">21 点</h1>
@@ -237,7 +270,7 @@ export default function BlackjackGame() {
               </AnimatePresence>
 
               <div className="relative flex min-h-0 flex-1 flex-col py-3 sm:py-4">
-                <div className="flex shrink-0 flex-col items-center gap-1 pt-1 sm:pt-2">
+                <div className="blackjack-desktop-scale flex shrink-0 flex-col items-center gap-1 pt-1 sm:pt-2">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-emerald-50/80">
                     <Crown className="h-3.5 w-3.5 text-amber-300" />
                     庄家
@@ -266,7 +299,7 @@ export default function BlackjackGame() {
                       )}
                     </AnimatePresence>
                   </div>
-                  <div className="flex min-h-16 items-end justify-center">
+                  <div className="blackjack-dealer-cards flex min-h-16 items-end justify-center">
                     {dealer.cards.length === 0 ? (
                       <span className="text-xs text-emerald-100/40">等待发牌</span>
                     ) : (
@@ -315,7 +348,7 @@ export default function BlackjackGame() {
                   </AnimatePresence>
                 </div>
 
-                <div className="mx-auto flex min-h-12 max-w-[90%] flex-1 items-center justify-center py-4 sm:py-6">
+                <div className="mx-auto flex min-h-12 max-w-[90%] flex-1 items-center justify-center py-4 sm:py-6 lg:min-h-0 lg:py-2">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={message}
@@ -323,7 +356,7 @@ export default function BlackjackGame() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="truncate rounded-full bg-black/25 px-3 py-1 text-center text-[11px] text-emerald-50/95"
+                      className="blackjack-desktop-scale truncate rounded-full bg-black/25 px-3 py-1 text-center text-[11px] text-emerald-50/95"
                     >
                       {message}
                     </motion.div>
@@ -337,7 +370,7 @@ export default function BlackjackGame() {
                 />
               </div>
 
-              <div className="relative h-6 shrink-0 truncate border-t border-white/5 px-3 py-1 text-center text-[10px] leading-4 text-emerald-100/45">
+              <div className="blackjack-desktop-scale relative h-6 shrink-0 truncate border-t border-white/5 px-3 py-1 text-center text-[10px] leading-4 text-emerald-100/45">
                 {latestLog || '\u00a0'}
               </div>
             </div>
@@ -364,7 +397,7 @@ function TableSeats({
 
   if (!human) {
     return (
-      <div className="flex shrink-0 items-end justify-center gap-2 px-2 pb-1 sm:gap-4 sm:px-4 sm:pb-2">
+      <div className="blackjack-desktop-scale flex shrink-0 items-end justify-center gap-2 px-2 pb-1 sm:gap-4 sm:px-4 sm:pb-2">
         {left.map(({ seat, index }) => (
           <PlayerSeat key={seat.id} seat={seat} isActive={isTurn && activeSeatIndex === index} />
         ))}
@@ -373,7 +406,7 @@ function TableSeats({
   }
 
   return (
-    <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-1 px-2 pb-1 sm:gap-2 sm:px-4 sm:pb-2">
+    <div className="blackjack-desktop-scale grid shrink-0 grid-cols-[1fr_auto_1fr] items-end gap-1 px-2 pb-1 sm:gap-2 sm:px-4 sm:pb-2">
       <div className="flex items-end justify-end gap-2 sm:gap-4">
         {left.map(({ seat, index }) => (
           <PlayerSeat key={seat.id} seat={seat} isActive={isTurn && activeSeatIndex === index} />
